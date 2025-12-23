@@ -35,8 +35,10 @@ class _CreateAuthorityScreenState extends ConsumerState<CreateAuthorityScreen>
   final _billNumberController = TextEditingController();
   final _particularsController = TextEditingController();
 
+  // These date variables were being initialized to the current date
   DateTime _selectedDate = DateTime.now();
   DateTime _selectedBillDate = DateTime.now();
+
   bool _isGeneratingPdf = false;
 
   @override
@@ -47,13 +49,28 @@ class _CreateAuthorityScreenState extends ConsumerState<CreateAuthorityScreen>
       duration: const Duration(milliseconds: 400),
       vsync: this,
     );
-
     _fadeAnimation = CurvedAnimation(
       parent: _animationController,
       curve: Curves.easeOut,
     );
-
     _animationController.forward();
+
+    // ✅ FIX: Initialize controllers with data from the provider
+    // This runs after the widget is built to safely read the provider state
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authority = ref.read(paymentAuthorityProvider);
+
+      // Populate Text Fields from the loaded authority data
+      _authorityOrderController.text = authority.authorityOrderNo;
+      _billNumberController.text = authority.billNumber;
+      _particularsController.text = authority.particulars;
+
+      // Populate Dates from the loaded authority data
+      setState(() {
+        _selectedDate = authority.date;
+        _selectedBillDate = authority.billDate;
+      });
+    });
   }
 
   @override
@@ -69,6 +86,7 @@ class _CreateAuthorityScreenState extends ConsumerState<CreateAuthorityScreen>
   /// Syncs text field values to the Riverpod state before actions like PDF generation
   void _syncTextControllersToState() {
     final notifier = ref.read(paymentAuthorityProvider.notifier);
+
     notifier.updateAuthorityOrderNo(_authorityOrderController.text);
     notifier.updateBillNumber(_billNumberController.text);
     notifier.updateParticulars(_particularsController.text);
@@ -686,41 +704,43 @@ class _CreateAuthorityScreenState extends ConsumerState<CreateAuthorityScreen>
   }
 
   Future<void> _generatePDF() async {
-    // 1. Sync manual text entries to provider state so PDF model picks them up
-    _syncTextControllersToState();
-
-    setState(() {
-      _isGeneratingPdf = true;
-    });
-
+    setState(() => _isGeneratingPdf = true);
     try {
-      // 2. Trigger the PDF generation provider
-      // Correct way to call the function provider: read it, then invoke the returned function
+      // 1. Sync latest text values from controllers to the state provider
+      _syncTextControllersToState();
+
+      // 2. Trigger PDF generation (which also saves the full state to the database)
       final generatePdfAction = ref.read(generatePaymentAuthorityPdfProvider);
       await generatePdfAction();
     } catch (e) {
-      if (mounted) {
-        showCupertinoDialog(
-          context: context,
-          builder: (context) => CupertinoAlertDialog(
-            title: const Text('Error'),
-            content: Text('Failed to generate PDF: $e'),
-            actions: [
-              CupertinoDialogAction(
-                child: const Text('OK'),
-                onPressed: () => Navigator.pop(context),
-              ),
-            ],
-          ),
-        );
-      }
+      _showErrorDialog(e.toString()); // Helper to show an error popup
     } finally {
       if (mounted) {
-        setState(() {
-          _isGeneratingPdf = false;
-        });
+        setState(() => _isGeneratingPdf = false);
       }
     }
+  }
+
+  void _showErrorDialog(String message) {
+    // Ensure the context is still valid before showing a dialog
+    if (!mounted) return;
+
+    showCupertinoDialog(
+      context: context,
+      builder: (context) => CupertinoAlertDialog(
+        title: const Text('Error'),
+        content: Text(message),
+        actions: [
+          CupertinoDialogAction(
+            isDefaultAction: true,
+            child: const Text('OK'),
+            onPressed: () {
+              Navigator.pop(context);
+            },
+          ),
+        ],
+      ),
+    );
   }
 
   void _handleBack() {
