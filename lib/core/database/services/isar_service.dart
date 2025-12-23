@@ -6,6 +6,7 @@ import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:csv/csv.dart';
 import 'package:excel/excel.dart' as excel_pkg;
+import 'package:saral_office/core/database/models/recent_division.dart';
 import 'package:saral_office/core/database/models/recent_gl.dart';
 import 'package:saral_office/core/database/models/recent_vendor.dart';
 import '../models/vendor.dart';
@@ -31,6 +32,7 @@ class IsarService {
           DivisionSchema,
           RecentGLSchema,
           RecentVendorSchema,
+          RecentDivisionSchema,
         ],
         directory: dir.path,
         inspector: kDebugMode,
@@ -47,6 +49,38 @@ class IsarService {
       debugPrint('Stack trace: $stackTrace');
       rethrow;
     }
+  }
+
+  Future<void> markDivisionAsUsed(Division division) async {
+    await isar.writeTxn(() async {
+      final existing = await isar.recentDivisions
+          .filter()
+          .fundsCenterEqualTo(division.fundsCenter)
+          .findFirst();
+
+      if (existing != null) {
+        existing.name = division.name;
+        existing.lastUsedAt = DateTime.now();
+        await isar.recentDivisions.put(existing);
+      } else {
+        await isar.recentDivisions.put(
+          RecentDivision()
+            ..fundsCenter = division.fundsCenter
+            ..name = division.name
+            ..lastUsedAt = DateTime.now(),
+        );
+      }
+
+      // keep only latest 20
+      final extra = await isar.recentDivisions
+          .where()
+          .sortByLastUsedAtDesc()
+          .offset(20)
+          .findAll();
+      if (extra.isNotEmpty) {
+        await isar.recentDivisions.deleteAll(extra.map((e) => e.id).toList());
+      }
+    });
   }
 
   // Mark a vendor as recently used
@@ -462,7 +496,31 @@ class IsarService {
       }
 
       if (query.isEmpty) {
-        return await isar.divisions.where().findAll();
+        // recent first
+        final recents = await isar.recentDivisions
+            .where()
+            .sortByLastUsedAtDesc()
+            .limit(10)
+            .findAll();
+
+        if (recents.isNotEmpty) {
+          final codes = recents.map((e) => e.fundsCenter).toList();
+
+          // Fetch all divisions whose fundsCenter is in `codes`
+          final fromDb = await isar.divisions
+              .filter()
+              .anyOf(codes, (q, code) => q.fundsCenterEqualTo(code))
+              .findAll();
+
+          final map = {for (var d in fromDb) d.fundsCenter: d};
+          return recents
+              .map((r) => map[r.fundsCenter])
+              .whereType<Division>()
+              .toList();
+        }
+
+        // fallback: first N divisions
+        return isar.divisions.where().limit(50).findAll();
       }
 
       final results = await isar.divisions
@@ -471,7 +529,6 @@ class IsarService {
           .or()
           .nameContains(query, caseSensitive: false)
           .findAll();
-
       debugPrint('🔍 Found ${results.length} divisions for query: "$query"');
       return results;
     } catch (e) {

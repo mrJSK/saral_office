@@ -224,48 +224,62 @@ final markGlAsUsedProvider = FutureProvider.family<void, GLAccount>((
   await isar.markGlAsUsed(gl); // implement in IsarService
 });
 
-/// Generate PDF using current PaymentAuthority state.
-final generatePaymentAuthorityPdfProvider = FutureProvider.autoDispose<void>((
+final paymentAuthorityPdfServiceProvider = Provider<PaymentAuthorityPdfService>(
+  (ref) {
+    return PaymentAuthorityPdfService();
+  },
+);
+
+/// **Fix:** Changed from FutureProvider to Provider returning a function.
+/// This allows triggering the PDF generation action on demand without type issues.
+final generatePaymentAuthorityPdfProvider =
+    Provider.autoDispose<Future<void> Function()>((ref) {
+      return () async {
+        final state = ref.read(paymentAuthorityProvider);
+        final pdfService = ref.read(paymentAuthorityPdfServiceProvider);
+
+        final pdfModel = PaymentAuthorityPdfModel(
+          divisionName: state.division?.name ?? '',
+          divisionCode: state.division?.fundsCenter ?? '',
+          date: state.date,
+          payeeName: state.vendor?.fullName ?? '',
+          payeeAddress: state.vendor?.fullAddress ?? '',
+          paymentParticulars: state.particulars ?? '',
+          authorityOrderNo: state.authorityOrderNo ?? '',
+          authorityOrderDate: state.date,
+          billNo: state.billNumber ?? '',
+          billDate: state.billDate,
+          netAmount: state.totalDebit,
+          debitLines: state.entries
+              .where((e) => e.isDebit)
+              .map(
+                (e) => AuthorityLine(
+                  description: e.description,
+                  glCode: e.glAccount?.glCode ?? '',
+                  amount: e.amount,
+                ),
+              )
+              .toList(),
+          creditLines: state.entries
+              .where((e) => !e.isDebit)
+              .map(
+                (e) => AuthorityLine(
+                  description: e.description,
+                  glCode: e.glAccount?.glCode ?? '',
+                  amount: e.amount,
+                ),
+              )
+              .toList(),
+        );
+
+        await pdfService.generateAndOpen(pdfModel);
+      };
+    });
+
+final markDivisionAsUsedProvider = FutureProvider.family<void, Division>((
   ref,
+  division,
 ) async {
-  final paState = ref.read(paymentAuthorityProvider);
-  final pdfService = ref.read(pdfServiceProvider);
-
-  // Build domain model that pdf_service.dart expects.
-  final pdfModel = PaymentAuthorityPdfModel(
-    divisionName: paState.division?.name ?? '',
-    divisionCode: paState.division?.fundsCenter ?? '',
-    date: paState.date,
-    payeeName: paState.vendor?.name1 ?? '',
-    payeeAddress:
-        '${paState.vendor?.street1 ?? ''} ${paState.vendor?.city ?? ''}'.trim(),
-    paymentParticulars: paState.particulars,
-    authorityOrderNo: paState.authorityOrderNo,
-    authorityOrderDate: paState.date, // or separate field if you have one
-    billNo: paState.billNumber,
-    billDate: paState.billDate,
-    netAmount: paState.totalDebit, // or any logic you use for net
-    debitLines: paState.entries
-        .where((e) => e.isDebit)
-        .map(
-          (e) => AuthorityLine(
-            description: e.description,
-            glCode: e.glAccount?.glCode ?? '',
-            amount: e.amount,
-          ),
-        )
-        .toList(),
-    creditLines: paState.entries
-        .where((e) => !e.isDebit)
-        .map(
-          (e) => AuthorityLine(
-            description: e.description,
-            glCode: e.glAccount?.glCode ?? '',
-            amount: e.amount,
-          ),
-        )
-        .toList(),
-  );
-
-  await pdfService.generateAndOpen(pdfModel);
+  final isar = ref.read(isarServiceProvider);
+  await isar.markDivisionAsUsed(division);
 });

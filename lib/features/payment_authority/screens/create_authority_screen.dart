@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+
 import '../../../core/theme/app_theme.dart';
 import '../../../core/database/models/vendor.dart';
 import '../../../core/database/models/division.dart';
@@ -36,6 +37,7 @@ class _CreateAuthorityScreenState extends ConsumerState<CreateAuthorityScreen>
 
   DateTime _selectedDate = DateTime.now();
   DateTime _selectedBillDate = DateTime.now();
+  bool _isGeneratingPdf = false;
 
   @override
   void initState() {
@@ -64,109 +66,155 @@ class _CreateAuthorityScreenState extends ConsumerState<CreateAuthorityScreen>
     super.dispose();
   }
 
+  /// Syncs text field values to the Riverpod state before actions like PDF generation
+  void _syncTextControllersToState() {
+    final notifier = ref.read(paymentAuthorityProvider.notifier);
+    notifier.updateAuthorityOrderNo(_authorityOrderController.text);
+    notifier.updateBillNumber(_billNumberController.text);
+    notifier.updateParticulars(_particularsController.text);
+  }
+
   @override
   Widget build(BuildContext context) {
     final authority = ref.watch(paymentAuthorityProvider);
 
-    return CupertinoPageScaffold(
-      backgroundColor: AppTheme.backgroundLight,
-      navigationBar: CupertinoNavigationBar(
-        backgroundColor: AppTheme.surfaceWhite.withOpacity(0.9),
-        border: null,
-        leading: CupertinoButton(
-          padding: EdgeInsets.zero,
-          onPressed: () => _handleBack(),
-          child: const Icon(CupertinoIcons.back),
-        ),
-        middle: const Text(
-          'New Payment Authority',
-          style: TextStyle(
-            fontFamily: 'SF Pro Display',
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        trailing: CupertinoButton(
-          padding: EdgeInsets.zero,
-          onPressed: authority.isBalanced ? _generatePDF : null,
-          child: Icon(
-            CupertinoIcons.checkmark_circle_fill,
-            color: authority.isBalanced
-                ? AppTheme.successGreen
-                : AppTheme.textSecondary.withOpacity(0.3),
-          ),
-        ),
-      ),
-      child: SafeArea(
-        child: FadeTransition(
-          opacity: _fadeAnimation,
-          child: CustomScrollView(
-            controller: _scrollController,
-            physics: const BouncingScrollPhysics(
-              parent: AlwaysScrollableScrollPhysics(),
+    return Stack(
+      children: [
+        CupertinoPageScaffold(
+          backgroundColor: AppTheme.backgroundLight,
+          navigationBar: CupertinoNavigationBar(
+            backgroundColor: AppTheme.surfaceWhite.withOpacity(0.9),
+            border: null,
+            leading: CupertinoButton(
+              padding: EdgeInsets.zero,
+              onPressed: _isGeneratingPdf ? null : () => _handleBack(),
+              child: const Icon(CupertinoIcons.back),
             ),
-            slivers: [
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.all(AppTheme.spacingM),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Section: Basic Details
-                      _buildSectionHeader(
-                        'Basic Details',
-                        CupertinoIcons.info_circle_fill,
+            middle: const Text(
+              'New Payment Authority',
+              style: TextStyle(
+                fontFamily: 'SF Pro Display',
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            trailing: CupertinoButton(
+              padding: EdgeInsets.zero,
+              onPressed: (authority.isBalanced && !_isGeneratingPdf)
+                  ? () => _generatePDF()
+                  : null,
+              child: Icon(
+                CupertinoIcons.checkmark_circle_fill,
+                color: (authority.isBalanced && !_isGeneratingPdf)
+                    ? AppTheme.successGreen
+                    : AppTheme.textSecondary.withOpacity(0.3),
+              ),
+            ),
+          ),
+          child: SafeArea(
+            child: FadeTransition(
+              opacity: _fadeAnimation,
+              child: CustomScrollView(
+                controller: _scrollController,
+                physics: const BouncingScrollPhysics(
+                  parent: AlwaysScrollableScrollPhysics(),
+                ),
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.all(AppTheme.spacingM),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Section: Basic Details
+                          _buildSectionHeader(
+                            'Basic Details',
+                            CupertinoIcons.info_circle_fill,
+                          ),
+                          const SizedBox(height: AppTheme.spacingM),
+                          _buildBasicDetailsCard(),
+
+                          const SizedBox(height: AppTheme.spacingXL),
+
+                          // Section: Vendor Information
+                          _buildSectionHeader(
+                            'Vendor Information',
+                            CupertinoIcons.person_2_fill,
+                          ),
+                          const SizedBox(height: AppTheme.spacingM),
+                          _buildVendorCard(),
+
+                          const SizedBox(height: AppTheme.spacingXL),
+
+                          // Section: Accounting Entries
+                          _buildSectionHeader(
+                            'Accounting Entries',
+                            CupertinoIcons.list_bullet,
+                          ),
+                          const SizedBox(height: AppTheme.spacingM),
+                          _buildAccountingEntriesSection(authority),
+
+                          const SizedBox(height: AppTheme.spacingM),
+
+                          // Add Entry Button
+                          _buildAddEntryButton(),
+
+                          const SizedBox(height: AppTheme.spacingXL),
+
+                          // Totals Summary
+                          TotalsSummaryCard(
+                            totalDebit: authority.totalDebit,
+                            totalCredit: authority.totalCredit,
+                            isBalanced: authority.isBalanced,
+                          ),
+
+                          const SizedBox(height: AppTheme.spacingXL),
+
+                          // Generate PDF Button
+                          _buildGeneratePDFButton(authority),
+
+                          const SizedBox(height: AppTheme.spacingXL),
+                        ],
                       ),
-                      const SizedBox(height: AppTheme.spacingM),
-                      _buildBasicDetailsCard(),
-
-                      const SizedBox(height: AppTheme.spacingXL),
-
-                      // Section: Vendor Information
-                      _buildSectionHeader(
-                        'Vendor Information',
-                        CupertinoIcons.person_2_fill,
-                      ),
-                      const SizedBox(height: AppTheme.spacingM),
-                      _buildVendorCard(),
-
-                      const SizedBox(height: AppTheme.spacingXL),
-
-                      // Section: Accounting Entries
-                      _buildSectionHeader(
-                        'Accounting Entries',
-                        CupertinoIcons.list_bullet,
-                      ),
-                      const SizedBox(height: AppTheme.spacingM),
-                      _buildAccountingEntriesSection(authority),
-
-                      const SizedBox(height: AppTheme.spacingM),
-
-                      // Add Entry Button
-                      _buildAddEntryButton(),
-
-                      const SizedBox(height: AppTheme.spacingXL),
-
-                      // Totals Summary
-                      TotalsSummaryCard(
-                        totalDebit: authority.totalDebit,
-                        totalCredit: authority.totalCredit,
-                        isBalanced: authority.isBalanced,
-                      ),
-
-                      const SizedBox(height: AppTheme.spacingXL),
-
-                      // Generate PDF Button
-                      _buildGeneratePDFButton(authority),
-
-                      const SizedBox(height: AppTheme.spacingXL),
-                    ],
+                    ),
                   ),
+                ],
+              ),
+            ),
+          ),
+        ),
+
+        // Loading Overlay
+        if (_isGeneratingPdf)
+          Container(
+            color: Colors.black.withOpacity(0.3),
+            child: Center(
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: AppTheme.surfaceWhite.withOpacity(0.9),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: const [
+                    CupertinoActivityIndicator(radius: 14),
+                    SizedBox(height: 12),
+                    Text(
+                      'Generating PDF...',
+                      style: TextStyle(
+                        fontFamily: 'SF Pro Display',
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: AppTheme.textPrimary,
+                        decoration: TextDecoration.none,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
+            ),
           ),
-        ),
-      ),
+      ],
     );
   }
 
@@ -211,6 +259,9 @@ class _CreateAuthorityScreenState extends ConsumerState<CreateAuthorityScreen>
                 ref
                     .read(paymentAuthorityProvider.notifier)
                     .updateDivision(division);
+
+                // Mark as recent
+                ref.read(markDivisionAsUsedProvider(division));
               }
             },
           ),
@@ -224,7 +275,12 @@ class _CreateAuthorityScreenState extends ConsumerState<CreateAuthorityScreen>
                 child: _buildDateField(
                   label: 'Date',
                   date: _selectedDate,
-                  onChanged: (date) => setState(() => _selectedDate = date),
+                  onChanged: (date) {
+                    setState(() => _selectedDate = date);
+                    ref
+                        .read(paymentAuthorityProvider.notifier)
+                        .updateDate(date);
+                  },
                 ),
               ),
               const SizedBox(width: AppTheme.spacingM),
@@ -257,7 +313,12 @@ class _CreateAuthorityScreenState extends ConsumerState<CreateAuthorityScreen>
                 child: _buildDateField(
                   label: 'Bill Date',
                   date: _selectedBillDate,
-                  onChanged: (date) => setState(() => _selectedBillDate = date),
+                  onChanged: (date) {
+                    setState(() => _selectedBillDate = date);
+                    ref
+                        .read(paymentAuthorityProvider.notifier)
+                        .updateBillDate(date);
+                  },
                 ),
               ),
             ],
@@ -296,7 +357,7 @@ class _CreateAuthorityScreenState extends ConsumerState<CreateAuthorityScreen>
             ),
             child: Row(
               children: [
-                Icon(
+                const Icon(
                   CupertinoIcons.calendar,
                   size: 18,
                   color: AppTheme.primaryBlue,
@@ -379,17 +440,17 @@ class _CreateAuthorityScreenState extends ConsumerState<CreateAuthorityScreen>
                 ref
                     .read(paymentAuthorityProvider.notifier)
                     .updateVendor(selectedVendor);
+
+                // Mark as recent
+                ref.read(markVendorAsUsedProvider(selectedVendor));
               }
             },
           ),
-
           if (vendor != null) ...[
             const SizedBox(height: AppTheme.spacingM),
             _buildVendorDetails(vendor),
           ],
-
           const SizedBox(height: AppTheme.spacingM),
-
           IOSTextField(
             controller: _particularsController,
             label: 'Particulars of Payment',
@@ -535,14 +596,14 @@ class _CreateAuthorityScreenState extends ConsumerState<CreateAuthorityScreen>
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: [
+          children: const [
             Icon(
               CupertinoIcons.add_circled_solid,
               color: AppTheme.primaryBlue,
               size: 20,
             ),
-            const SizedBox(width: 8),
-            const Text(
+            SizedBox(width: 8),
+            Text(
               'Add Entry',
               style: TextStyle(
                 fontFamily: 'SF Pro Display',
@@ -563,7 +624,8 @@ class _CreateAuthorityScreenState extends ConsumerState<CreateAuthorityScreen>
         authority.isBalanced &&
         authority.entries.isNotEmpty &&
         authority.vendor != null &&
-        authority.division != null;
+        authority.division != null &&
+        !_isGeneratingPdf;
 
     return CupertinoButton(
       padding: EdgeInsets.zero,
@@ -623,20 +685,42 @@ class _CreateAuthorityScreenState extends ConsumerState<CreateAuthorityScreen>
     );
   }
 
-  void _generatePDF() {
-    showCupertinoDialog(
-      context: context,
-      builder: (context) => CupertinoAlertDialog(
-        title: const Text('Generate PDF'),
-        content: const Text('This feature is coming soon!'),
-        actions: [
-          CupertinoDialogAction(
-            child: const Text('OK'),
-            onPressed: () => Navigator.pop(context),
+  Future<void> _generatePDF() async {
+    // 1. Sync manual text entries to provider state so PDF model picks them up
+    _syncTextControllersToState();
+
+    setState(() {
+      _isGeneratingPdf = true;
+    });
+
+    try {
+      // 2. Trigger the PDF generation provider
+      // Correct way to call the function provider: read it, then invoke the returned function
+      final generatePdfAction = ref.read(generatePaymentAuthorityPdfProvider);
+      await generatePdfAction();
+    } catch (e) {
+      if (mounted) {
+        showCupertinoDialog(
+          context: context,
+          builder: (context) => CupertinoAlertDialog(
+            title: const Text('Error'),
+            content: Text('Failed to generate PDF: $e'),
+            actions: [
+              CupertinoDialogAction(
+                child: const Text('OK'),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ],
           ),
-        ],
-      ),
-    );
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isGeneratingPdf = false;
+        });
+      }
+    }
   }
 
   void _handleBack() {
@@ -669,7 +753,10 @@ class _CreateAuthorityScreenState extends ConsumerState<CreateAuthorityScreen>
   }
 }
 
+// --------------------------
 // Add Entry Sheet
+// --------------------------
+
 class AddEntrySheet extends ConsumerStatefulWidget {
   const AddEntrySheet({super.key});
 
@@ -926,7 +1013,10 @@ class _AddEntrySheetState extends ConsumerState<AddEntrySheet> {
   }
 }
 
+// --------------------------
 // GL Account Picker Screen
+// --------------------------
+
 class GLAccountPickerScreen extends ConsumerStatefulWidget {
   final Function(GLAccount) onSelected;
 
@@ -1018,6 +1108,9 @@ class _GLAccountPickerScreenState extends ConsumerState<GLAccountPickerScreen> {
                           vertical: 12,
                         ),
                         onPressed: () {
+                          // Mark as recent
+                          ref.read(markGlAsUsedProvider(gl));
+
                           widget.onSelected(gl);
                           Navigator.pop(context);
                         },

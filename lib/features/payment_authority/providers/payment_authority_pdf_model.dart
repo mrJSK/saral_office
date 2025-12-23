@@ -16,20 +16,14 @@ class PaymentAuthorityPdfModel {
   final String divisionName;
   final String divisionCode;
   final DateTime date;
-
   final String payeeName;
   final String payeeAddress;
-
   final String paymentParticulars;
-
   final String authorityOrderNo;
   final DateTime authorityOrderDate;
-
   final String billNo;
   final DateTime billDate;
-
   final double netAmount;
-
   final List<AuthorityLine> debitLines;
   final List<AuthorityLine> creditLines;
 
