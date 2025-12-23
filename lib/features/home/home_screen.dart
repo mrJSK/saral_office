@@ -1,5 +1,3 @@
-// lib/features/home/home_screen.dart
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,6 +8,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/di/injection.dart';
 import '../../core/database/services/isar_service.dart';
 import '../payment_authority/screens/create_authority_screen.dart';
+import '../payment_authority/providers/payment_authority_provider.dart';
 import 'widgets/stats_card.dart';
 import 'widgets/recent_authorities_list.dart';
 import 'widgets/quick_action_button.dart';
@@ -106,7 +105,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
                       const SizedBox(height: AppTheme.spacingXL),
 
-                      // Stats Section
+                      // Stats Section - NOW WITH REAL DATA
                       _buildStatsSection(),
 
                       const SizedBox(height: AppTheme.spacingXL),
@@ -207,52 +206,144 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   }
 
   Widget _buildStatsSection() {
-    final isarService = getIt<IsarService>();
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Database Statistics', style: AppTheme.headline3),
+        Text('Statistics', style: AppTheme.headline3),
         const SizedBox(height: AppTheme.spacingM),
 
-        FutureBuilder<Map<String, int>>(
-          future: _getDatabaseStats(),
-          builder: (context, snapshot) {
-            if (!snapshot.hasData) {
-              return const Center(child: CupertinoActivityIndicator());
-            }
+        // Watch the authorities provider for real data
+        Consumer(
+          builder: (context, ref, child) {
+            final authoritiesAsync = ref.watch(recentAuthoritiesProvider);
 
-            final stats = snapshot.data!;
+            return authoritiesAsync.when(
+              data: (authorities) {
+                // Calculate real stats
+                final totalCount = authorities.length;
 
-            return Row(
-              children: [
-                Expanded(
-                  child: StatsCard(
-                    icon: CupertinoIcons.person_2_fill,
-                    title: 'Vendors',
-                    value: stats['vendors']?.toString() ?? '0',
-                    color: AppTheme.primaryBlue,
+                // This month's count
+                final now = DateTime.now();
+                final thisMonthCount = authorities
+                    .where(
+                      (a) =>
+                          a.createdAt.year == now.year &&
+                          a.createdAt.month == now.month,
+                    )
+                    .length;
+
+                // This month's total amount
+                final thisMonthAmount = authorities
+                    .where(
+                      (a) =>
+                          a.createdAt.year == now.year &&
+                          a.createdAt.month == now.month,
+                    )
+                    .fold(0.0, (sum, a) => sum + a.amount);
+
+                // Format amount
+                String formattedAmount;
+                if (thisMonthAmount >= 100000) {
+                  formattedAmount =
+                      '₹${(thisMonthAmount / 100000).toStringAsFixed(1)}L';
+                } else if (thisMonthAmount >= 1000) {
+                  formattedAmount =
+                      '₹${(thisMonthAmount / 1000).toStringAsFixed(1)}K';
+                } else {
+                  formattedAmount = '₹${thisMonthAmount.toStringAsFixed(0)}';
+                }
+
+                return Row(
+                  children: [
+                    Expanded(
+                      child: StatsCard(
+                        icon: CupertinoIcons.doc_text_fill,
+                        title: 'Total',
+                        value: totalCount.toString(),
+                        color: AppTheme.primaryBlue,
+                      ),
+                    ),
+                    const SizedBox(width: AppTheme.spacingM),
+                    Expanded(
+                      child: StatsCard(
+                        icon: CupertinoIcons.calendar,
+                        title: 'This Month',
+                        value: thisMonthCount.toString(),
+                        color: AppTheme.successGreen,
+                      ),
+                    ),
+                    const SizedBox(width: AppTheme.spacingM),
+                    Expanded(
+                      child: StatsCard(
+                        icon: CupertinoIcons.money_dollar_circle_fill,
+                        title: 'Amount',
+                        value: formattedAmount,
+                        color: AppTheme.warningOrange,
+                      ),
+                    ),
+                  ],
+                );
+              },
+              loading: () => Row(
+                children: [
+                  Expanded(
+                    child: StatsCard(
+                      icon: CupertinoIcons.doc_text,
+                      title: 'Total',
+                      value: '-',
+                      color: AppTheme.primaryBlue,
+                    ),
                   ),
-                ),
-                const SizedBox(width: AppTheme.spacingM),
-                Expanded(
-                  child: StatsCard(
-                    icon: CupertinoIcons.square_list_fill,
-                    title: 'GL Accounts',
-                    value: stats['glAccounts']?.toString() ?? '0',
-                    color: AppTheme.successGreen,
+                  const SizedBox(width: AppTheme.spacingM),
+                  Expanded(
+                    child: StatsCard(
+                      icon: CupertinoIcons.calendar,
+                      title: 'This Month',
+                      value: '-',
+                      color: AppTheme.successGreen,
+                    ),
                   ),
-                ),
-                const SizedBox(width: AppTheme.spacingM),
-                Expanded(
-                  child: StatsCard(
-                    icon: CupertinoIcons.building_2_fill,
-                    title: 'Divisions',
-                    value: stats['divisions']?.toString() ?? '0',
-                    color: AppTheme.warningOrange,
+                  const SizedBox(width: AppTheme.spacingM),
+                  Expanded(
+                    child: StatsCard(
+                      icon: CupertinoIcons.money_dollar_circle,
+                      title: 'Amount',
+                      value: '-',
+                      color: AppTheme.warningOrange,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
+              error: (error, stack) => Row(
+                children: [
+                  Expanded(
+                    child: StatsCard(
+                      icon: CupertinoIcons.doc_text,
+                      title: 'Total',
+                      value: '0',
+                      color: AppTheme.primaryBlue,
+                    ),
+                  ),
+                  const SizedBox(width: AppTheme.spacingM),
+                  Expanded(
+                    child: StatsCard(
+                      icon: CupertinoIcons.calendar,
+                      title: 'This Month',
+                      value: '0',
+                      color: AppTheme.successGreen,
+                    ),
+                  ),
+                  const SizedBox(width: AppTheme.spacingM),
+                  Expanded(
+                    child: StatsCard(
+                      icon: CupertinoIcons.money_dollar_circle,
+                      title: 'Amount',
+                      value: '₹0',
+                      color: AppTheme.warningOrange,
+                    ),
+                  ),
+                ],
+              ),
             );
           },
         ),
@@ -285,21 +376,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     );
   }
 
-  Future<Map<String, int>> _getDatabaseStats() async {
-    final isarService = getIt<IsarService>();
-
-    final vendorCount = await isarService.isar.vendors.count();
-    final glCount = await isarService.isar.gLAccounts.count();
-    final divisionCount = await isarService.isar.divisions.count();
-
-    return {
-      'vendors': vendorCount,
-      'glAccounts': glCount,
-      'divisions': divisionCount,
-    };
-  }
-
   void _navigateToCreateAuthority() {
+    // Reset the provider to ensure clean state for new authority
+    ref.read(paymentAuthorityProvider.notifier).reset();
+
     Navigator.of(
       context,
     ).push(CupertinoPageRoute(builder: (_) => const CreateAuthorityScreen()));

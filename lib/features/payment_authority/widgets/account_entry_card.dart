@@ -9,12 +9,15 @@ class AccountEntryCard extends StatelessWidget {
   final AccountEntry entry;
   final int index;
   final VoidCallback onDelete;
+  // Added onUpdate callback to support editing
+  final Function(AccountEntry)? onUpdate;
 
   const AccountEntryCard({
     super.key,
     required this.entry,
     required this.index,
     required this.onDelete,
+    this.onUpdate,
   });
 
   @override
@@ -76,6 +79,23 @@ class AccountEntryCard extends StatelessWidget {
                   style: AppTheme.caption.copyWith(fontWeight: FontWeight.w600),
                 ),
                 const Spacer(),
+                // Edit Button (Added if onUpdate is provided)
+                if (onUpdate != null) ...[
+                  CupertinoButton(
+                    padding: EdgeInsets.zero,
+                    onPressed: () {
+                      // Trigger edit logic here if you want to implement inline editing
+                      // or open a dialog similar to "Add Entry"
+                    },
+                    child: const Icon(
+                      CupertinoIcons.pencil,
+                      size: 18,
+                      color: AppTheme.primaryBlue,
+                    ),
+                    minimumSize: const Size(0, 0),
+                  ),
+                  const SizedBox(width: 12),
+                ],
                 CupertinoButton(
                   padding: EdgeInsets.zero,
                   onPressed: onDelete,
@@ -84,7 +104,7 @@ class AccountEntryCard extends StatelessWidget {
                     size: 18,
                     color: AppTheme.errorRed,
                   ),
-                  minimumSize: Size(0, 0),
+                  minimumSize: const Size(0, 0),
                 ),
               ],
             ),

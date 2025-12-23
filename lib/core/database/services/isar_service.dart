@@ -9,6 +9,7 @@ import 'package:excel/excel.dart' as excel_pkg;
 import 'package:saral_office/core/database/models/recent_division.dart';
 import 'package:saral_office/core/database/models/recent_gl.dart';
 import 'package:saral_office/core/database/models/recent_vendor.dart';
+import 'package:saral_office/core/database/models/saved_authority.dart'; // Added import
 import '../models/vendor.dart';
 import '../models/gl_account.dart';
 import '../models/division.dart';
@@ -33,6 +34,7 @@ class IsarService {
           RecentGLSchema,
           RecentVendorSchema,
           RecentDivisionSchema,
+          SavedAuthoritySchema, // Added Schema
         ],
         directory: dir.path,
         inspector: kDebugMode,
@@ -50,6 +52,50 @@ class IsarService {
       rethrow;
     }
   }
+
+  // ---------------------------------------------------------------------------
+  // NEW METHODS FOR SAVED AUTHORITIES
+  // ---------------------------------------------------------------------------
+
+  // Save payment authority to database
+  Future<void> saveAuthority(SavedAuthority authority) async {
+    try {
+      await isar.writeTxn(() async {
+        await isar.savedAuthoritys.put(authority);
+      });
+      debugPrint('✅ Authority saved: ${authority.authorityOrderNo}');
+    } catch (e) {
+      debugPrint('❌ Error saving authority: $e');
+      rethrow;
+    }
+  }
+
+  // Watch recent authorities (latest first, limit 10)
+  Stream<List<SavedAuthority>> watchRecentAuthorities() {
+    return isar.savedAuthoritys
+        .where()
+        .sortByCreatedAtDesc()
+        .limit(10)
+        .watch(fireImmediately: true);
+  }
+
+  // Get recent authorities once
+  Future<List<SavedAuthority>> getRecentAuthorities() async {
+    try {
+      return await isar.savedAuthoritys
+          .where()
+          .sortByCreatedAtDesc()
+          .limit(10)
+          .findAll();
+    } catch (e) {
+      debugPrint('❌ Error fetching recent authorities: $e');
+      return [];
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // EXISTING METHODS
+  // ---------------------------------------------------------------------------
 
   Future<void> markDivisionAsUsed(Division division) async {
     await isar.writeTxn(() async {
@@ -217,7 +263,6 @@ class IsarService {
     return str.isEmpty ? null : str;
   }
 
-  // Import Vendors from Excel with complete null safety
   // Import Vendors from CSV
   Future<void> _importVendors() async {
     try {
@@ -432,12 +477,10 @@ class IsarService {
   // Search methods
   Future<List<Vendor>> searchVendors(String query) async {
     try {
-      if (!_isInitialized) {
-        debugPrint('⚠️ Isar not initialized');
-        return [];
-      }
+      if (!_isInitialized) return [];
 
       if (query.isEmpty) {
+        // Return simple list of first 50 vendors instead of recent ones
         return await isar.vendors.where().limit(50).findAll();
       }
 
@@ -445,15 +488,12 @@ class IsarService {
           .filter()
           .vendorCodeContains(query, caseSensitive: false)
           .findAll();
-
       final byName = await isar.vendors
           .filter()
           .name1Contains(query, caseSensitive: false)
           .findAll();
 
       final results = {...byCode, ...byName}.toList();
-      debugPrint('🔍 Found ${results.length} vendors for query: "$query"');
-
       return results.take(50).toList();
     } catch (e) {
       debugPrint('❌ Error searching vendors: $e');
@@ -490,37 +530,11 @@ class IsarService {
 
   Future<List<Division>> searchDivisions(String query) async {
     try {
-      if (!_isInitialized) {
-        debugPrint('⚠️ Isar not initialized');
-        return [];
-      }
+      if (!_isInitialized) return [];
 
       if (query.isEmpty) {
-        // recent first
-        final recents = await isar.recentDivisions
-            .where()
-            .sortByLastUsedAtDesc()
-            .limit(10)
-            .findAll();
-
-        if (recents.isNotEmpty) {
-          final codes = recents.map((e) => e.fundsCenter).toList();
-
-          // Fetch all divisions whose fundsCenter is in `codes`
-          final fromDb = await isar.divisions
-              .filter()
-              .anyOf(codes, (q, code) => q.fundsCenterEqualTo(code))
-              .findAll();
-
-          final map = {for (var d in fromDb) d.fundsCenter: d};
-          return recents
-              .map((r) => map[r.fundsCenter])
-              .whereType<Division>()
-              .toList();
-        }
-
-        // fallback: first N divisions
-        return isar.divisions.where().limit(50).findAll();
+        // Return simple list of first 50 divisions instead of recent ones
+        return await isar.divisions.where().limit(50).findAll();
       }
 
       final results = await isar.divisions
@@ -529,7 +543,7 @@ class IsarService {
           .or()
           .nameContains(query, caseSensitive: false)
           .findAll();
-      debugPrint('🔍 Found ${results.length} divisions for query: "$query"');
+
       return results;
     } catch (e) {
       debugPrint('❌ Error searching divisions: $e');
@@ -555,6 +569,7 @@ class IsarService {
         await isar.vendors.clear();
         await isar.gLAccounts.clear();
         await isar.divisions.clear();
+        await isar.savedAuthoritys.clear(); // Clear authorities too
       });
 
       debugPrint('📦 Reimporting data...');

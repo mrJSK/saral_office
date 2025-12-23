@@ -1,4 +1,4 @@
-// lib/features/payment_authority/services/payment_authority_pdf_model.dart
+// lib/features/payment_authority/providers/payment_authority_pdf_model.dart
 
 class AuthorityLine {
   final String description;
@@ -18,6 +18,8 @@ class PaymentAuthorityPdfModel {
   final DateTime date;
   final String payeeName;
   final String payeeAddress;
+  final String? payeePan; // Optional PAN
+  final String? payeeGst; // Optional GST
   final String paymentParticulars;
   final String authorityOrderNo;
   final DateTime authorityOrderDate;
@@ -33,6 +35,8 @@ class PaymentAuthorityPdfModel {
     required this.date,
     required this.payeeName,
     required this.payeeAddress,
+    this.payeePan,
+    this.payeeGst,
     required this.paymentParticulars,
     required this.authorityOrderNo,
     required this.authorityOrderDate,

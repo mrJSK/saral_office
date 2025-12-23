@@ -160,22 +160,30 @@ class _VendorPickerScreenState extends ConsumerState<VendorPickerScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
+                                  // Title: Vendor Name
                                   Text(
                                     vendor.fullName,
                                     style: const TextStyle(
                                       fontFamily: 'SF Pro Display',
-                                      fontSize: 15,
+                                      fontSize: 16,
                                       fontWeight: FontWeight.w600,
                                       color: AppTheme.textPrimary,
                                     ),
                                   ),
                                   const SizedBox(height: 4),
+                                  // Subtitle: Vendor Code
                                   Text(
                                     vendor.vendorCode,
-                                    style: AppTheme.caption,
+                                    style: const TextStyle(
+                                      fontFamily: 'SF Pro Display',
+                                      fontSize: 14,
+                                      color: AppTheme.textSecondary,
+                                    ),
                                   ),
-                                  const SizedBox(height: 2),
-                                  Text(vendor.city, style: AppTheme.caption),
+                                  if (vendor.city.isNotEmpty) ...[
+                                    const SizedBox(height: 2),
+                                    Text(vendor.city, style: AppTheme.caption),
+                                  ],
                                 ],
                               ),
                             ),
