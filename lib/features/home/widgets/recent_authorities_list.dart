@@ -3,6 +3,7 @@
 import 'dart:convert';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:saral_office/core/database/models/saved_authority.dart';
@@ -10,22 +11,166 @@ import 'package:saral_office/core/theme/app_theme.dart';
 import 'package:saral_office/features/payment_authority/providers/payment_authority_provider.dart';
 import 'package:saral_office/features/payment_authority/screens/create_authority_screen.dart';
 
-class RecentAuthoritiesList extends ConsumerWidget {
+class RecentAuthoritiesList extends ConsumerStatefulWidget {
   const RecentAuthoritiesList({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<RecentAuthoritiesList> createState() =>
+      _RecentAuthoritiesListState();
+}
+
+class _RecentAuthoritiesListState extends ConsumerState<RecentAuthoritiesList> {
+  bool _isSelectionMode = false;
+  final Set<int> _selectedIds = {};
+
+  void _toggleSelectionMode() {
+    setState(() {
+      _isSelectionMode = !_isSelectionMode;
+      _selectedIds.clear();
+    });
+  }
+
+  void _toggleItemSelection(int id) {
+    setState(() {
+      if (_selectedIds.contains(id)) {
+        _selectedIds.remove(id);
+        // Optional: Exit selection mode if last item deselected
+        if (_selectedIds.isEmpty) {
+          _isSelectionMode = false;
+        }
+      } else {
+        _selectedIds.add(id);
+      }
+    });
+  }
+
+  // Handle long press to enter selection mode
+  void _handleLongPress(int id) {
+    if (!_isSelectionMode) {
+      setState(() {
+        _isSelectionMode = true;
+        _selectedIds.add(id);
+      });
+      // Provide haptic feedback
+      HapticFeedback.mediumImpact();
+    }
+  }
+
+  Future<void> _deleteSelected() async {
+    if (_selectedIds.isEmpty) return;
+
+    final confirm = await showCupertinoDialog<bool>(
+      context: context,
+      builder: (context) => CupertinoAlertDialog(
+        title: const Text('Delete Authorities'),
+        content: Text(
+          'Are you sure you want to delete ${_selectedIds.length} items?',
+        ),
+        actions: [
+          CupertinoDialogAction(
+            isDefaultAction: true,
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          CupertinoDialogAction(
+            isDestructiveAction: true,
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        final isarService = ref.read(isarServiceProvider);
+        await isarService.deleteAuthorities(_selectedIds.toList());
+        _toggleSelectionMode();
+      } catch (e) {
+        debugPrint('Error deleting: $e');
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final authoritiesAsync = ref.watch(recentAuthoritiesProvider);
 
-    return authoritiesAsync.when(
-      data: (authorities) {
-        if (authorities.isEmpty) {
-          return _buildEmptyState(context);
-        }
-        return _buildAuthoritiesList(context, authorities, ref);
-      },
-      loading: () => _buildLoadingState(),
-      error: (error, stackTrace) => _buildErrorState(error),
+    return Column(
+      children: [
+        // Header
+        Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppTheme.spacingM,
+            vertical: AppTheme.spacingS,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                _isSelectionMode && _selectedIds.isNotEmpty
+                    ? '${_selectedIds.length} Selected'
+                    : 'Recent Authorities',
+                style: const TextStyle(
+                  fontFamily: 'SF Pro Display',
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.textPrimary,
+                  letterSpacing: -0.5,
+                ),
+              ),
+              Row(
+                children: [
+                  if (_isSelectionMode && _selectedIds.isNotEmpty)
+                    CupertinoButton(
+                      padding: const EdgeInsets.only(right: 16),
+                      minSize: 0,
+                      onPressed: _deleteSelected,
+                      child: const Icon(
+                        CupertinoIcons.trash,
+                        color: CupertinoColors.destructiveRed,
+                        size: 22,
+                      ),
+                    ),
+
+                  authoritiesAsync.maybeWhen(
+                    data: (data) => data.isNotEmpty
+                        ? CupertinoButton(
+                            padding: EdgeInsets.zero,
+                            minSize: 0,
+                            onPressed: _toggleSelectionMode,
+                            child: Text(
+                              _isSelectionMode ? 'Done' : 'Select',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: _isSelectionMode
+                                    ? AppTheme.primaryBlue
+                                    : AppTheme.textSecondary,
+                              ),
+                            ),
+                          )
+                        : const SizedBox.shrink(),
+                    orElse: () => const SizedBox.shrink(),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+
+        // List
+        authoritiesAsync.when(
+          data: (authorities) {
+            if (authorities.isEmpty) {
+              return _buildEmptyState(context);
+            }
+            return _buildAuthoritiesList(context, authorities, ref);
+          },
+          loading: () => _buildLoadingState(),
+          error: (error, stackTrace) => _buildErrorState(error),
+        ),
+      ],
     );
   }
 
@@ -151,43 +296,14 @@ class RecentAuthoritiesList extends ConsumerWidget {
       ),
       child: Column(
         children: [
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  AppTheme.errorRed.withOpacity(0.15),
-                  AppTheme.errorRed.withOpacity(0.05),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              CupertinoIcons.exclamationmark_circle,
-              color: AppTheme.errorRed,
-              size: 36,
-            ),
+          const Icon(
+            CupertinoIcons.exclamationmark_circle,
+            color: AppTheme.errorRed,
+            size: 36,
           ),
           const SizedBox(height: AppTheme.spacingL),
-          const Text(
-            'Error Loading Authorities',
-            style: TextStyle(
-              fontFamily: 'SF Pro Display',
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              color: AppTheme.textPrimary,
-              letterSpacing: -0.5,
-            ),
-          ),
-          const SizedBox(height: AppTheme.spacingS),
-          Text(
-            error.toString(),
-            style: AppTheme.caption,
-            textAlign: TextAlign.center,
-          ),
+          const Text('Error Loading Authorities'),
+          Text(error.toString(), style: AppTheme.caption),
         ],
       ),
     );
@@ -198,23 +314,30 @@ class RecentAuthoritiesList extends ConsumerWidget {
     List<SavedAuthority> authorities,
     WidgetRef ref,
   ) {
-    return Column(
-      children: [
-        ListView.separated(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: authorities.length,
-          separatorBuilder: (_, __) =>
-              const SizedBox(height: AppTheme.spacingM),
-          itemBuilder: (context, index) {
-            return AuthorityCard(
-              authority: authorities[index],
-              onTap: () =>
-                  _handleAuthorityTap(context, authorities[index], ref),
-            );
+    return ListView.separated(
+      padding: EdgeInsets.zero,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: authorities.length,
+      separatorBuilder: (_, __) => const SizedBox(height: AppTheme.spacingM),
+      itemBuilder: (context, index) {
+        final authority = authorities[index];
+        final isSelected = _selectedIds.contains(authority.id);
+
+        return AuthorityCard(
+          authority: authority,
+          isSelectionMode: _isSelectionMode,
+          isSelected: isSelected,
+          onTap: () {
+            if (_isSelectionMode) {
+              _toggleItemSelection(authority.id);
+            } else {
+              _handleAuthorityTap(context, authority, ref);
+            }
           },
-        ),
-      ],
+          onLongPress: () => _handleLongPress(authority.id),
+        );
+      },
     );
   }
 
@@ -226,30 +349,14 @@ class RecentAuthoritiesList extends ConsumerWidget {
     try {
       final authorityMap =
           jsonDecode(savedAuthority.fullJsonData) as Map<String, dynamic>;
-
       final authority = PaymentAuthority.fromMap(authorityMap);
-
       ref.read(paymentAuthorityProvider.notifier).load(authority);
-
       Navigator.push(
         context,
         CupertinoPageRoute(builder: (_) => const CreateAuthorityScreen()),
       );
-    } catch (e, stackTrace) {
-      debugPrint('Error loading authority: $e\n$stackTrace');
-      showCupertinoDialog(
-        context: context,
-        builder: (context) => CupertinoAlertDialog(
-          title: const Text('Error'),
-          content: Text('Failed to load authority details.\n$e'),
-          actions: [
-            CupertinoDialogAction(
-              child: const Text('OK'),
-              onPressed: () => Navigator.pop(context),
-            ),
-          ],
-        ),
-      );
+    } catch (e) {
+      debugPrint('Error loading authority: $e');
     }
   }
 }
@@ -257,11 +364,17 @@ class RecentAuthoritiesList extends ConsumerWidget {
 class AuthorityCard extends StatefulWidget {
   final SavedAuthority authority;
   final VoidCallback onTap;
+  final VoidCallback? onLongPress; // Added onLongPress
+  final bool isSelectionMode;
+  final bool isSelected;
 
   const AuthorityCard({
     super.key,
     required this.authority,
     required this.onTap,
+    this.onLongPress,
+    this.isSelectionMode = false,
+    this.isSelected = false,
   });
 
   @override
@@ -276,24 +389,31 @@ class _AuthorityCardState extends State<AuthorityCard> {
     final dateFormat = DateFormat('dd MMM yyyy');
     final timeFormat = DateFormat('hh:mm a');
 
+    // Using standard GestureDetector onTap/onLongPress for better reliability
     return GestureDetector(
       onTapDown: (_) => setState(() => _isPressed = true),
-      onTapUp: (_) {
-        setState(() => _isPressed = false);
-        widget.onTap();
-      },
+      onTapUp: (_) => setState(() => _isPressed = false),
       onTapCancel: () => setState(() => _isPressed = false),
+      onTap: widget.onTap,
+      onLongPress: () {
+        setState(() => _isPressed = false); // Reset visual state
+        widget.onLongPress?.call();
+      },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
         curve: Curves.easeOut,
         decoration: BoxDecoration(
-          color: AppTheme.surfaceWhite,
+          color: widget.isSelected && widget.isSelectionMode
+              ? AppTheme.primaryBlue.withOpacity(0.08)
+              : AppTheme.surfaceWhite,
           borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
           border: Border.all(
-            color: _isPressed
-                ? AppTheme.primaryBlue.withOpacity(0.3)
-                : AppTheme.dividerColor,
-            width: _isPressed ? 1.5 : 1,
+            color: widget.isSelected && widget.isSelectionMode
+                ? AppTheme.primaryBlue
+                : (_isPressed
+                      ? AppTheme.primaryBlue.withOpacity(0.3)
+                      : AppTheme.dividerColor),
+            width: (widget.isSelected || _isPressed) ? 1.5 : 1,
           ),
           boxShadow: [
             BoxShadow(
@@ -309,6 +429,20 @@ class _AuthorityCardState extends State<AuthorityCard> {
           padding: const EdgeInsets.all(AppTheme.spacingM),
           child: Row(
             children: [
+              if (widget.isSelectionMode)
+                Padding(
+                  padding: const EdgeInsets.only(right: AppTheme.spacingM),
+                  child: Icon(
+                    widget.isSelected
+                        ? CupertinoIcons.checkmark_circle_fill
+                        : CupertinoIcons.circle,
+                    color: widget.isSelected
+                        ? AppTheme.primaryBlue
+                        : AppTheme.textSecondary,
+                    size: 24,
+                  ),
+                ),
+
               Container(
                 width: 48,
                 height: 48,
@@ -361,7 +495,7 @@ class _AuthorityCardState extends State<AuthorityCard> {
                     const SizedBox(height: 6),
                     Row(
                       children: [
-                        Icon(
+                        const Icon(
                           CupertinoIcons.calendar,
                           size: 12,
                           color: AppTheme.textSecondary,
@@ -372,7 +506,7 @@ class _AuthorityCardState extends State<AuthorityCard> {
                           style: AppTheme.caption.copyWith(fontSize: 11),
                         ),
                         const SizedBox(width: 12),
-                        Icon(
+                        const Icon(
                           CupertinoIcons.time,
                           size: 12,
                           color: AppTheme.textSecondary,
@@ -401,12 +535,14 @@ class _AuthorityCardState extends State<AuthorityCard> {
                       letterSpacing: -0.41,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  const Icon(
-                    CupertinoIcons.chevron_right,
-                    color: AppTheme.textSecondary,
-                    size: 16,
-                  ),
+                  if (!widget.isSelectionMode) ...[
+                    const SizedBox(height: 8),
+                    const Icon(
+                      CupertinoIcons.chevron_right,
+                      color: AppTheme.textSecondary,
+                      size: 16,
+                    ),
+                  ],
                 ],
               ),
             ],

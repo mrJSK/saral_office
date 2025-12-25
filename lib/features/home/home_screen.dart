@@ -352,28 +352,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   }
 
   Widget _buildRecentSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text('Recent Authorities', style: AppTheme.headline3),
-            CupertinoButton(
-              padding: EdgeInsets.zero,
-              onPressed: () => _navigateToHistory(),
-              child: Text(
-                'View All',
-                style: AppTheme.body2.copyWith(color: AppTheme.primaryBlue),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: AppTheme.spacingM),
-
-        const RecentAuthoritiesList(),
-      ],
-    );
+    // The header is now built inside RecentAuthoritiesList
+    // to support the "Select" and "Delete" actions.
+    return const RecentAuthoritiesList();
   }
 
   void _navigateToCreateAuthority() {

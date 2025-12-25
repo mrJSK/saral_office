@@ -482,6 +482,8 @@ class _CreateAuthorityScreenState extends ConsumerState<CreateAuthorityScreen>
   }
 
   Widget _buildVendorDetails(Vendor vendor) {
+    bool hasText(String? s) => s != null && s.trim().isNotEmpty;
+
     return Container(
       padding: const EdgeInsets.all(AppTheme.spacingM),
       decoration: BoxDecoration(
@@ -493,14 +495,33 @@ class _CreateAuthorityScreenState extends ConsumerState<CreateAuthorityScreen>
         children: [
           _buildDetailRow('Vendor Code', vendor.vendorCode),
           const SizedBox(height: 8),
+
           _buildDetailRow('Address', vendor.fullAddress),
-          if (vendor.pan != null) ...[
+
+          if (hasText(vendor.pan)) ...[
             const SizedBox(height: 8),
-            _buildDetailRow('PAN', vendor.pan!),
+            _buildDetailRow('PAN', vendor.pan!.trim()),
           ],
-          if (vendor.gst != null) ...[
+
+          if (hasText(vendor.gst)) ...[
             const SizedBox(height: 8),
-            _buildDetailRow('GST', vendor.gst!),
+            _buildDetailRow('GST', vendor.gst!.trim()),
+          ],
+
+          // ✅ NEW: Bank details + Email
+          if (hasText(vendor.bankAccount)) ...[
+            const SizedBox(height: 8),
+            _buildDetailRow('Bank A/C', vendor.bankAccount!.trim()),
+          ],
+
+          if (hasText(vendor.ifsc)) ...[
+            const SizedBox(height: 8),
+            _buildDetailRow('IFSC', vendor.ifsc!.trim()),
+          ],
+
+          if (hasText(vendor.email)) ...[
+            const SizedBox(height: 8),
+            _buildDetailRow('Email', vendor.email!.trim()),
           ],
         ],
       ),
@@ -699,7 +720,7 @@ class _CreateAuthorityScreenState extends ConsumerState<CreateAuthorityScreen>
   void _showAddEntrySheet() {
     showCupertinoModalPopup(
       context: context,
-      builder: (context) => const AddEntrySheet(),
+      builder: (context) => const AddEntryScreen(),
     );
   }
 
@@ -776,17 +797,17 @@ class _CreateAuthorityScreenState extends ConsumerState<CreateAuthorityScreen>
 // --------------------------
 // Add Entry Sheet
 // --------------------------
-
-class AddEntrySheet extends ConsumerStatefulWidget {
-  const AddEntrySheet({super.key});
+class AddEntryScreen extends ConsumerStatefulWidget {
+  const AddEntryScreen({super.key});
 
   @override
-  ConsumerState<AddEntrySheet> createState() => _AddEntrySheetState();
+  ConsumerState<AddEntryScreen> createState() => _AddEntryScreenState();
 }
 
-class _AddEntrySheetState extends ConsumerState<AddEntrySheet> {
+class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
   final _descriptionController = TextEditingController();
   final _amountController = TextEditingController();
+
   GLAccount? _selectedGL;
   bool _isDebit = true;
 
@@ -799,191 +820,211 @@ class _AddEntrySheetState extends ConsumerState<AddEntrySheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.75,
-      decoration: const BoxDecoration(
-        color: AppTheme.backgroundLight,
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(AppTheme.radiusXLarge),
+    final activeColor = _isDebit
+        ? AppTheme.warningOrange
+        : AppTheme.successGreen;
+
+    return CupertinoPageScaffold(
+      backgroundColor: AppTheme.backgroundLight,
+      resizeToAvoidBottomInset: false, // IMPORTANT: avoid double inset
+      navigationBar: CupertinoNavigationBar(
+        backgroundColor: AppTheme.surfaceWhite.withOpacity(0.9),
+        border: null,
+        leading: CupertinoButton(
+          padding: EdgeInsets.zero,
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        middle: const Text(
+          'Add Entry',
+          style: TextStyle(
+            fontFamily: 'SF Pro Display',
+            fontSize: 17,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        trailing: CupertinoButton(
+          padding: EdgeInsets.zero,
+          onPressed: _addEntry,
+          child: const Text('Add'),
         ),
       ),
-      child: Column(
-        children: [
-          // Handle Bar
-          Container(
-            margin: const EdgeInsets.only(top: 12),
-            width: 36,
-            height: 5,
-            decoration: BoxDecoration(
-              color: AppTheme.dividerColor,
-              borderRadius: BorderRadius.circular(2.5),
-            ),
-          ),
+      child: SafeArea(
+        bottom: false, // IMPORTANT: don't add extra bottom safe padding
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
-          // Header
-          Padding(
-            padding: const EdgeInsets.all(AppTheme.spacingM),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                CupertinoButton(
-                  padding: EdgeInsets.zero,
-                  child: const Text('Cancel'),
-                  onPressed: () => Navigator.pop(context),
-                ),
-                const Text(
-                  'Add Entry',
-                  style: TextStyle(
-                    fontFamily: 'SF Pro Display',
-                    fontSize: 17,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                CupertinoButton(
-                  padding: EdgeInsets.zero,
-                  onPressed: _addEntry,
-                  child: const Text('Add'),
-                ),
-              ],
-            ),
-          ),
-
-          const Divider(height: 1, color: AppTheme.dividerColor),
-
-          // Content
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(AppTheme.spacingM),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Entry Type Segmented Control
-                  Text(
-                    'Entry Type',
-                    style: AppTheme.caption.copyWith(
-                      fontWeight: FontWeight.w500,
-                      fontSize: 12,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  CupertinoSegmentedControl<bool>(
-                    padding: const EdgeInsets.all(2),
-                    groupValue: _isDebit,
-                    children: const {
-                      true: Padding(
-                        padding: EdgeInsets.symmetric(vertical: 8),
-                        child: Text('Debit'),
-                      ),
-                      false: Padding(
-                        padding: EdgeInsets.symmetric(vertical: 8),
-                        child: Text('Credit'),
-                      ),
-                    },
-                    onValueChanged: (value) {
-                      setState(() => _isDebit = value);
-                    },
-                  ),
-
-                  const SizedBox(height: AppTheme.spacingL),
-
-                  // Description
-                  IOSTextField(
-                    controller: _descriptionController,
-                    label: 'Description',
-                    placeholder: 'Enter entry description',
-                    maxLines: 2,
-                  ),
-
-                  const SizedBox(height: AppTheme.spacingL),
-
-                  // GL Account Selection
-                  Text(
-                    'GL Account',
-                    style: AppTheme.caption.copyWith(
-                      fontWeight: FontWeight.w500,
-                      fontSize: 12,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  GestureDetector(
-                    onTap: _showGLPicker,
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: AppTheme.surfaceWhite,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: AppTheme.dividerColor,
-                          width: 1,
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: _selectedGL != null
-                                ? Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        _selectedGL!.glCode,
-                                        style: const TextStyle(
-                                          fontFamily: 'SF Pro Display',
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w600,
-                                          color: AppTheme.textPrimary,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        _selectedGL!.glDescription,
-                                        style: AppTheme.caption,
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ],
-                                  )
-                                : Text(
-                                    'Select GL Account',
-                                    style: AppTheme.body2,
-                                  ),
-                          ),
-                          const Icon(
-                            CupertinoIcons.chevron_right,
-                            size: 18,
-                            color: AppTheme.textSecondary,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: AppTheme.spacingL),
-
-                  // Amount
-                  IOSTextField(
-                    controller: _amountController,
-                    label: 'Amount',
-                    placeholder: '0.00',
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    prefix: const Padding(
-                      padding: EdgeInsets.only(right: 8),
-                      child: Text(
-                        '₹',
-                        style: TextStyle(
-                          fontSize: 17,
-                          color: AppTheme.textPrimary,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+            return SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              padding: EdgeInsets.fromLTRB(
+                AppTheme.spacingM,
+                AppTheme.spacingM,
+                AppTheme.spacingM,
+                AppTheme.spacingM + bottomInset, // only inset once
               ),
-            ),
-          ),
-        ],
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // --- keep your existing widgets EXACTLY as-is below ---
+                    Text(
+                      'Entry Type',
+                      style: AppTheme.caption.copyWith(
+                        fontWeight: FontWeight.w500,
+                        fontSize: 12,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+
+                    CupertinoSegmentedControl<bool>(
+                      padding: const EdgeInsets.all(3),
+                      groupValue: _isDebit,
+                      selectedColor: activeColor,
+                      unselectedColor: AppTheme.surfaceWhite,
+                      borderColor: activeColor.withOpacity(0.55),
+                      pressedColor: activeColor.withOpacity(0.18),
+                      children: {
+                        true: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 22,
+                            vertical: 10,
+                          ),
+                          child: Text(
+                            'Debit',
+                            style: TextStyle(
+                              fontFamily: 'SF Pro Display',
+                              fontWeight: FontWeight.w600,
+                              color: _isDebit
+                                  ? AppTheme.surfaceWhite
+                                  : AppTheme.textPrimary,
+                            ),
+                          ),
+                        ),
+                        false: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 22,
+                            vertical: 10,
+                          ),
+                          child: Text(
+                            'Credit',
+                            style: TextStyle(
+                              fontFamily: 'SF Pro Display',
+                              fontWeight: FontWeight.w600,
+                              color: !_isDebit
+                                  ? AppTheme.surfaceWhite
+                                  : AppTheme.textPrimary,
+                            ),
+                          ),
+                        ),
+                      },
+                      onValueChanged: (value) =>
+                          setState(() => _isDebit = value),
+                    ),
+
+                    const SizedBox(height: AppTheme.spacingL),
+
+                    IOSTextField(
+                      controller: _descriptionController,
+                      label: 'Description',
+                      placeholder: 'Enter entry description',
+                      maxLines: 2,
+                      fillColor: AppTheme.surfaceWhite,
+                    ),
+
+                    const SizedBox(height: AppTheme.spacingL),
+
+                    Text(
+                      'GL Account',
+                      style: AppTheme.caption.copyWith(
+                        fontWeight: FontWeight.w500,
+                        fontSize: 12,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+
+                    GestureDetector(
+                      onTap: _showGLPicker,
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppTheme.surfaceWhite,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: AppTheme.dividerColor,
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: _selectedGL != null
+                                  ? Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          _selectedGL!.glCode,
+                                          style: const TextStyle(
+                                            fontFamily: 'SF Pro Display',
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w600,
+                                            color: AppTheme.textPrimary,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          _selectedGL!.glDescription,
+                                          style: AppTheme.caption,
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ],
+                                    )
+                                  : Text(
+                                      'Select GL Account',
+                                      style: AppTheme.body2,
+                                    ),
+                            ),
+                            const Icon(
+                              CupertinoIcons.chevron_right,
+                              size: 18,
+                              color: AppTheme.textSecondary,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: AppTheme.spacingL),
+
+                    IOSTextField(
+                      controller: _amountController,
+                      label: 'Amount',
+                      placeholder: '0.00',
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      prefix: const Padding(
+                        padding: EdgeInsets.only(right: 8),
+                        child: Text(
+                          '₹',
+                          style: TextStyle(
+                            fontSize: 17,
+                            color: AppTheme.textPrimary,
+                          ),
+                        ),
+                      ),
+                      fillColor: AppTheme.surfaceWhite,
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -993,15 +1034,15 @@ class _AddEntrySheetState extends ConsumerState<AddEntrySheet> {
       context,
       CupertinoPageRoute(
         builder: (context) => GLAccountPickerScreen(
-          onSelected: (gl) {
-            setState(() => _selectedGL = gl);
-          },
+          onSelected: (gl) => setState(() => _selectedGL = gl),
         ),
       ),
     );
   }
 
   void _addEntry() {
+    FocusScope.of(context).unfocus();
+
     if (_descriptionController.text.isEmpty ||
         _selectedGL == null ||
         _amountController.text.isEmpty) {
@@ -1032,7 +1073,6 @@ class _AddEntrySheetState extends ConsumerState<AddEntrySheet> {
     Navigator.pop(context);
   }
 }
-
 // --------------------------
 // GL Account Picker Screen
 // --------------------------

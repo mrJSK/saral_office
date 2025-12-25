@@ -1,5 +1,4 @@
 // lib/core/database/models/vendor.dart
-
 import 'package:isar/isar.dart';
 
 part 'vendor.g.dart';
@@ -23,6 +22,11 @@ class Vendor {
   String? region;
   String? pan;
   String? gst;
+
+  // NEW FIELDS
+  String? ifsc;
+  String? bankAccount;
+  String? email;
 
   String get fullName =>
       name2 != null && name2!.isNotEmpty ? '$name1 $name2' : name1;

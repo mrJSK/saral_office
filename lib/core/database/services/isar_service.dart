@@ -53,6 +53,18 @@ class IsarService {
     }
   }
 
+  Future<void> deleteAuthorities(List<int> ids) async {
+    try {
+      await isar.writeTxn(() async {
+        await isar.savedAuthoritys.deleteAll(ids);
+      });
+      debugPrint('✅ Deleted ${ids.length} authorities');
+    } catch (e) {
+      debugPrint('❌ Error deleting authorities: $e');
+      rethrow;
+    }
+  }
+
   // ---------------------------------------------------------------------------
   // NEW METHODS FOR SAVED AUTHORITIES
   // ---------------------------------------------------------------------------
@@ -223,39 +235,6 @@ class IsarService {
     ]);
   }
 
-  // Helper method to safely get cell value with improved null safety
-  String? _getCellValue(excel_pkg.Data? cell) {
-    if (cell == null || cell.value == null) return null;
-
-    final value = cell.value;
-
-    // Helper to process strings safely
-    String? processString(dynamic val) {
-      if (val == null) return null;
-      final str = val.toString();
-      return str.trim().isEmpty ? null : str.trim();
-    }
-
-    // Handle different data types
-    if (value is String) {
-      return processString(value);
-    } else if (value is excel_pkg.TextCellValue) {
-      return processString(value.value);
-    } else if (value is num || value is bool) {
-      return value.toString();
-    } else if (value is excel_pkg.IntCellValue) {
-      return value.value.toString();
-    } else if (value is excel_pkg.DoubleCellValue) {
-      return value.value.toString();
-    } else if (value is excel_pkg.BoolCellValue) {
-      return value.value.toString();
-    } else if (value is excel_pkg.FormulaCellValue) {
-      return processString(value.toString());
-    }
-
-    return processString(value);
-  }
-
   // Safe string extraction helper for CSV data
   String? _safeCsvString(dynamic value) {
     if (value == null) return null;
@@ -264,29 +243,30 @@ class IsarService {
   }
 
   // Import Vendors from CSV
+  // Import Vendors from CSV
   Future<void> _importVendors() async {
     try {
-      debugPrint('📂 Loading Vendor_Master.csv...');
-
+      // ✅ UPDATED: Pointing to the new combined CSV file
+      debugPrint('📂 Loading Vendor_Master_Combined.csv...');
       final csvString = await rootBundle.loadString(
-        'assets/data/Vendor_Master.csv',
+        'assets/data/Vendor_Master_Combined.csv',
       );
 
       final List<List<dynamic>> rows = const CsvToListConverter().convert(
         csvString,
+        eol: '\n', // Explicitly handle newlines to prevent parsing errors
       );
 
       debugPrint('📄 Processing ${rows.length} rows');
-
       final vendors = <Vendor>[];
 
       // Skip header row (index 0)
       for (var i = 1; i < rows.length; i++) {
         try {
           final row = rows[i];
-
           if (row.isEmpty) continue;
 
+          // Helper to safely get string values without crashing on nulls/bounds
           String? safe(int index) {
             if (index >= row.length) return null;
             final v = row[index];
@@ -298,6 +278,7 @@ class IsarService {
           final vendorCode = safe(0);
           final name1 = safe(1);
 
+          // Validation: Code and Name are mandatory
           if (vendorCode == null ||
               vendorCode.isEmpty ||
               name1 == null ||
@@ -318,7 +299,13 @@ class IsarService {
             ..postalCode = safe(9) ?? ''
             ..region = safe(10) ?? ''
             ..pan = safe(11) ?? ''
-            ..gst = safe(12) ?? '';
+            ..gst = safe(12) ?? ''
+            // ✅ NEW FIELDS MAPPED FROM COMBINED CSV
+            ..ifsc =
+                safe(13) // Index 13: IFSC
+            ..bankAccount =
+                safe(14) // Index 14: Bank Account
+            ..email = safe(15); // Index 15: Email
 
           vendors.add(vendor);
         } catch (e) {
@@ -328,13 +315,14 @@ class IsarService {
       }
 
       if (vendors.isEmpty) {
-        debugPrint('⚠️ No vendors parsed from Vendor_Master.csv');
+        debugPrint('⚠️ No vendors parsed from Vendor_Master_Combined.csv');
         return;
       }
 
       debugPrint('💾 Saving ${vendors.length} vendors to database...');
-
       await isar.writeTxn(() async {
+        // ✅ IMPORTANT: Clear old data to prevent duplicates and ensure new fields populate
+        await isar.vendors.clear();
         await isar.vendors.putAll(vendors);
       });
 
@@ -475,19 +463,44 @@ class IsarService {
   }
 
   // Search methods
+  // lib/core/database/services/isar_service.dart
+
+  // Replace your searchVendors method:
   Future<List<Vendor>> searchVendors(String query) async {
     try {
       if (!_isInitialized) return [];
 
       if (query.isEmpty) {
-        // Return simple list of first 50 vendors instead of recent ones
-        return await isar.vendors.where().limit(50).findAll();
+        // ✅ Return recent vendors when no search query
+        final recentVendorCodes = await isar.recentVendors
+            .where()
+            .sortByLastUsedAtDesc()
+            .limit(20)
+            .findAll();
+
+        if (recentVendorCodes.isEmpty) {
+          // No recents yet, return first 50
+          return await isar.vendors.where().limit(50).findAll();
+        }
+
+        // Fetch full vendor data for recent vendor codes
+        final vendors = <Vendor>[];
+        for (var recent in recentVendorCodes) {
+          final vendor = await isar.vendors
+              .filter()
+              .vendorCodeEqualTo(recent.vendorCode)
+              .findFirst();
+          if (vendor != null) vendors.add(vendor);
+        }
+        return vendors;
       }
 
+      // Search logic
       final byCode = await isar.vendors
           .filter()
           .vendorCodeContains(query, caseSensitive: false)
           .findAll();
+
       final byName = await isar.vendors
           .filter()
           .name1Contains(query, caseSensitive: false)
@@ -501,6 +514,7 @@ class IsarService {
     }
   }
 
+  // Replace your searchGLAccounts method:
   Future<List<GLAccount>> searchGLAccounts(String query) async {
     try {
       if (!_isInitialized) {
@@ -509,7 +523,28 @@ class IsarService {
       }
 
       if (query.isEmpty) {
-        return await isar.gLAccounts.where().limit(50).findAll();
+        // ✅ Return recent GL accounts when no search query
+        final recentGLCodes = await isar.recentGLs
+            .where()
+            .sortByLastUsedAtDesc()
+            .limit(20)
+            .findAll();
+
+        if (recentGLCodes.isEmpty) {
+          // No recents yet, return first 50
+          return await isar.gLAccounts.where().limit(50).findAll();
+        }
+
+        // Fetch full GL data for recent GL codes
+        final glAccounts = <GLAccount>[];
+        for (var recent in recentGLCodes) {
+          final gl = await isar.gLAccounts
+              .filter()
+              .glCodeEqualTo(recent.glCode)
+              .findFirst();
+          if (gl != null) glAccounts.add(gl);
+        }
+        return glAccounts;
       }
 
       final results = await isar.gLAccounts
@@ -528,13 +563,34 @@ class IsarService {
     }
   }
 
+  // Replace your searchDivisions method:
   Future<List<Division>> searchDivisions(String query) async {
     try {
       if (!_isInitialized) return [];
 
       if (query.isEmpty) {
-        // Return simple list of first 50 divisions instead of recent ones
-        return await isar.divisions.where().limit(50).findAll();
+        // ✅ Return recent divisions when no search query
+        final recentDivisionCodes = await isar.recentDivisions
+            .where()
+            .sortByLastUsedAtDesc()
+            .limit(20)
+            .findAll();
+
+        if (recentDivisionCodes.isEmpty) {
+          // No recents yet, return first 50
+          return await isar.divisions.where().limit(50).findAll();
+        }
+
+        // Fetch full division data for recent division codes
+        final divisions = <Division>[];
+        for (var recent in recentDivisionCodes) {
+          final division = await isar.divisions
+              .filter()
+              .fundsCenterEqualTo(recent.fundsCenter)
+              .findFirst();
+          if (division != null) divisions.add(division);
+        }
+        return divisions;
       }
 
       final results = await isar.divisions

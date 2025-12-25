@@ -9,7 +9,6 @@ class AccountEntryCard extends StatelessWidget {
   final AccountEntry entry;
   final int index;
   final VoidCallback onDelete;
-  // Added onUpdate callback to support editing
   final Function(AccountEntry)? onUpdate;
 
   const AccountEntryCard({
@@ -22,44 +21,42 @@ class AccountEntryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final typeColor = entry.isDebit
+        ? AppTheme.warningOrange
+        : AppTheme.successGreen;
+    final typeBg = typeColor.withOpacity(0.10);
+    final borderColor = typeColor.withOpacity(0.30);
+
     return Container(
       decoration: BoxDecoration(
         color: AppTheme.surfaceWhite,
         borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
-        border: Border.all(
-          color: entry.isDebit
-              ? AppTheme.warningOrange.withOpacity(0.3)
-              : AppTheme.successGreen.withOpacity(0.3),
-          width: 1.5,
-        ),
+        border: Border.all(color: borderColor, width: 1.5),
       ),
       child: Column(
         children: [
-          // Header
+          // Header with DEBIT/CREDIT badge
           Container(
             padding: const EdgeInsets.symmetric(
               horizontal: AppTheme.spacingM,
               vertical: 10,
             ),
             decoration: BoxDecoration(
-              color: entry.isDebit
-                  ? AppTheme.warningOrange.withOpacity(0.1)
-                  : AppTheme.successGreen.withOpacity(0.1),
+              color: typeBg,
               borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(AppTheme.radiusMedium - 1),
               ),
             ),
             child: Row(
               children: [
+                // DEBIT/CREDIT Badge
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 8,
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: entry.isDebit
-                        ? AppTheme.warningOrange
-                        : AppTheme.successGreen,
+                    color: typeColor,
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
@@ -73,20 +70,20 @@ class AccountEntryCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 10),
+
+                // Entry number
                 Text(
                   'Entry ${index + 1}',
                   style: AppTheme.caption.copyWith(fontWeight: FontWeight.w600),
                 ),
                 const Spacer(),
-                // Edit Button (Added if onUpdate is provided)
+
+                // Edit Button
                 if (onUpdate != null) ...[
                   CupertinoButton(
                     padding: EdgeInsets.zero,
-                    onPressed: () {
-                      // Trigger edit logic here if you want to implement inline editing
-                      // or open a dialog similar to "Add Entry"
-                    },
+                    onPressed: () => onUpdate?.call(entry),
                     child: const Icon(
                       CupertinoIcons.pencil,
                       size: 18,
@@ -96,6 +93,8 @@ class AccountEntryCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 12),
                 ],
+
+                // Delete Button
                 CupertinoButton(
                   padding: EdgeInsets.zero,
                   onPressed: onDelete,
@@ -110,7 +109,7 @@ class AccountEntryCard extends StatelessWidget {
             ),
           ),
 
-          // Content
+          // Content Section
           Padding(
             padding: const EdgeInsets.all(AppTheme.spacingM),
             child: Column(
@@ -118,12 +117,11 @@ class AccountEntryCard extends StatelessWidget {
               children: [
                 // Description
                 _buildRow('Description', entry.description),
-
                 const SizedBox(height: 10),
                 const Divider(height: 1, color: AppTheme.dividerColor),
                 const SizedBox(height: 10),
 
-                // GL Code
+                // GL Account Details (if available)
                 if (entry.glAccount != null) ...[
                   _buildRow('GL Code', entry.glAccount!.glCode),
                   const SizedBox(height: 8),
@@ -133,9 +131,8 @@ class AccountEntryCard extends StatelessWidget {
                   const SizedBox(height: 10),
                 ],
 
-                // Amount
+                // Amount with dynamic color
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
                       'Amount',
@@ -143,15 +140,23 @@ class AccountEntryCard extends StatelessWidget {
                         fontWeight: FontWeight.w500,
                       ),
                     ),
-                    Text(
-                      '₹${entry.amount.toStringAsFixed(2)}',
-                      style: TextStyle(
-                        fontFamily: 'SF Pro Display',
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: entry.isDebit
-                            ? AppTheme.warningOrange
-                            : AppTheme.successGreen,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerRight,
+                          child: Text(
+                            '₹${entry.amount.toStringAsFixed(2)}',
+                            style: TextStyle(
+                              fontFamily: 'SF Pro Display',
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: typeColor,
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ],
@@ -164,6 +169,7 @@ class AccountEntryCard extends StatelessWidget {
     );
   }
 
+  /// Helper method to build label-value rows
   Widget _buildRow(String label, String value) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

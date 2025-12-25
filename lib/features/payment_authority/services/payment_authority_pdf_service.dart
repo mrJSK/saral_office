@@ -15,7 +15,7 @@ class PaymentAuthorityPdfService {
   /// Generate PDF and open it
   Future<File> generateAndOpen(pa_model.PaymentAuthorityPdfModel pa) async {
     final pdfBytes = await _buildPdf(pa);
-    final file = await _savePdfToFile(pdfBytes);
+    final file = await _savePdfToFile(pdfBytes, pa);
     await OpenFilex.open(file.path);
     return file;
   }
@@ -72,7 +72,7 @@ class PaymentAuthorityPdfService {
   }
 
   /// Build text styles map
-  Map<String, pw.TextStyle> _buildTextStyles(pw.Font ttf, pw.Font ttfBold) {
+  Map<String, pw.TextStyle?> _buildTextStyles(pw.Font ttf, pw.Font ttfBold) {
     return {
       'title': pw.TextStyle(
         font: ttfBold,
@@ -100,9 +100,10 @@ class PaymentAuthorityPdfService {
   }
 
   /// Build header block with division, vendor details, and payment info
+  // ✅ UPDATE THE _buildHeaderBlock FUNCTION - Add Email
   pw.Widget _buildHeaderBlock(
     pa_model.PaymentAuthorityPdfModel pa,
-    Map<String, pw.TextStyle> styles,
+    Map<String, pw.TextStyle?> styles,
   ) {
     final dateStr = _formatDate(pa.date);
     final authorityDateStr = _formatDate(pa.authorityOrderDate);
@@ -141,10 +142,48 @@ class PaymentAuthorityPdfService {
         pw.Text('Name: ${pa.payeeName}', style: styles['bold']),
         pw.SizedBox(height: 2),
         pw.Text('Address: ${pa.payeeAddress}', style: styles['base']),
-        if (pa.payeePan != null && pa.payeePan!.isNotEmpty)
+
+        // PAN and GST details
+        if (pa.payeePan != null && pa.payeePan!.isNotEmpty) ...[
+          pw.SizedBox(height: 2),
           pw.Text('PAN: ${pa.payeePan}', style: styles['base']),
-        if (pa.payeeGst != null && pa.payeeGst!.isNotEmpty)
+        ],
+        if (pa.payeeGst != null && pa.payeeGst!.isNotEmpty) ...[
+          pw.SizedBox(height: 2),
           pw.Text('GST: ${pa.payeeGst}', style: styles['base']),
+        ],
+
+        // ✅ FIX: Bank Details Section with ALL fields (IFSC, Bank Account, Email)
+        if ((pa.payeeBankAccount != null && pa.payeeBankAccount!.isNotEmpty) ||
+            (pa.payeeIfsc != null && pa.payeeIfsc!.isNotEmpty) ||
+            (pa.payeeEmail != null && pa.payeeEmail!.isNotEmpty)) ...[
+          pw.SizedBox(height: 6),
+          pw.Container(
+            padding: const pw.EdgeInsets.symmetric(vertical: 4, horizontal: 0),
+            decoration: const pw.BoxDecoration(
+              border: pw.Border(
+                top: pw.BorderSide(width: 0.5, color: PdfColors.grey700),
+                bottom: pw.BorderSide(width: 0.5, color: PdfColors.grey700),
+              ),
+            ),
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                if (pa.payeeBankAccount != null &&
+                    pa.payeeBankAccount!.isNotEmpty)
+                  pw.Text(
+                    'Bank A/C: ${pa.payeeBankAccount}',
+                    style: styles['base'],
+                  ),
+                if (pa.payeeIfsc != null && pa.payeeIfsc!.isNotEmpty)
+                  pw.Text('IFSC: ${pa.payeeIfsc}', style: styles['base']),
+                if (pa.payeeEmail != null && pa.payeeEmail!.isNotEmpty)
+                  pw.Text('Email: ${pa.payeeEmail}', style: styles['base']),
+              ],
+            ),
+          ),
+        ],
+
         pw.SizedBox(height: 8),
 
         // Payment particulars
@@ -176,19 +215,18 @@ class PaymentAuthorityPdfService {
   /// Build classification table with DEBIT/CREDIT columns using pw.Table
   pw.Widget _buildClassificationTable(
     pa_model.PaymentAuthorityPdfModel pa,
-    Map<String, pw.TextStyle> styles,
+    Map<String, pw.TextStyle?> styles,
   ) {
     final maxRows = _getMaxRows(pa.debitLines.length, pa.creditLines.length);
 
-    // Column width ratios
+    // ✅ FIX: Removed divider column (index 3) - was causing blank column
     const columnWidths = {
       0: pw.FlexColumnWidth(2.0), // DEBIT Description
       1: pw.FlexColumnWidth(1.2), // DEBIT Numerical Head
       2: pw.FlexColumnWidth(1.0), // DEBIT Amount
-      3: pw.FlexColumnWidth(0.3), // Divider
-      4: pw.FlexColumnWidth(2.0), // CREDIT Description
-      5: pw.FlexColumnWidth(1.2), // CREDIT Numerical Head
-      6: pw.FlexColumnWidth(1.0), // CREDIT Amount
+      3: pw.FlexColumnWidth(2.0), // CREDIT Description
+      4: pw.FlexColumnWidth(1.2), // CREDIT Numerical Head
+      5: pw.FlexColumnWidth(1.0), // CREDIT Amount
     };
 
     return pw.Container(
@@ -201,7 +239,7 @@ class PaymentAuthorityPdfService {
           _buildClassificationTitle(styles),
 
           // Sub-header: DEBIT | CREDIT
-          _buildDebitCreditSubHeader(styles, columnWidths),
+          _buildDebitCreditSubHeader(styles),
 
           // Column headers
           _buildTableColumnHeaders(styles, columnWidths),
@@ -214,7 +252,7 @@ class PaymentAuthorityPdfService {
   }
 
   /// Build CLASSIFICATION title row
-  pw.Widget _buildClassificationTitle(Map<String, pw.TextStyle> styles) {
+  pw.Widget _buildClassificationTitle(Map<String, pw.TextStyle?> styles) {
     return pw.Container(
       padding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 6),
       decoration: pw.BoxDecoration(
@@ -228,48 +266,34 @@ class PaymentAuthorityPdfService {
     );
   }
 
-  /// Build DEBIT | CREDIT sub-header
-  pw.Widget _buildDebitCreditSubHeader(
-    Map<String, pw.TextStyle> styles,
-    Map<int, pw.TableColumnWidth> columnWidths,
-  ) {
+  // ---- Ledger column sizing ----
+  static const double _descWidth = 2.0;
+  static const double _numHeadWidth = 1.2;
+  static const double _amountWidth = 1.0;
+
+  // DEBIT or CREDIT group width (3 columns)
+  static const double _groupWidth = _descWidth + _numHeadWidth + _amountWidth;
+
+  pw.Widget _buildDebitCreditSubHeader(Map<String, pw.TextStyle?> styles) {
     return pw.Container(
       decoration: pw.BoxDecoration(
         border: pw.Border(
-          bottom: pw.BorderSide(width: 1.0, color: PdfColors.black),
+          bottom: pw.BorderSide(width: 1, color: PdfColors.black),
         ),
       ),
       child: pw.Table(
-        columnWidths: columnWidths,
+        columnWidths: {
+          0: pw.FlexColumnWidth(_groupWidth),
+          1: pw.FlexColumnWidth(_groupWidth),
+        },
         border: pw.TableBorder(
-          horizontalInside: pw.BorderSide(width: 0),
-          verticalInside: pw.BorderSide(width: 1.0, color: PdfColors.black),
+          verticalInside: pw.BorderSide(width: 1, color: PdfColors.black),
         ),
         children: [
           pw.TableRow(
             children: [
-              // DEBIT header (columns 0-2)
-              pw.Padding(
-                padding: const pw.EdgeInsets.symmetric(
-                  horizontal: 4,
-                  vertical: 4,
-                ),
-                child: pw.Text('DEBIT', style: styles['header']),
-              ),
-              pw.SizedBox(),
-              pw.SizedBox(),
-              // Divider
-              pw.SizedBox(),
-              // CREDIT header (columns 4-6)
-              pw.Padding(
-                padding: const pw.EdgeInsets.symmetric(
-                  horizontal: 4,
-                  vertical: 4,
-                ),
-                child: pw.Text('CREDIT', style: styles['header']),
-              ),
-              pw.SizedBox(),
-              pw.SizedBox(),
+              _mergedHeaderCell('DEBIT', styles['header']!),
+              _mergedHeaderCell('CREDIT', styles['header']!),
             ],
           ),
         ],
@@ -277,9 +301,17 @@ class PaymentAuthorityPdfService {
     );
   }
 
-  /// Build column headers row
+  pw.Widget _mergedHeaderCell(String text, pw.TextStyle style) {
+    return pw.Container(
+      alignment: pw.Alignment.center,
+      padding: const pw.EdgeInsets.symmetric(vertical: 6),
+      child: pw.Text(text, style: style),
+    );
+  }
+
+  /// Build column headers row - ALL CENTERED
   pw.Widget _buildTableColumnHeaders(
-    Map<String, pw.TextStyle> styles,
+    Map<String, pw.TextStyle?> styles,
     Map<int, pw.TableColumnWidth> columnWidths,
   ) {
     return pw.Container(
@@ -297,13 +329,19 @@ class PaymentAuthorityPdfService {
         children: [
           pw.TableRow(
             children: [
-              _headerCell('Description', styles['smallBold']!),
-              _headerCell('Numerical Head', styles['smallBold']!),
-              _headerCell('Amount', styles['smallBold']!),
-              pw.SizedBox(), // Divider
-              _headerCell('Description', styles['smallBold']!),
-              _headerCell('Numerical Head', styles['smallBold']!),
-              _headerCell('Amount', styles['smallBold']!),
+              // DEBIT: Description - CENTERED
+              _headerCellCentered('Description', styles['smallBold']!),
+              // DEBIT: Numerical Head - CENTERED
+              _headerCellCentered('Numerical Head', styles['smallBold']!),
+              // DEBIT: Amount - CENTERED
+              _headerCellCentered('Amount', styles['smallBold']!),
+
+              // CREDIT: Description - CENTERED
+              _headerCellCentered('Description', styles['smallBold']!),
+              // CREDIT: Numerical Head - CENTERED
+              _headerCellCentered('Numerical Head', styles['smallBold']!),
+              // CREDIT: Amount - CENTERED
+              _headerCellCentered('Amount', styles['smallBold']!),
             ],
           ),
         ],
@@ -311,18 +349,18 @@ class PaymentAuthorityPdfService {
     );
   }
 
-  /// Build header cell widget
-  pw.Widget _headerCell(String text, pw.TextStyle style) {
+  /// Build CENTERED header cell widget
+  pw.Widget _headerCellCentered(String text, pw.TextStyle style) {
     return pw.Padding(
       padding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-      child: pw.Text(text, style: style),
+      child: pw.Center(child: pw.Text(text, style: style)),
     );
   }
 
   /// Build all data rows using pw.Table
   pw.Widget _buildDataRows(
     pa_model.PaymentAuthorityPdfModel pa,
-    Map<String, pw.TextStyle> styles,
+    Map<String, pw.TextStyle?> styles,
     Map<int, pw.TableColumnWidth> columnWidths,
     int maxRows,
   ) {
@@ -358,8 +396,7 @@ class PaymentAuthorityPdfService {
               align: pw.TextAlign.right,
               hasContent: debitLine != null,
             ),
-            // Divider
-            pw.SizedBox(),
+
             // CREDIT: Description (with optional "Please pay")
             pw.Padding(
               padding: const pw.EdgeInsets.symmetric(
@@ -431,25 +468,17 @@ class PaymentAuthorityPdfService {
   /// Build gross total row
   pw.Widget _buildGrossTotalRow(
     pa_model.PaymentAuthorityPdfModel pa,
-    Map<String, pw.TextStyle> styles,
+    Map<String, pw.TextStyle?> styles,
   ) {
-    final debitTotal = pa.debitLines.fold<double>(
-      0.0,
-      (sum, l) => sum + l.amount,
-    );
-    final creditTotal = pa.creditLines.fold<double>(
-      0.0,
-      (sum, l) => sum + l.amount,
-    );
+    final debitTotal = pa.debitLines.fold(0.0, (sum, l) => sum + l.amount);
 
     const columnWidths = {
-      0: pw.FlexColumnWidth(2.0),
-      1: pw.FlexColumnWidth(1.2),
-      2: pw.FlexColumnWidth(1.0),
-      3: pw.FlexColumnWidth(0.3),
-      4: pw.FlexColumnWidth(2.0),
-      5: pw.FlexColumnWidth(1.2),
-      6: pw.FlexColumnWidth(1.0),
+      0: pw.FlexColumnWidth(_descWidth),
+      1: pw.FlexColumnWidth(_numHeadWidth),
+      2: pw.FlexColumnWidth(_amountWidth),
+      3: pw.FlexColumnWidth(_descWidth),
+      4: pw.FlexColumnWidth(_numHeadWidth),
+      5: pw.FlexColumnWidth(_amountWidth),
     };
 
     return pw.Container(
@@ -474,9 +503,8 @@ class PaymentAuthorityPdfService {
                 ),
                 child: pw.Text('Gross Total', style: styles['bold']),
               ),
-              pw.SizedBox(), // Divider
+              pw.SizedBox(), // Col 3
               pw.SizedBox(), // Col 4
-              pw.SizedBox(), // Col 5
               // CREDIT Total
               pw.Padding(
                 padding: const pw.EdgeInsets.symmetric(
@@ -499,7 +527,7 @@ class PaymentAuthorityPdfService {
   /// Build entire bottom section with signatures, debit to, and cashier
   pw.Widget _buildSignaturesAndDebitSection(
     pa_model.PaymentAuthorityPdfModel pa,
-    Map<String, pw.TextStyle> styles,
+    Map<String, pw.TextStyle?> styles,
   ) {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -529,7 +557,7 @@ class PaymentAuthorityPdfService {
   /// Amount in words section
   pw.Widget _buildAmountInWordsSection(
     pa_model.PaymentAuthorityPdfModel pa,
-    Map<String, pw.TextStyle> styles,
+    Map<String, pw.TextStyle?> styles,
   ) {
     final amountInWords = _convertAmountToWords(pa.netAmount);
 
@@ -546,7 +574,7 @@ class PaymentAuthorityPdfService {
   /// Please pay to section with vendor details inline
   pw.Widget _buildPleasePaysToSection(
     pa_model.PaymentAuthorityPdfModel pa,
-    Map<String, pw.TextStyle> styles,
+    Map<String, pw.TextStyle?> styles,
   ) {
     return pw.Row(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -559,22 +587,16 @@ class PaymentAuthorityPdfService {
   }
 
   /// Vendor details table with Name, Address, PAN, GST
-  /// Vendor details table with Name, Address, PAN, GST
   pw.Widget _buildVendorDetailsTable(
     pa_model.PaymentAuthorityPdfModel pa,
-    Map<String, pw.TextStyle> styles,
+    Map<String, pw.TextStyle?> styles,
   ) {
     return pw.Table(
       border: pw.TableBorder.all(width: 0.5, color: PdfColors.black),
-      columnWidths: const {0: pw.FlexColumnWidth(1), 1: pw.FlexColumnWidth(3)},
+      columnWidths: {0: pw.FlexColumnWidth(1), 1: pw.FlexColumnWidth(3)},
       children: [
         _buildVendorTableRow('Name', pa.payeeName, styles),
         _buildVendorTableRow('Address', pa.payeeAddress, styles),
-        // This will now work correctly if the data is passed
-        if (pa.payeePan != null && pa.payeePan!.isNotEmpty)
-          _buildVendorTableRow('PAN', pa.payeePan!, styles),
-        if (pa.payeeGst != null && pa.payeeGst!.isNotEmpty)
-          _buildVendorTableRow('GST', pa.payeeGst!, styles),
       ],
     );
   }
@@ -583,7 +605,7 @@ class PaymentAuthorityPdfService {
   pw.TableRow _buildVendorTableRow(
     String label,
     String value,
-    Map<String, pw.TextStyle> styles,
+    Map<String, pw.TextStyle?> styles,
   ) {
     return pw.TableRow(
       children: [
@@ -600,7 +622,7 @@ class PaymentAuthorityPdfService {
   }
 
   /// Build signature line with three signature boxes
-  pw.Widget _buildSignaturesLine(Map<String, pw.TextStyle> styles) {
+  pw.Widget _buildSignaturesLine(Map<String, pw.TextStyle?> styles) {
     return pw.Row(
       mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
       children: [
@@ -632,7 +654,7 @@ class PaymentAuthorityPdfService {
   /// Build cashier section with D.A.(W), Dated, Sig. of Cashier
   pw.Widget _buildCashierDetailsSection(
     pa_model.PaymentAuthorityPdfModel pa,
-    Map<String, pw.TextStyle> styles,
+    Map<String, pw.TextStyle?> styles,
   ) {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -796,13 +818,34 @@ class PaymentAuthorityPdfService {
   int _getMaxRows(int debitCount, int creditCount) =>
       debitCount > creditCount ? debitCount : creditCount;
 
-  /// Save PDF bytes to file
-  Future<File> _savePdfToFile(Uint8List bytes) async {
+  /// ✅ FIX: Save PDF with vendor_billnumber filename (sanitized)
+  Future<File> _savePdfToFile(
+    Uint8List bytes,
+    pa_model.PaymentAuthorityPdfModel pa,
+  ) async {
     final output = await getApplicationDocumentsDirectory();
-    final file = File(
-      '${output.path}/payment_authority_${DateTime.now().millisecondsSinceEpoch}.pdf',
-    );
+
+    // Sanitize vendor name and bill number for filename
+    final sanitizedVendor = _sanitizeFilename(pa.payeeName);
+    final sanitizedBill = _sanitizeFilename(pa.billNo);
+
+    final filename = '${sanitizedVendor}_$sanitizedBill.pdf';
+
+    final file = File('${output.path}/$filename');
     await file.writeAsBytes(bytes);
     return file;
+  }
+
+  /// ✅ Sanitize filename by removing special characters
+  String _sanitizeFilename(String input) {
+    // Remove special characters, keep only alphanumeric, underscore, hyphen
+    return input
+        .replaceAll(RegExp(r'[^\w\s-]'), '') // Remove special chars
+        .replaceAll(RegExp(r'\s+'), '_') // Replace spaces with underscore
+        .replaceAll(
+          RegExp(r'_+'),
+          '_',
+        ) // Replace multiple underscores with single
+        .trim();
   }
 }

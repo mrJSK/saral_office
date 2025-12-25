@@ -31,7 +31,6 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_riverpod: ^2.6.1
-  get_it: ^9.2.0
   pdf: ^3.11.3
   printing: ^5.14.2
   intl: ^0.20.2
@@ -69,7 +68,7 @@ flutter:
   assets:
     - assets/data/
     - assets/icons/
-
+    - assets/data/Vendor_Master_Combined.csv
   fonts:
     - family: SF Pro Display
       fonts:

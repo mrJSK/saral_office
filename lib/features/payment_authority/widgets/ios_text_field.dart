@@ -12,6 +12,10 @@ class IOSTextField extends StatelessWidget {
   final Widget? prefix;
   final Widget? suffix;
 
+  /// Optional background color for the text field area.
+  /// Defaults to AppTheme.backgroundLight to keep existing UI unchanged.
+  final Color? fillColor;
+
   const IOSTextField({
     super.key,
     required this.controller,
@@ -21,6 +25,7 @@ class IOSTextField extends StatelessWidget {
     this.maxLines = 1,
     this.prefix,
     this.suffix,
+    this.fillColor,
   });
 
   @override
@@ -52,7 +57,7 @@ class IOSTextField extends StatelessWidget {
               : null,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           decoration: BoxDecoration(
-            color: AppTheme.backgroundLight,
+            color: fillColor ?? AppTheme.backgroundLight,
             borderRadius: BorderRadius.circular(10),
             border: Border.all(color: AppTheme.dividerColor, width: 1),
           ),

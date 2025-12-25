@@ -15,12 +15,14 @@ import 'package:saral_office/features/payment_authority/services/payment_authori
 /// Core services
 /// --------------------
 
-final isarServiceProvider = Provider((ref) {
-  return getIt<IsarService>();
+// ✅ Riverpod provider for IsarService
+final isarServiceProvider = Provider<IsarService>((ref) {
+  return getIsarService();
 });
 
-final pdfServiceProvider = Provider((ref) {
-  return getIt<PaymentAuthorityPdfService>();
+// ✅ Riverpod provider for PDF Service
+final pdfServiceProvider = Provider<PaymentAuthorityPdfService>((ref) {
+  return PaymentAuthorityPdfService();
 });
 
 /// --------------------
@@ -45,7 +47,7 @@ final glAccountSearchProvider = FutureProvider.family<List<GLAccount>, String>((
   return isarService.searchGLAccounts(query);
 });
 
-/// Divisions
+/// Divisions (when query is empty, IsarService returns recent divisions)
 final divisionSearchProvider = FutureProvider.family<List<Division>, String>((
   ref,
   query,
@@ -138,6 +140,9 @@ class PaymentAuthority {
               'region': vendor!.region,
               'pan': vendor!.pan,
               'gst': vendor!.gst,
+              'ifsc': vendor!.ifsc,
+              'bankAccount': vendor!.bankAccount,
+              'email': vendor!.email,
             }
           : null,
       'particulars': particulars,
@@ -193,7 +198,10 @@ class PaymentAuthority {
         ..postalCode = vendorData['postalCode'] ?? ''
         ..region = vendorData['region'] ?? ''
         ..pan = vendorData['pan'] ?? ''
-        ..gst = vendorData['gst'] ?? '';
+        ..gst = vendorData['gst'] ?? ''
+        ..ifsc = vendorData['ifsc']
+        ..bankAccount = vendorData['bankAccount']
+        ..email = vendorData['email'];
     }
 
     final entries = <AccountEntry>[];
@@ -323,7 +331,7 @@ class PaymentAuthorityNotifier extends StateNotifier<PaymentAuthority> {
     }
   }
 
-  // Load a saved authority into the state (restore for editing)
+  /// Load a saved authority into the state (restore for editing)
   void load(PaymentAuthority authority) {
     state = authority;
   }
@@ -360,8 +368,13 @@ final markGlAsUsedProvider = FutureProvider.family<void, GLAccount>((
   await isar.markGlAsUsed(gl);
 });
 
-final paymentAuthorityPdfServiceProvider = Provider((ref) {
-  return PaymentAuthorityPdfService();
+/// Mark division as recently used
+final markDivisionAsUsedProvider = FutureProvider.family<void, Division>((
+  ref,
+  division,
+) async {
+  final isar = ref.read(isarServiceProvider);
+  await isar.markDivisionAsUsed(division);
 });
 
 /// Generate PDF and save authority to database
@@ -369,7 +382,7 @@ final generatePaymentAuthorityPdfProvider =
     Provider.autoDispose<Future<void> Function()>((ref) {
       return () async {
         final state = ref.read(paymentAuthorityProvider);
-        final pdfService = ref.read(paymentAuthorityPdfServiceProvider);
+        final pdfService = ref.read(pdfServiceProvider);
         final isar = ref.read(isarServiceProvider);
 
         // Save to database before generating PDF
@@ -391,10 +404,16 @@ final generatePaymentAuthorityPdfProvider =
           date: state.date,
           payeeName: state.vendor?.name1 ?? '',
           payeeAddress: state.vendor?.fullAddress ?? '',
-          paymentParticulars: state.particulars ?? '',
-          authorityOrderNo: state.authorityOrderNo ?? '',
+          // Pass new fields from the selected vendor
+          payeePan: state.vendor?.pan,
+          payeeGst: state.vendor?.gst,
+          payeeIfsc: state.vendor?.ifsc, // <--- NEW
+          payeeBankAccount: state.vendor?.bankAccount, // <--- NEW
+          payeeEmail: state.vendor?.email, // <--- NEW
+          paymentParticulars: state.particulars,
+          authorityOrderNo: state.authorityOrderNo,
           authorityOrderDate: state.date,
-          billNo: state.billNumber ?? '',
+          billNo: state.billNumber,
           billDate: state.billDate,
           netAmount: state.totalDebit,
           debitLines: state.entries
@@ -429,12 +448,4 @@ final recentAuthoritiesProvider = StreamProvider<List<SavedAuthority>>((
 ) async* {
   final isar = ref.watch(isarServiceProvider);
   yield* isar.watchRecentAuthorities();
-});
-
-final markDivisionAsUsedProvider = FutureProvider.family<void, Division>((
-  ref,
-  division,
-) async {
-  final isar = ref.read(isarServiceProvider);
-  await isar.markDivisionAsUsed(division);
 });

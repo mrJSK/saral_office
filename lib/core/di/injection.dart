@@ -1,18 +1,24 @@
 // lib/core/di/injection.dart
-import 'package:get_it/get_it.dart';
+
 import 'package:saral_office/core/database/services/isar_service.dart';
-import 'package:saral_office/features/payment_authority/services/payment_authority_pdf_service.dart';
-import 'package:saral_office/features/payment_authority/providers/payment_authority_provider.dart';
 
-final getIt = GetIt.instance;
+// ✅ Single initialization function
+Future<void> initializeApp() async {
+  // Create and initialize Isar service once
+  final isarService = IsarService();
+  await isarService.initialize();
 
-Future<void> setupDependencyInjection() async {
-  // Isar
-  getIt.registerSingleton<IsarService>(IsarService());
-  await getIt<IsarService>().initialize();
+  // Store it in a global variable for provider access
+  _isarServiceInstance = isarService;
+}
 
-  // PDF service
-  getIt.registerLazySingleton<PaymentAuthorityPdfService>(
-    () => PaymentAuthorityPdfService(),
-  );
+// Private singleton instance
+IsarService? _isarServiceInstance;
+
+// Getter for providers to access
+IsarService getIsarService() {
+  if (_isarServiceInstance == null) {
+    throw Exception('IsarService not initialized. Call initializeApp() first.');
+  }
+  return _isarServiceInstance!;
 }

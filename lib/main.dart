@@ -20,8 +20,8 @@ void main() async {
     ),
   );
 
-  // Initialize dependencies (Isar will auto-import data if needed)
-  await setupDependencyInjection();
+  // ✅ Initialize app (Isar will auto-import data if needed)
+  await initializeApp();
 
   runApp(const ProviderScope(child: SaralOfficeApp()));
 }
