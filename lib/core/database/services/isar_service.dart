@@ -174,6 +174,28 @@ class IsarService {
     });
   }
 
+  Future<Map<String, String>> getGlDescriptionMapForCodes(
+    Iterable<String> glCodes,
+  ) async {
+    if (!_isInitialized) return {};
+
+    final codes = glCodes
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .toSet()
+        .toList();
+
+    if (codes.isEmpty) return {};
+
+    // Use anyOf() to OR multiple glCodeEqualTo() filters
+    final rows = await isar.gLAccounts
+        .filter()
+        .anyOf(codes, (q, code) => q.glCodeEqualTo(code))
+        .findAll();
+
+    return {for (final r in rows) r.glCode.trim(): r.glDescription.trim()};
+  }
+
   // Mark a GL account as recently used
   Future<void> markGlAsUsed(GLAccount gl) async {
     await isar.writeTxn(() async {

@@ -22,7 +22,9 @@ final isarServiceProvider = Provider<IsarService>((ref) {
 
 // ✅ Riverpod provider for PDF Service
 final pdfServiceProvider = Provider<PaymentAuthorityPdfService>((ref) {
-  return PaymentAuthorityPdfService();
+  // Pass the required IsarService instance
+  final isarService = ref.watch(isarServiceProvider);
+  return PaymentAuthorityPdfService(isarService);
 });
 
 /// --------------------

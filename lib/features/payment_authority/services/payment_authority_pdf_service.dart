@@ -7,10 +7,14 @@ import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
+import 'package:saral_office/core/database/services/isar_service.dart';
+
 import '../providers/payment_authority_pdf_model.dart' as pa_model;
 
 class PaymentAuthorityPdfService {
-  PaymentAuthorityPdfService();
+  final IsarService _isarService;
+
+  PaymentAuthorityPdfService(this._isarService);
 
   /// Generate PDF and open it
   Future<File> generateAndOpen(pa_model.PaymentAuthorityPdfModel pa) async {
@@ -31,44 +35,139 @@ class PaymentAuthorityPdfService {
     // Define text styles
     final textStyles = _buildTextStyles(ttf, ttfBold);
 
+    // Create printer-safe page theme
+    final pageTheme = await _buildPageTheme(PdfPageFormat.a4);
+
+    // 1. Fetch GL Descriptions from Isar
+    final glCodes = <String>{
+      ...pa.debitLines.map((e) => e.glCode),
+      ...pa.creditLines.map((e) => e.glCode),
+    };
+    final glDescMap = await _isarService.getGlDescriptionMapForCodes(glCodes);
+
     doc.addPage(
-      pw.Page(
-        pageFormat: PdfPageFormat.a4,
-        margin: const pw.EdgeInsets.all(15),
+      pw.MultiPage(
+        pageTheme: pageTheme,
+        // Ensure main axis (vertical) doesn't expand unnecessarily
+        mainAxisAlignment: pw.MainAxisAlignment.start,
         build: (context) {
-          return pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.stretch,
-            children: [
-              // Title
-              pw.Center(
-                child: pw.Text(
-                  'FOR CASH PAYMENT ONLY',
-                  style: textStyles['title'],
-                ),
+          // Calculate safe width for inner content (page width - margins - padding)
+          final safeWidth = pageTheme.pageFormat.availableWidth - 12;
+
+          return [
+            pw.Container(
+              padding: const pw.EdgeInsets.symmetric(horizontal: 6),
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+                children: [
+                  // Reduced top spacing
+                  pw.SizedBox(height: 2),
+
+                  // Title
+                  pw.Center(
+                    child: pw.Text(
+                      'FOR CASH PAYMENT ONLY',
+                      style: textStyles['title'],
+                    ),
+                  ),
+                  // Compacted gap: 12 -> 8
+                  pw.SizedBox(height: 8),
+
+                  // Header details section
+                  _buildHeaderBlock(pa, textStyles),
+                  // Compacted gap: 12 -> 8
+                  pw.SizedBox(height: 8),
+
+                  // Classification table with DEBIT/CREDIT
+                  _buildClassificationTable(
+                    pa,
+                    textStyles,
+                    maxWidth: safeWidth,
+                    glDescMap: glDescMap,
+                  ),
+                  // Compacted gap: 10 -> 6
+                  pw.SizedBox(height: 6),
+
+                  // Gross total row
+                  _buildGrossTotalRow(pa, textStyles, maxWidth: safeWidth),
+                  // Compacted gap: 16 -> 10
+                  pw.SizedBox(height: 10),
+
+                  _buildPaymentParagraph(pa, textStyles),
+                  pw.SizedBox(height: 10),
+
+                  // Complete bottom section with signatures, debit to, and cashier
+                  _buildSignaturesAndDebitSection(
+                    pa,
+                    textStyles,
+                    maxWidth: safeWidth,
+                  ),
+
+                  pw.SizedBox(height: 2),
+                ],
               ),
-              pw.SizedBox(height: 12),
-
-              // Header details section
-              _buildHeaderBlock(pa, textStyles),
-              pw.SizedBox(height: 12),
-
-              // Classification table with DEBIT/CREDIT
-              _buildClassificationTable(pa, textStyles),
-              pw.SizedBox(height: 10),
-
-              // Gross total row
-              _buildGrossTotalRow(pa, textStyles),
-              pw.SizedBox(height: 16),
-
-              // Complete bottom section with signatures, debit to, and cashier
-              _buildSignaturesAndDebitSection(pa, textStyles),
-            ],
-          );
+            ),
+          ];
         },
       ),
     );
 
     return doc.save();
+  }
+
+  pw.Widget _buildPaymentParagraph(
+    pa_model.PaymentAuthorityPdfModel pa,
+    Map<String, pw.TextStyle?> styles,
+  ) {
+    final amountInWords = _convertAmountToWords(pa.netAmount);
+    final payeeName = pa.payeeName.trim();
+    final payeeAddress = pa.payeeAddress.trim();
+    final particulars = pa.paymentParticulars.trim();
+
+    return pw.Container(
+      padding: const pw.EdgeInsets.fromLTRB(6, 6, 6, 6),
+      decoration: pw.BoxDecoration(
+        border: pw.Border.all(width: 0.6, color: PdfColors.grey700),
+        borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
+        color: PdfColors.grey100,
+      ),
+      child: pw.RichText(
+        text: pw.TextSpan(
+          style: styles['base'],
+          children: [
+            pw.TextSpan(text: 'Paid Rupees (in words) ', style: styles['base']),
+            pw.TextSpan(text: amountInWords, style: styles['bold']),
+            pw.TextSpan(text: ' to ', style: styles['base']),
+            pw.TextSpan(text: payeeName, style: styles['bold']),
+            if (payeeAddress.isNotEmpty) pw.TextSpan(text: ', $payeeAddress'),
+            if (particulars.isNotEmpty)
+              pw.TextSpan(text: ', towards $particulars'),
+            pw.TextSpan(text: '.', style: styles['base']),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Helper to build printer-safe page theme
+  Future<pw.PageTheme> _buildPageTheme(PdfPageFormat format) async {
+    // UPDATED MARGINS:
+    // Left/Right: 25mm (keeps text safe from hole punches/binding)
+    // Top/Bottom: 10mm (reduced from 22mm to fit more vertical content)
+    format = format.applyMargin(
+      left: 25 * PdfPageFormat.mm,
+      top: 10 * PdfPageFormat.mm,
+      right: 25 * PdfPageFormat.mm,
+      bottom: 10 * PdfPageFormat.mm,
+    );
+
+    return pw.PageTheme(
+      pageFormat: format,
+      theme: pw.ThemeData.withFont(
+        base: await PdfGoogleFonts.robotoRegular(),
+        bold: await PdfGoogleFonts.robotoBold(),
+      ),
+    );
   }
 
   /// Build text styles map
@@ -100,7 +199,6 @@ class PaymentAuthorityPdfService {
   }
 
   /// Build header block with division, vendor details, and payment info
-  // ✅ UPDATE THE _buildHeaderBlock FUNCTION - Add Email
   pw.Widget _buildHeaderBlock(
     pa_model.PaymentAuthorityPdfModel pa,
     Map<String, pw.TextStyle?> styles,
@@ -141,7 +239,19 @@ class PaymentAuthorityPdfService {
         pw.SizedBox(height: 3),
         pw.Text('Name: ${pa.payeeName}', style: styles['bold']),
         pw.SizedBox(height: 2),
-        pw.Text('Address: ${pa.payeeAddress}', style: styles['base']),
+
+        // Address wrapped in Expanded to prevent overflow
+        pw.Row(
+          children: [
+            pw.Expanded(
+              child: pw.Text(
+                'Address: ${pa.payeeAddress}',
+                style: styles['base'],
+                softWrap: true,
+              ),
+            ),
+          ],
+        ),
 
         // PAN and GST details
         if (pa.payeePan != null && pa.payeePan!.isNotEmpty) ...[
@@ -153,7 +263,7 @@ class PaymentAuthorityPdfService {
           pw.Text('GST: ${pa.payeeGst}', style: styles['base']),
         ],
 
-        // ✅ FIX: Bank Details Section with ALL fields (IFSC, Bank Account, Email)
+        // Bank Details Section
         if ((pa.payeeBankAccount != null && pa.payeeBankAccount!.isNotEmpty) ||
             (pa.payeeIfsc != null && pa.payeeIfsc!.isNotEmpty) ||
             (pa.payeeEmail != null && pa.payeeEmail!.isNotEmpty)) ...[
@@ -205,37 +315,47 @@ class PaymentAuthorityPdfService {
         ),
         pw.SizedBox(height: 3),
         pw.Text(
-          'Amount (Net) Rs. ${pa.netAmount.toStringAsFixed(2)} Only',
+          'Amount (Net) Rs. ${_formatIndianNumber(pa.netAmount)} Only', // ✅ NEW
           style: styles['bold']?.copyWith(fontSize: 11),
         ),
       ],
     );
   }
 
+  // ---- Ledger column sizing ----
+  static const double _descWidth = 1.5;
+  static const double _numHeadWidth = 1.5;
+  static const double _amountWidth = 0.9;
+
+  // DEBIT or CREDIT group width (3 columns)
+  static const double _groupWidth = _descWidth + _numHeadWidth + _amountWidth;
+
   /// Build classification table with DEBIT/CREDIT columns using pw.Table
   pw.Widget _buildClassificationTable(
     pa_model.PaymentAuthorityPdfModel pa,
-    Map<String, pw.TextStyle?> styles,
-  ) {
+    Map<String, pw.TextStyle?> styles, {
+    required double maxWidth,
+    required Map<String, String> glDescMap,
+  }) {
     final maxRows = _getMaxRows(pa.debitLines.length, pa.creditLines.length);
 
-    // ✅ FIX: Removed divider column (index 3) - was causing blank column
     const columnWidths = {
-      0: pw.FlexColumnWidth(2.0), // DEBIT Description
-      1: pw.FlexColumnWidth(1.2), // DEBIT Numerical Head
-      2: pw.FlexColumnWidth(1.0), // DEBIT Amount
-      3: pw.FlexColumnWidth(2.0), // CREDIT Description
-      4: pw.FlexColumnWidth(1.2), // CREDIT Numerical Head
-      5: pw.FlexColumnWidth(1.0), // CREDIT Amount
+      0: pw.FlexColumnWidth(_descWidth),
+      1: pw.FlexColumnWidth(_numHeadWidth),
+      2: pw.FlexColumnWidth(_amountWidth),
+      3: pw.FlexColumnWidth(_descWidth),
+      4: pw.FlexColumnWidth(_numHeadWidth),
+      5: pw.FlexColumnWidth(_amountWidth),
     };
 
     return pw.Container(
+      width: maxWidth,
       decoration: pw.BoxDecoration(
         border: pw.Border.all(width: 1.0, color: PdfColors.black),
       ),
       child: pw.Column(
         children: [
-          // Main title: CLASSIFICATION (spanning full width)
+          // Main title: CLASSIFICATION
           _buildClassificationTitle(styles),
 
           // Sub-header: DEBIT | CREDIT
@@ -245,7 +365,7 @@ class PaymentAuthorityPdfService {
           _buildTableColumnHeaders(styles, columnWidths),
 
           // Data rows
-          _buildDataRows(pa, styles, columnWidths, maxRows),
+          _buildDataRows(pa, styles, columnWidths, maxRows, glDescMap),
         ],
       ),
     );
@@ -265,14 +385,6 @@ class PaymentAuthorityPdfService {
       ),
     );
   }
-
-  // ---- Ledger column sizing ----
-  static const double _descWidth = 2.0;
-  static const double _numHeadWidth = 1.2;
-  static const double _amountWidth = 1.0;
-
-  // DEBIT or CREDIT group width (3 columns)
-  static const double _groupWidth = _descWidth + _numHeadWidth + _amountWidth;
 
   pw.Widget _buildDebitCreditSubHeader(Map<String, pw.TextStyle?> styles) {
     return pw.Container(
@@ -329,23 +441,54 @@ class PaymentAuthorityPdfService {
         children: [
           pw.TableRow(
             children: [
-              // DEBIT: Description - CENTERED
               _headerCellCentered('Description', styles['smallBold']!),
-              // DEBIT: Numerical Head - CENTERED
-              _headerCellCentered('Numerical Head', styles['smallBold']!),
-              // DEBIT: Amount - CENTERED
+              _headerCellCentered('GL Code', styles['smallBold']!),
               _headerCellCentered('Amount', styles['smallBold']!),
 
-              // CREDIT: Description - CENTERED
               _headerCellCentered('Description', styles['smallBold']!),
-              // CREDIT: Numerical Head - CENTERED
-              _headerCellCentered('Numerical Head', styles['smallBold']!),
-              // CREDIT: Amount - CENTERED
+              _headerCellCentered('GL Code', styles['smallBold']!),
               _headerCellCentered('Amount', styles['smallBold']!),
             ],
           ),
         ],
       ),
+    );
+  }
+
+  /// Build GL Code cell with centered Code (Bold) and ERP Description (Normal)
+  pw.Widget _buildGlCodeCell(
+    String glCode,
+    String glDescription,
+    pw.TextStyle codeStyle,
+    pw.TextStyle descStyle, {
+    bool hasContent = false,
+  }) {
+    return pw.Container(
+      padding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+      alignment: pw.Alignment.center, // Vertically center the entire block
+      child: hasContent
+          ? pw.Column(
+              mainAxisAlignment: pw.MainAxisAlignment.center,
+              crossAxisAlignment:
+                  pw.CrossAxisAlignment.center, // Horizontally center
+              mainAxisSize: pw.MainAxisSize.min,
+              children: [
+                pw.Text(
+                  glCode,
+                  style: codeStyle,
+                  textAlign: pw.TextAlign.center,
+                ),
+                if (glDescription.isNotEmpty)
+                  pw.Text(
+                    glDescription,
+                    style: descStyle,
+                    textAlign: pw.TextAlign.center,
+                    maxLines: 2,
+                    overflow: pw.TextOverflow.clip,
+                  ),
+              ],
+            )
+          : pw.SizedBox(height: 18),
     );
   }
 
@@ -363,6 +506,7 @@ class PaymentAuthorityPdfService {
     Map<String, pw.TextStyle?> styles,
     Map<int, pw.TableColumnWidth> columnWidths,
     int maxRows,
+    Map<String, String> glDescMap,
   ) {
     return pw.Table(
       columnWidths: columnWidths,
@@ -375,6 +519,12 @@ class PaymentAuthorityPdfService {
         final creditLine = i < pa.creditLines.length ? pa.creditLines[i] : null;
         final showPleasePay = i == 0 && creditLine != null;
 
+        // Get ERP descriptions for GL codes
+        final debitGlCode = debitLine?.glCode ?? '';
+        final creditGlCode = creditLine?.glCode ?? '';
+        final debitErpDesc = glDescMap[debitGlCode.trim()] ?? '';
+        final creditErpDesc = glDescMap[creditGlCode.trim()] ?? '';
+
         return pw.TableRow(
           children: [
             // DEBIT: Description
@@ -383,15 +533,19 @@ class PaymentAuthorityPdfService {
               styles['small']!,
               hasContent: debitLine != null,
             ),
-            // DEBIT: Numerical Head
-            _buildDataCell(
-              debitLine?.glCode ?? '',
-              styles['smallBold']!,
+            // DEBIT: GL Code (Centered with Description)
+            _buildGlCodeCell(
+              debitGlCode,
+              debitErpDesc,
+              styles['smallBold']!, // Code is bold
+              styles['small']!, // Desc is normal
               hasContent: debitLine != null,
             ),
             // DEBIT: Amount
             _buildDataCell(
-              debitLine?.amount.toStringAsFixed(2) ?? '',
+              debitLine != null
+                  ? _formatIndianNumber(debitLine.amount)
+                  : '', // ✅ NEW
               styles['smallBold']!,
               align: pw.TextAlign.right,
               hasContent: debitLine != null,
@@ -425,15 +579,20 @@ class PaymentAuthorityPdfService {
                     )
                   : pw.SizedBox(height: 18),
             ),
-            // CREDIT: Numerical Head
-            _buildDataCell(
-              creditLine?.glCode ?? '',
+            // CREDIT: GL Code (Centered with Description)
+            _buildGlCodeCell(
+              creditGlCode,
+              creditErpDesc,
               styles['smallBold']!,
+              styles['small']!,
               hasContent: creditLine != null,
             ),
             // CREDIT: Amount
+            // CREDIT: Amount
             _buildDataCell(
-              creditLine?.amount.toStringAsFixed(2) ?? '',
+              creditLine != null
+                  ? _formatIndianNumber(creditLine.amount)
+                  : '', // ✅ NEW
               styles['smallBold']!,
               align: pw.TextAlign.right,
               hasContent: creditLine != null,
@@ -468,8 +627,9 @@ class PaymentAuthorityPdfService {
   /// Build gross total row
   pw.Widget _buildGrossTotalRow(
     pa_model.PaymentAuthorityPdfModel pa,
-    Map<String, pw.TextStyle?> styles,
-  ) {
+    Map<String, pw.TextStyle?> styles, {
+    required double maxWidth,
+  }) {
     final debitTotal = pa.debitLines.fold(0.0, (sum, l) => sum + l.amount);
 
     const columnWidths = {
@@ -482,6 +642,7 @@ class PaymentAuthorityPdfService {
     };
 
     return pw.Container(
+      width: maxWidth,
       decoration: pw.BoxDecoration(
         border: pw.Border.all(width: 1.0, color: PdfColors.black),
       ),
@@ -493,8 +654,6 @@ class PaymentAuthorityPdfService {
         children: [
           pw.TableRow(
             children: [
-              pw.SizedBox(), // Col 0
-              pw.SizedBox(), // Col 1
               // DEBIT Total
               pw.Padding(
                 padding: const pw.EdgeInsets.symmetric(
@@ -503,8 +662,6 @@ class PaymentAuthorityPdfService {
                 ),
                 child: pw.Text('Gross Total', style: styles['bold']),
               ),
-              pw.SizedBox(), // Col 3
-              pw.SizedBox(), // Col 4
               // CREDIT Total
               pw.Padding(
                 padding: const pw.EdgeInsets.symmetric(
@@ -512,7 +669,7 @@ class PaymentAuthorityPdfService {
                   vertical: 6,
                 ),
                 child: pw.Text(
-                  debitTotal.toStringAsFixed(2),
+                  _formatIndianNumber(debitTotal), // ✅ NEW
                   style: styles['bold']?.copyWith(fontSize: 11),
                   textAlign: pw.TextAlign.right,
                 ),
@@ -527,96 +684,18 @@ class PaymentAuthorityPdfService {
   /// Build entire bottom section with signatures, debit to, and cashier
   pw.Widget _buildSignaturesAndDebitSection(
     pa_model.PaymentAuthorityPdfModel pa,
-    Map<String, pw.TextStyle?> styles,
-  ) {
+    Map<String, pw.TextStyle?> styles, {
+    required double maxWidth,
+  }) {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
-        // Amount in words section
-        _buildAmountInWordsSection(pa, styles),
-        pw.SizedBox(height: 10),
-
-        // Please pay to section with vendor details table
-        _buildPleasePaysToSection(pa, styles),
-        pw.SizedBox(height: 12),
-
-        // Vendor details table
-        _buildVendorDetailsTable(pa, styles),
-        pw.SizedBox(height: 14),
-
         // Signatures line
         _buildSignaturesLine(styles),
         pw.SizedBox(height: 12),
 
         // Cashier details section
         _buildCashierDetailsSection(pa, styles),
-      ],
-    );
-  }
-
-  /// Amount in words section
-  pw.Widget _buildAmountInWordsSection(
-    pa_model.PaymentAuthorityPdfModel pa,
-    Map<String, pw.TextStyle?> styles,
-  ) {
-    final amountInWords = _convertAmountToWords(pa.netAmount);
-
-    return pw.Column(
-      crossAxisAlignment: pw.CrossAxisAlignment.start,
-      children: [
-        pw.Text('Received Rupees (in words)', style: styles['base']),
-        pw.SizedBox(height: 4),
-        pw.Text(amountInWords, style: styles['bold']),
-      ],
-    );
-  }
-
-  /// Please pay to section with vendor details inline
-  pw.Widget _buildPleasePaysToSection(
-    pa_model.PaymentAuthorityPdfModel pa,
-    Map<String, pw.TextStyle?> styles,
-  ) {
-    return pw.Row(
-      crossAxisAlignment: pw.CrossAxisAlignment.start,
-      children: [
-        pw.Text('to', style: styles['base']),
-        pw.SizedBox(width: 160),
-        pw.Text('and Debit to', style: styles['base']),
-      ],
-    );
-  }
-
-  /// Vendor details table with Name, Address, PAN, GST
-  pw.Widget _buildVendorDetailsTable(
-    pa_model.PaymentAuthorityPdfModel pa,
-    Map<String, pw.TextStyle?> styles,
-  ) {
-    return pw.Table(
-      border: pw.TableBorder.all(width: 0.5, color: PdfColors.black),
-      columnWidths: {0: pw.FlexColumnWidth(1), 1: pw.FlexColumnWidth(3)},
-      children: [
-        _buildVendorTableRow('Name', pa.payeeName, styles),
-        _buildVendorTableRow('Address', pa.payeeAddress, styles),
-      ],
-    );
-  }
-
-  /// Build individual vendor table row
-  pw.TableRow _buildVendorTableRow(
-    String label,
-    String value,
-    Map<String, pw.TextStyle?> styles,
-  ) {
-    return pw.TableRow(
-      children: [
-        pw.Padding(
-          padding: const pw.EdgeInsets.all(4),
-          child: pw.Text(label, style: styles['smallBold']),
-        ),
-        pw.Padding(
-          padding: const pw.EdgeInsets.all(4),
-          child: pw.Text(value, style: styles['small']),
-        ),
       ],
     );
   }
@@ -629,21 +708,21 @@ class PaymentAuthorityPdfService {
         pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.center,
           children: [
-            pw.SizedBox(height: 32),
+            pw.SizedBox(height: 24), // Reduced from 32
             pw.Text('Sig. of Dealing Asstt.', style: styles['small']),
           ],
         ),
         pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.center,
           children: [
-            pw.SizedBox(height: 32),
+            pw.SizedBox(height: 24), // Reduced from 32
             pw.Text('Sig. of D.A.', style: styles['small']),
           ],
         ),
         pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.center,
           children: [
-            pw.SizedBox(height: 32),
+            pw.SizedBox(height: 24), // Reduced from 32
             pw.Text('Sig. of E.E.', style: styles['small']),
           ],
         ),
@@ -702,7 +781,7 @@ class PaymentAuthorityPdfService {
             pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.center,
               children: [
-                pw.SizedBox(height: 32),
+                pw.SizedBox(height: 24), // Reduced from 32
                 pw.Text('Sig. of Cashier', style: styles['small']),
               ],
             ),
@@ -818,7 +897,7 @@ class PaymentAuthorityPdfService {
   int _getMaxRows(int debitCount, int creditCount) =>
       debitCount > creditCount ? debitCount : creditCount;
 
-  /// ✅ FIX: Save PDF with vendor_billnumber filename (sanitized)
+  /// Save PDF with vendor_billnumber filename (sanitized)
   Future<File> _savePdfToFile(
     Uint8List bytes,
     pa_model.PaymentAuthorityPdfModel pa,
@@ -836,7 +915,7 @@ class PaymentAuthorityPdfService {
     return file;
   }
 
-  /// ✅ Sanitize filename by removing special characters
+  /// Sanitize filename by removing special characters
   String _sanitizeFilename(String input) {
     // Remove special characters, keep only alphanumeric, underscore, hyphen
     return input
@@ -847,5 +926,44 @@ class PaymentAuthorityPdfService {
           '_',
         ) // Replace multiple underscores with single
         .trim();
+  }
+
+  /// Format number with Indian comma notation (e.g., 1,05,84,282.50)
+  String _formatIndianNumber(double amount) {
+    // Split into rupees and paise
+    final rupees = amount.floor();
+    final paise = ((amount - rupees) * 100).round();
+
+    // Convert to string
+    String rupeesStr = rupees.toString();
+
+    // If less than 1000, no commas needed
+    if (rupeesStr.length <= 3) {
+      return paise > 0
+          ? '$rupeesStr.${paise.toString().padLeft(2, '0')}'
+          : '$rupeesStr.00';
+    }
+
+    // Split: last 3 digits, then groups of 2
+    final lastThree = rupeesStr.substring(rupeesStr.length - 3);
+    final remaining = rupeesStr.substring(0, rupeesStr.length - 3);
+
+    // Add commas every 2 digits in remaining part (from right to left)
+    String formatted = '';
+    int count = 0;
+    for (int i = remaining.length - 1; i >= 0; i--) {
+      if (count == 2) {
+        formatted = ',$formatted';
+        count = 0;
+      }
+      formatted = remaining[i] + formatted;
+      count++;
+    }
+
+    // Combine with last three digits
+    formatted = '$formatted,$lastThree';
+
+    // Add paise
+    return '$formatted.${paise.toString().padLeft(2, '0')}';
   }
 }

@@ -4,14 +4,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:saral_office/core/database/models/division.dart';
 import 'package:saral_office/core/database/models/gl_account.dart';
 import 'package:saral_office/core/database/models/vendor.dart';
-import '../../core/theme/app_theme.dart';
-import '../../core/di/injection.dart';
-import '../../core/database/services/isar_service.dart';
-import '../payment_authority/screens/create_authority_screen.dart';
-import '../payment_authority/providers/payment_authority_provider.dart';
-import 'widgets/stats_card.dart';
-import 'widgets/recent_authorities_list.dart';
-import 'widgets/quick_action_button.dart';
+import '../../../core/theme/app_theme.dart';
+import '../../../core/di/injection.dart';
+import '../../../core/database/services/isar_service.dart';
+import '../../payment_authority/screens/create_authority_screen.dart';
+import '../../payment_authority/providers/payment_authority_provider.dart';
+import '../widgets/stats_card.dart';
+import '../widgets/recent_authorities_list.dart';
+import '../widgets/quick_action_button.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -352,8 +352,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   }
 
   Widget _buildRecentSection() {
-    // The header is now built inside RecentAuthoritiesList
-    // to support the "Select" and "Delete" actions.
     return const RecentAuthoritiesList();
   }
 

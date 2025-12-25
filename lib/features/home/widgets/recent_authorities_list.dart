@@ -34,7 +34,6 @@ class _RecentAuthoritiesListState extends ConsumerState<RecentAuthoritiesList> {
     setState(() {
       if (_selectedIds.contains(id)) {
         _selectedIds.remove(id);
-        // Optional: Exit selection mode if last item deselected
         if (_selectedIds.isEmpty) {
           _isSelectionMode = false;
         }
@@ -51,7 +50,6 @@ class _RecentAuthoritiesListState extends ConsumerState<RecentAuthoritiesList> {
         _isSelectionMode = true;
         _selectedIds.add(id);
       });
-      // Provide haptic feedback
       HapticFeedback.mediumImpact();
     }
   }
@@ -99,65 +97,59 @@ class _RecentAuthoritiesListState extends ConsumerState<RecentAuthoritiesList> {
     return Column(
       children: [
         // Header
-        Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppTheme.spacingM,
-            vertical: AppTheme.spacingS,
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                _isSelectionMode && _selectedIds.isNotEmpty
-                    ? '${_selectedIds.length} Selected'
-                    : 'Recent Authorities',
-                style: const TextStyle(
-                  fontFamily: 'SF Pro Display',
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: AppTheme.textPrimary,
-                  letterSpacing: -0.5,
-                ),
-              ),
-              Row(
-                children: [
-                  if (_isSelectionMode && _selectedIds.isNotEmpty)
-                    CupertinoButton(
-                      padding: const EdgeInsets.only(right: 16),
-                      minSize: 0,
-                      onPressed: _deleteSelected,
-                      child: const Icon(
-                        CupertinoIcons.trash,
-                        color: CupertinoColors.destructiveRed,
-                        size: 22,
-                      ),
+        // Removed Padding wrapper here because HomeScreen already provides the horizontal padding
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text(
+              _isSelectionMode && _selectedIds.isNotEmpty
+                  ? '${_selectedIds.length} Selected'
+                  : 'Recent Authorities',
+              // Used AppTheme.headline3 to match "Statistics" header exactly
+              style: AppTheme.headline3,
+            ),
+            Row(
+              children: [
+                if (_isSelectionMode && _selectedIds.isNotEmpty)
+                  CupertinoButton(
+                    padding: const EdgeInsets.only(right: 16),
+                    minSize: 0,
+                    onPressed: _deleteSelected,
+                    child: const Icon(
+                      CupertinoIcons.trash,
+                      color: CupertinoColors.destructiveRed,
+                      size: 22,
                     ),
-
-                  authoritiesAsync.maybeWhen(
-                    data: (data) => data.isNotEmpty
-                        ? CupertinoButton(
-                            padding: EdgeInsets.zero,
-                            minSize: 0,
-                            onPressed: _toggleSelectionMode,
-                            child: Text(
-                              _isSelectionMode ? 'Done' : 'Select',
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                                color: _isSelectionMode
-                                    ? AppTheme.primaryBlue
-                                    : AppTheme.textSecondary,
-                              ),
-                            ),
-                          )
-                        : const SizedBox.shrink(),
-                    orElse: () => const SizedBox.shrink(),
                   ),
-                ],
-              ),
-            ],
-          ),
+
+                authoritiesAsync.maybeWhen(
+                  data: (data) => data.isNotEmpty
+                      ? CupertinoButton(
+                          padding: EdgeInsets.zero,
+                          minSize: 0,
+                          onPressed: _toggleSelectionMode,
+                          child: Text(
+                            _isSelectionMode ? 'Done' : 'Select',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: _isSelectionMode
+                                  ? AppTheme.primaryBlue
+                                  : AppTheme.textSecondary,
+                            ),
+                          ),
+                        )
+                      : const SizedBox.shrink(),
+                  orElse: () => const SizedBox.shrink(),
+                ),
+              ],
+            ),
+          ],
         ),
+
+        // Added spacing to match the gap in Stats section (AppTheme.spacingM)
+        const SizedBox(height: AppTheme.spacingM),
 
         // List
         authoritiesAsync.when(
@@ -364,7 +356,7 @@ class _RecentAuthoritiesListState extends ConsumerState<RecentAuthoritiesList> {
 class AuthorityCard extends StatefulWidget {
   final SavedAuthority authority;
   final VoidCallback onTap;
-  final VoidCallback? onLongPress; // Added onLongPress
+  final VoidCallback? onLongPress;
   final bool isSelectionMode;
   final bool isSelected;
 
@@ -389,14 +381,13 @@ class _AuthorityCardState extends State<AuthorityCard> {
     final dateFormat = DateFormat('dd MMM yyyy');
     final timeFormat = DateFormat('hh:mm a');
 
-    // Using standard GestureDetector onTap/onLongPress for better reliability
     return GestureDetector(
       onTapDown: (_) => setState(() => _isPressed = true),
       onTapUp: (_) => setState(() => _isPressed = false),
       onTapCancel: () => setState(() => _isPressed = false),
       onTap: widget.onTap,
       onLongPress: () {
-        setState(() => _isPressed = false); // Reset visual state
+        setState(() => _isPressed = false);
         widget.onLongPress?.call();
       },
       child: AnimatedContainer(
