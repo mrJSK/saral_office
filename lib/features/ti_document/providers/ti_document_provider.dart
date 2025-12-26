@@ -3,9 +3,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:isar/isar.dart';
 import '../models/ti_document.dart';
-import '../models/ti_pdf_model.dart'; // ← NEW: Import PDF model
 import '../../../core/di/injection.dart';
-import '../services/ti_pdf_service.dart'; // ← CHANGED: Use new PDF service
+import '../services/ti_document_service.dart';
 import '../../employee/models/employee.dart';
 import '../../../core/database/models/division.dart';
 
@@ -15,9 +14,10 @@ import '../../../core/database/models/division.dart';
 
 class TIDocumentNotifier extends StateNotifier<TIDocumentModel> {
   final Isar isar;
-  final TiPdfService _tiPdfService; // ← CHANGED: Use TiPdfService
+  final TIDocumentService _tiDocumentService;
 
-  TIDocumentNotifier(this.isar, this._tiPdfService) : super(TIDocumentModel());
+  TIDocumentNotifier(this.isar, this._tiDocumentService)
+    : super(TIDocumentModel());
 
   // 1. Update OM (Office Memorandum) Details
   void updateOMNumber(String number) {
@@ -32,7 +32,12 @@ class TIDocumentNotifier extends StateNotifier<TIDocumentModel> {
     state = state.copyWith(omNumber: number, omDate: date);
   }
 
-  // 2. Update Recommending Office Details
+  // 2. Update Amount
+  void updateAmount(double amount) {
+    state = state.copyWith(amount: amount);
+  }
+
+  // 3. Update Recommending Office Details
   void updateRecommendingOffice(String office) {
     state = state.copyWith(recommendingOffice: office);
   }
@@ -57,7 +62,7 @@ class TIDocumentNotifier extends StateNotifier<TIDocumentModel> {
     );
   }
 
-  // 3. Update Division Details
+  // 4. Update Division Details
   void updateDivision(Division division) {
     state = state.copyWith(
       divisionName: division.name,
@@ -75,7 +80,7 @@ class TIDocumentNotifier extends StateNotifier<TIDocumentModel> {
     );
   }
 
-  // 4. Update Employee Details
+  // 5. Update Employee Details
   void updateEmployee(Employee employee) {
     state = state.copyWith(
       employeeName: employee.employeeName,
@@ -106,45 +111,17 @@ class TIDocumentNotifier extends StateNotifier<TIDocumentModel> {
     state = TIDocumentModel();
   }
 
-  // ✅ UPDATED: Generate single PDF with 2 pages and auto-open
+  // Generate and save PDF
   Future<void> generateAndSavePDF() async {
     if (!state.isValid) {
       throw Exception('Please fill all required fields');
     }
 
     try {
-      // Convert state to TiPdfModel
-      final pdfModel = TiPdfModel(
-        omNumber: state.omNumber ?? '',
-        omDate: state.omDate ?? DateTime.now(),
-        recommendingOffice: state.recommendingOffice ?? '',
-        letterNumber: state.letterNumber ?? '',
-        letterDate: state.letterDate ?? DateTime.now(),
-        divisionName: state.divisionName ?? '',
-        divisionCode: state.fundsCenter ?? '',
-        employeeName: state.employeeName ?? '',
-        employeeDesignation: state.employeeDesignation ?? '',
-      );
-
-      // Generate single PDF with 2 pages and auto-open (like Payment Authority)
-      await _tiPdfService.generateAndOpen(pdfModel);
-
-      // Save to database
-      await _saveTIDocument(state);
+      await _tiDocumentService.generateTIDocumentPDF(state);
+      await _tiDocumentService.saveTIDocument(state);
     } catch (e) {
       throw Exception('Failed to generate PDF: $e');
-    }
-  }
-
-  // ✅ NEW: Save to database
-  Future<void> _saveTIDocument(TIDocumentModel document) async {
-    try {
-      final doc = document.toIsarDocument();
-      await isar.writeTxn(() async {
-        await isar.tIDocuments.put(doc);
-      });
-    } catch (e) {
-      throw Exception('Failed to save TI Document: $e');
     }
   }
 
@@ -162,13 +139,14 @@ class TIDocumentNotifier extends StateNotifier<TIDocumentModel> {
 final tiDocumentProvider =
     StateNotifierProvider<TIDocumentNotifier, TIDocumentModel>((ref) {
       final isar = ref.watch(isarProvider);
-      final tiPdfService = ref.watch(tiPdfServiceProvider); // ← CHANGED
-      return TIDocumentNotifier(isar, tiPdfService); // ← CHANGED
+      final tiDocumentService = ref.watch(tiDocumentServiceProvider);
+      return TIDocumentNotifier(isar, tiDocumentService);
     });
 
-// ✅ NEW: TI PDF Service Provider
-final tiPdfServiceProvider = Provider<TiPdfService>((ref) {
-  return TiPdfService();
+// TI Document Service Provider
+final tiDocumentServiceProvider = Provider<TIDocumentService>((ref) {
+  final isar = ref.watch(isarProvider);
+  return TIDocumentService(isar);
 });
 
 // Recent TI Documents Provider (for history/listing)
@@ -188,6 +166,23 @@ final tiDocumentByIdProvider = FutureProvider.family<TIDocument?, int>((
 ) async {
   final isar = ref.watch(isarProvider);
   return await isar.tIDocuments.get(id);
+});
+
+// Generate PDF Provider (for one-shot operations)
+final generateTIDocumentPdfProvider = FutureProvider<void>((ref) async {
+  final tiDocument = ref.watch(tiDocumentProvider);
+  final tiDocumentService = ref.watch(tiDocumentServiceProvider);
+
+  if (!tiDocument.isValid) {
+    throw Exception('Please fill all required fields before generating PDF');
+  }
+
+  try {
+    await tiDocumentService.generateTIDocumentPDF(tiDocument);
+    await tiDocumentService.saveTIDocument(tiDocument);
+  } catch (e) {
+    throw Exception('PDF generation failed: $e');
+  }
 });
 
 // Provider to count total TI documents (for stats)

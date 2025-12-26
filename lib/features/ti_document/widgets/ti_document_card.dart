@@ -6,239 +6,196 @@ import 'package:intl/intl.dart';
 import '../models/ti_document.dart';
 import '../../../core/theme/app_theme.dart';
 
-class TIDocumentCard extends StatelessWidget {
+class TIDocumentCard extends StatefulWidget {
   final TIDocument document;
-  final VoidCallback? onTap;
-  final VoidCallback? onDelete;
+  final VoidCallback onTap;
+  final VoidCallback? onLongPress;
+  final bool isSelectionMode;
+  final bool isSelected;
 
   const TIDocumentCard({
     super.key,
     required this.document,
-    this.onTap,
-    this.onDelete,
+    required this.onTap,
+    this.onLongPress,
+    this.isSelectionMode = false,
+    this.isSelected = false,
   });
+
+  @override
+  State<TIDocumentCard> createState() => _TIDocumentCardState();
+}
+
+class _TIDocumentCardState extends State<TIDocumentCard> {
+  bool isPressed = false;
 
   @override
   Widget build(BuildContext context) {
     final dateFormat = DateFormat('dd MMM yyyy');
+    final timeFormat = DateFormat('hh:mm a');
 
     return GestureDetector(
-      onTap: onTap,
-      child: Container(
+      onTapDown: (_) => setState(() => isPressed = true),
+      onTapUp: (_) => setState(() => isPressed = false),
+      onTapCancel: () => setState(() => isPressed = false),
+      onTap: widget.onTap,
+      onLongPress: () {
+        setState(() => isPressed = false);
+        widget.onLongPress?.call();
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        curve: Curves.easeOut,
         margin: const EdgeInsets.only(bottom: AppTheme.spacingM),
         decoration: BoxDecoration(
-          color: AppTheme.surfaceWhite,
+          color: widget.isSelected && widget.isSelectionMode
+              ? AppTheme.successGreen.withOpacity(0.08)
+              : AppTheme.surfaceWhite,
           borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
-          border: Border.all(color: AppTheme.dividerColor, width: 1),
+          border: Border.all(
+            color: widget.isSelected && widget.isSelectionMode
+                ? AppTheme.successGreen
+                : isPressed
+                ? AppTheme.successGreen.withOpacity(0.3)
+                : AppTheme.dividerColor,
+            width: widget.isSelected || isPressed ? 1.5 : 1,
+          ),
           boxShadow: [
             BoxShadow(
-              color: CupertinoColors.systemGrey.withValues(alpha: 0.08),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
+              color: CupertinoColors.systemGrey.withOpacity(
+                isPressed ? 0.15 : 0.08,
+              ),
+              blurRadius: isPressed ? 12 : 8,
+              offset: Offset(0, isPressed ? 3 : 2),
             ),
           ],
         ),
         child: Padding(
           padding: const EdgeInsets.all(AppTheme.spacingM),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Row(
             children: [
-              // Header Row
-              Row(
-                children: [
-                  // OM Number Badge
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppTheme.primaryBlue.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          CupertinoIcons.doc_text_fill,
-                          size: 14,
-                          color: AppTheme.primaryBlue,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          'OM ${document.omNumber}',
-                          style: const TextStyle(
-                            fontFamily: 'SF Pro Display',
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: AppTheme.primaryBlue,
-                          ),
-                        ),
-                      ],
-                    ),
+              // Selection indicator
+              if (widget.isSelectionMode)
+                Padding(
+                  padding: const EdgeInsets.only(right: AppTheme.spacingM),
+                  child: Icon(
+                    widget.isSelected
+                        ? CupertinoIcons.check_mark_circled_solid
+                        : CupertinoIcons.circle,
+                    color: widget.isSelected
+                        ? AppTheme.successGreen
+                        : AppTheme.textSecondary,
+                    size: 24,
                   ),
-                  const Spacer(),
-                  // Date
-                  Text(
-                    dateFormat.format(document.omDate),
-                    style: AppTheme.caption.copyWith(
-                      fontSize: 12,
-                      color: AppTheme.textSecondary,
-                    ),
-                  ),
-                  if (onDelete != null) ...[
-                    const SizedBox(width: 8),
-                    CupertinoButton(
-                      padding: EdgeInsets.zero,
-                      minSize: 0,
-                      onPressed: onDelete,
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: AppTheme.errorRed.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: const Icon(
-                          CupertinoIcons.trash,
-                          size: 14,
-                          color: AppTheme.errorRed,
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-              const SizedBox(height: AppTheme.spacingM),
+                ),
 
-              // Employee Name
-              Row(
-                children: [
-                  const Icon(
-                    CupertinoIcons.person_fill,
-                    size: 14,
-                    color: AppTheme.textSecondary,
+              // Icon
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      AppTheme.successGreen.withOpacity(0.15),
+                      AppTheme.successGreen.withOpacity(0.08),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      document.employeeName,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: AppTheme.successGreen.withOpacity(0.2),
+                    width: 1,
+                  ),
+                ),
+                child: const Icon(
+                  CupertinoIcons.doc_text_fill,
+                  color: AppTheme.successGreen,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: AppTheme.spacingM),
+
+              // Content
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'OM ${widget.document.omNumber}',
                       style: const TextStyle(
                         fontFamily: 'SF Pro Display',
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
                         color: AppTheme.textPrimary,
+                        letterSpacing: -0.24,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      widget.document.employeeName,
+                      style: AppTheme.caption.copyWith(
+                        fontSize: 13,
+                        color: AppTheme.textSecondary,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 6),
-
-              // Designation
-              Row(
-                children: [
-                  const Icon(
-                    CupertinoIcons.briefcase,
-                    size: 13,
-                    color: AppTheme.textSecondary,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    document.employeeDesignation,
-                    style: AppTheme.caption.copyWith(fontSize: 13),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppTheme.spacingS),
-
-              // Divider
-              const Divider(height: 1, color: AppTheme.dividerColor),
-              const SizedBox(height: AppTheme.spacingS),
-
-              // Division & Recommending Office
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    const SizedBox(height: 6),
+                    Row(
                       children: [
-                        Text(
-                          'Division',
-                          style: AppTheme.caption.copyWith(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                          ),
+                        const Icon(
+                          CupertinoIcons.calendar,
+                          size: 12,
+                          color: AppTheme.textSecondary,
                         ),
-                        const SizedBox(height: 2),
+                        const SizedBox(width: 4),
                         Text(
-                          document.divisionName,
-                          style: AppTheme.body2.copyWith(fontSize: 12),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                          dateFormat.format(widget.document.createdAt),
+                          style: AppTheme.caption.copyWith(fontSize: 11),
+                        ),
+                        const SizedBox(width: 12),
+                        const Icon(
+                          CupertinoIcons.time,
+                          size: 12,
+                          color: AppTheme.textSecondary,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          timeFormat.format(widget.document.createdAt),
+                          style: AppTheme.caption.copyWith(fontSize: 11),
                         ),
                       ],
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Recommending Office',
-                          style: AppTheme.caption.copyWith(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          document.recommendingOffice,
-                          style: AppTheme.body2.copyWith(fontSize: 12),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-
-              // Status Badge
-              if (document.status.isNotEmpty) ...[
-                const SizedBox(height: AppTheme.spacingS),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: _getStatusColor(document.status).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        _getStatusIcon(document.status),
-                        size: 12,
-                        color: _getStatusColor(document.status),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        document.status,
-                        style: TextStyle(
-                          fontFamily: 'SF Pro Display',
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: _getStatusColor(document.status),
-                        ),
-                      ),
-                    ],
-                  ),
+                  ],
                 ),
-              ],
+              ),
+              const SizedBox(width: AppTheme.spacingM),
+
+              // Amount & Chevron
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    '₹${_formatAmount(widget.document.amount)}',
+                    style: const TextStyle(
+                      fontFamily: 'SF Pro Display',
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.successGreen,
+                      letterSpacing: -0.41,
+                    ),
+                  ),
+                  if (!widget.isSelectionMode) ...[
+                    const SizedBox(height: 8),
+                    const Icon(
+                      CupertinoIcons.chevron_right,
+                      color: AppTheme.textSecondary,
+                      size: 16,
+                    ),
+                  ],
+                ],
+              ),
             ],
           ),
         ),
@@ -246,29 +203,8 @@ class TIDocumentCard extends StatelessWidget {
     );
   }
 
-  Color _getStatusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'generated':
-        return AppTheme.successGreen;
-      case 'draft':
-        return AppTheme.warningOrange;
-      case 'cancelled':
-        return AppTheme.errorRed;
-      default:
-        return AppTheme.primaryBlue;
-    }
-  }
-
-  IconData _getStatusIcon(String status) {
-    switch (status.toLowerCase()) {
-      case 'generated':
-        return CupertinoIcons.checkmark_circle_fill;
-      case 'draft':
-        return CupertinoIcons.clock_fill;
-      case 'cancelled':
-        return CupertinoIcons.xmark_circle_fill;
-      default:
-        return CupertinoIcons.info_circle_fill;
-    }
+  String _formatAmount(double amount) {
+    final format = NumberFormat.compact();
+    return format.format(amount);
   }
 }

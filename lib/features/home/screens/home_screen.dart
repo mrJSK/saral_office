@@ -8,7 +8,8 @@ import '../../payment_authority/screens/create_authority_screen.dart';
 import '../../payment_authority/providers/payment_authority_provider.dart';
 import '../../ti_document/screens/create_ti_document_screen.dart';
 import '../../ti_document/providers/ti_document_provider.dart';
-import '../../employee/screens/employee_management_screen.dart'; // ✅ ADD THIS
+import '../../ti_document/widgets/recent_ti_documents_list.dart';
+import '../../employee/screens/employee_management_screen.dart';
 import '../widgets/stats_card.dart';
 import '../widgets/recent_authorities_list.dart';
 import '../widgets/quick_action_button.dart';
@@ -21,7 +22,8 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
+  // ← ADD WidgetsBindingObserver
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
@@ -29,6 +31,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   @override
   void initState() {
     super.initState();
+
+    // ✅ ADD: Register observer for app lifecycle
+    WidgetsBinding.instance.addObserver(this);
+
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 600),
       vsync: this,
@@ -49,8 +55,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   @override
   void dispose() {
+    // ✅ ADD: Remove observer
+    WidgetsBinding.instance.removeObserver(this);
     _animationController.dispose();
     super.dispose();
+  }
+
+  // ✅ ADD: Listen for app lifecycle changes
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // Refresh data when app comes back to foreground
+      _refreshData();
+    }
+  }
+
+  // ✅ ADD: Refresh all providers
+  void _refreshData() {
+    ref.invalidate(recentAuthoritiesProvider);
+    ref.invalidate(recentTIDocumentsProvider);
   }
 
   @override
@@ -79,6 +102,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               child: const Icon(CupertinoIcons.settings, size: 24),
             ),
           ),
+
           // Content
           SliverToBoxAdapter(
             child: FadeTransition(
@@ -93,14 +117,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                       // Welcome Section
                       _buildWelcomeSection(),
                       const SizedBox(height: AppTheme.spacingL),
+
                       // Quick Actions
                       _buildQuickActions(),
                       const SizedBox(height: AppTheme.spacingXL),
+
                       // Stats Section
                       _buildStatsSection(),
                       const SizedBox(height: AppTheme.spacingXL),
-                      // Recent Authorities
-                      _buildRecentSection(),
+
+                      // Recent Payment Authorities
+                      _buildRecentAuthoritiesSection(),
+                      const SizedBox(height: AppTheme.spacingXL),
+
+                      // Recent TI Documents
+                      _buildRecentTIDocumentsSection(),
+                      const SizedBox(height: AppTheme.spacingXL),
                     ],
                   ),
                 ),
@@ -131,7 +163,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           style: AppTheme.headline3.copyWith(color: AppTheme.textSecondary),
         ),
         const SizedBox(height: 4),
-        Text('Ready to create payment authorities?', style: AppTheme.body2),
+        Text('Ready to create documents?', style: AppTheme.body2),
       ],
     );
   }
@@ -165,6 +197,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             subtitle: 'Generate transfer information PDFs',
             iconColor: AppTheme.successGreen,
             onTap: () => _navigateToCreateTIDocument(),
+          ),
+          const Divider(height: 1, color: AppTheme.dividerColor),
+          QuickActionButton(
+            icon: CupertinoIcons.person_2_fill,
+            title: 'Manage Employees',
+            subtitle: 'Add or edit employee information',
+            iconColor: AppTheme.warningOrange,
+            onTap: () => _navigateToEmployeeManagement(),
           ),
         ],
       ),
@@ -308,25 +348,39 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     );
   }
 
-  Widget _buildRecentSection() {
+  Widget _buildRecentAuthoritiesSection() {
     return const RecentAuthoritiesList();
   }
 
-  void _navigateToCreateAuthority() {
+  Widget _buildRecentTIDocumentsSection() {
+    return const RecentTIDocumentsList();
+  }
+
+  // ✅ UPDATED: Refresh data when returning from create screens
+  void _navigateToCreateAuthority() async {
     ref.read(paymentAuthorityProvider.notifier).reset();
-    Navigator.of(
+    await Navigator.of(
       context,
     ).push(CupertinoPageRoute(builder: (_) => const CreateAuthorityScreen()));
+    // Refresh data after returning
+    _refreshData();
   }
 
-  void _navigateToCreateTIDocument() {
+  void _navigateToCreateTIDocument() async {
     ref.read(tiDocumentProvider.notifier).reset();
-    Navigator.of(
+    await Navigator.of(
       context,
     ).push(CupertinoPageRoute(builder: (_) => const CreateTIDocumentScreen()));
+    // Refresh data after returning
+    _refreshData();
   }
 
-  // ✅ UPDATED SETTINGS SHEET - ONLY EMPLOYEE MANAGEMENT
+  void _navigateToEmployeeManagement() {
+    Navigator.of(context).push(
+      CupertinoPageRoute(builder: (_) => const EmployeeManagementScreen()),
+    );
+  }
+
   void _showSettingsSheet(BuildContext context) {
     showCupertinoModalPopup(
       context: context,
@@ -337,12 +391,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           CupertinoActionSheetAction(
             onPressed: () {
               Navigator.pop(context);
-              Navigator.push(
-                context,
-                CupertinoPageRoute(
-                  builder: (_) => const EmployeeManagementScreen(),
-                ),
-              );
+              _navigateToEmployeeManagement();
             },
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,

@@ -4,10 +4,12 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:isar/isar.dart';
+import 'package:saral_office/core/di/injection.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/database/models/division.dart';
 import '../../employee/models/employee.dart';
-import '../../employee/screens/employee_management_screen.dart'; // ✅ ADD THIS
+import '../../employee/screens/employee_management_screen.dart';
 import '../providers/ti_document_provider.dart';
 import '../../payment_authority/widgets/ios_text_field.dart';
 import '../../payment_authority/widgets/division_search_field.dart';
@@ -29,6 +31,7 @@ class _CreateTIDocumentScreenState extends ConsumerState<CreateTIDocumentScreen>
 
   // Controllers
   final _omNumberController = TextEditingController();
+  final _amountController = TextEditingController();
   final _recommendingOfficeController = TextEditingController();
   final _letterNumberController = TextEditingController();
 
@@ -52,6 +55,73 @@ class _CreateTIDocumentScreenState extends ConsumerState<CreateTIDocumentScreen>
       curve: Curves.easeOut,
     );
     _animationController.forward();
+
+    // ✅ LOAD DATA FROM PROVIDER (after widget is built)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadFromProvider();
+    });
+  }
+
+  // ✅ NEW: Load data from provider into UI
+  void _loadFromProvider() async {
+    final document = ref.read(tiDocumentProvider);
+
+    // Populate text controllers
+    if (document.omNumber != null) {
+      _omNumberController.text = document.omNumber!;
+    }
+    if (document.amount != null) {
+      _amountController.text = document.amount!.toStringAsFixed(0);
+    }
+    if (document.recommendingOffice != null) {
+      _omNumberController.text = document.omNumber!;
+    }
+    if (document.recommendingOffice != null) {
+      _recommendingOfficeController.text = document.recommendingOffice!;
+    }
+    if (document.letterNumber != null) {
+      _letterNumberController.text = document.letterNumber!;
+    }
+
+    // Populate dates
+    if (document.omDate != null) {
+      setState(() => _omDate = document.omDate!);
+    }
+    if (document.letterDate != null) {
+      setState(() => _letterDate = document.letterDate!);
+    }
+
+    // Populate Division (need to fetch from database)
+    if (document.divisionName != null && document.fundsCenter != null) {
+      try {
+        final isar = ref.read(isarProvider);
+        final division = await isar.divisions
+            .filter()
+            .nameEqualTo(document.divisionName!)
+            .findFirst();
+        if (division != null && mounted) {
+          setState(() => _selectedDivision = division);
+        }
+      } catch (e) {
+        debugPrint('Error loading division: $e');
+      }
+    }
+
+    // Populate Employee (need to fetch from database)
+    if (document.employeeSapId != null) {
+      try {
+        final isar = ref.read(isarProvider);
+        final employee = await isar.employees
+            .filter()
+            .sapIdEqualTo(document.employeeSapId!)
+            .findFirst();
+        if (employee != null && mounted) {
+          setState(() => _selectedEmployee = employee);
+        }
+      } catch (e) {
+        debugPrint('Error loading employee: $e');
+      }
+    }
   }
 
   @override
@@ -59,6 +129,7 @@ class _CreateTIDocumentScreenState extends ConsumerState<CreateTIDocumentScreen>
     _animationController.dispose();
     _scrollController.dispose();
     _omNumberController.dispose();
+    _amountController.dispose();
     _recommendingOfficeController.dispose();
     _letterNumberController.dispose();
     super.dispose();
@@ -81,12 +152,20 @@ class _CreateTIDocumentScreenState extends ConsumerState<CreateTIDocumentScreen>
     if (_selectedEmployee != null) {
       notifier.updateEmployee(_selectedEmployee!);
     }
+    if (_amountController.text.trim().isNotEmpty) {
+      final amount = double.tryParse(_amountController.text.trim()) ?? 0.0;
+      notifier.updateAmount(amount);
+    }
   }
 
   Future<void> _generatePDF() async {
     // Validate all fields
     if (_omNumberController.text.trim().isEmpty) {
       _showErrorDialog('Please enter OM Number');
+      return;
+    }
+    if (_amountController.text.trim().isEmpty) {
+      _showErrorDialog('Please enter Amount');
       return;
     }
     if (_recommendingOfficeController.text.trim().isEmpty) {
@@ -116,7 +195,7 @@ class _CreateTIDocumentScreenState extends ConsumerState<CreateTIDocumentScreen>
       await ref.read(tiDocumentProvider.notifier).generateAndSavePDF();
 
       if (mounted) {
-        // ✅ UPDATED: Success dialog for single PDF
+        // Success dialog
         showCupertinoDialog(
           context: context,
           barrierDismissible: false,
@@ -232,7 +311,6 @@ class _CreateTIDocumentScreenState extends ConsumerState<CreateTIDocumentScreen>
     );
   }
 
-  // ✅ UPDATED: Use Employee Management Screen for selection
   void _showEmployeeSelector() {
     Navigator.push(
       context,
@@ -251,6 +329,7 @@ class _CreateTIDocumentScreenState extends ConsumerState<CreateTIDocumentScreen>
     // Check if any data has been entered
     final hasData =
         _omNumberController.text.isNotEmpty ||
+        _amountController.text.isNotEmpty ||
         _recommendingOfficeController.text.isNotEmpty ||
         _letterNumberController.text.isNotEmpty ||
         _selectedDivision != null ||
@@ -290,6 +369,7 @@ class _CreateTIDocumentScreenState extends ConsumerState<CreateTIDocumentScreen>
   Widget build(BuildContext context) {
     final canGenerate =
         _omNumberController.text.trim().isNotEmpty &&
+        _amountController.text.trim().isNotEmpty &&
         _recommendingOfficeController.text.trim().isNotEmpty &&
         _letterNumberController.text.trim().isNotEmpty &&
         _selectedDivision != null &&
@@ -350,9 +430,28 @@ class _CreateTIDocumentScreenState extends ConsumerState<CreateTIDocumentScreen>
                   ]),
                   const SizedBox(height: 24),
 
-                  // Section 2: Recommending Office
+                  // Section 2: Amount
                   _buildSectionHeader(
-                    '2. Recommending Office',
+                    '2. Amount',
+                    CupertinoIcons.money_dollar_circle,
+                  ),
+                  const SizedBox(height: 10),
+                  _buildSectionCard([
+                    IOSTextField(
+                      controller: _amountController,
+                      label: 'Amount (Rs.)',
+                      placeholder: 'e.g. 10000',
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      onChanged: (_) => setState(() {}),
+                    ),
+                  ]),
+                  const SizedBox(height: 24),
+
+                  // Section 3: Recommending Office
+                  _buildSectionHeader(
+                    '3. Recommending Office',
                     CupertinoIcons.building_2_fill,
                   ),
                   const SizedBox(height: 10),
@@ -380,9 +479,9 @@ class _CreateTIDocumentScreenState extends ConsumerState<CreateTIDocumentScreen>
                   ]),
                   const SizedBox(height: 24),
 
-                  // Section 3: Division & Employee
+                  // Section 4: Division & Employee
                   _buildSectionHeader(
-                    '3. Division & Employee',
+                    '4. Division & Employee',
                     CupertinoIcons.person_2_fill,
                   ),
                   const SizedBox(height: 10),
@@ -395,7 +494,7 @@ class _CreateTIDocumentScreenState extends ConsumerState<CreateTIDocumentScreen>
                       },
                     ),
                     const Divider(height: 24, color: AppTheme.dividerColor),
-                    // ✅ Employee Selection Field
+                    // Employee Selection Field
                     _buildSelectionField(
                       label: 'Employee',
                       value: _selectedEmployee?.displayText,
@@ -507,7 +606,7 @@ class _CreateTIDocumentScreenState extends ConsumerState<CreateTIDocumentScreen>
           ),
         ),
 
-        // ✅ UPDATED: Loading Overlay
+        // Loading Overlay
         if (_isGeneratingPdf)
           Container(
             color: Colors.black.withOpacity(0.4),

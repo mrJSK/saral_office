@@ -12,16 +12,19 @@ class TIDocument {
   late String omNumber;
   late DateTime omDate;
 
-  // 2. Recommending Office Details
+  // 2. Amount (NEW)
+  late double amount;
+
+  // 3. Recommending Office Details
   late String recommendingOffice;
   late String letterNumber;
   late DateTime letterDate;
 
-  // 3. Division Details
+  // 4. Division Details
   late String divisionName;
   late String fundsCenter;
 
-  // 4. Employee Details (Person creating/opening the TI)
+  // 5. Employee Details (Person creating/opening the TI)
   late String employeeName;
   late String employeeDesignation;
   late String employeeSapId;
@@ -41,40 +44,44 @@ class TIDocument {
 
 class TIDocumentModel {
   // 1. OM Details
-  final String omNumber;
-  final DateTime omDate;
+  final String? omNumber;
+  final DateTime? omDate;
 
-  // 2. Recommending Office
-  final String recommendingOffice;
-  final String letterNumber;
-  final DateTime letterDate;
+  // 2. Amount (NEW)
+  final double? amount;
 
-  // 3. Division
-  final String divisionName;
-  final String fundsCenter;
+  // 3. Recommending Office
+  final String? recommendingOffice;
+  final String? letterNumber;
+  final DateTime? letterDate;
 
-  // 4. Employee
-  final String employeeName;
-  final String employeeDesignation;
-  final String employeeSapId;
+  // 4. Division
+  final String? divisionName;
+  final String? fundsCenter;
+
+  // 5. Employee
+  final String? employeeName;
+  final String? employeeDesignation;
+  final String? employeeSapId;
 
   TIDocumentModel({
-    this.omNumber = '',
-    DateTime? omDate,
-    this.recommendingOffice = '',
-    this.letterNumber = '',
-    DateTime? letterDate,
-    this.divisionName = '',
-    this.fundsCenter = '',
-    this.employeeName = '',
-    this.employeeDesignation = '',
-    this.employeeSapId = '',
-  }) : omDate = omDate ?? DateTime.now(),
-       letterDate = letterDate ?? DateTime.now();
+    this.omNumber,
+    this.omDate,
+    this.amount, // ← NEW
+    this.recommendingOffice,
+    this.letterNumber,
+    this.letterDate,
+    this.divisionName,
+    this.fundsCenter,
+    this.employeeName,
+    this.employeeDesignation,
+    this.employeeSapId,
+  });
 
   TIDocumentModel copyWith({
     String? omNumber,
     DateTime? omDate,
+    double? amount, // ← NEW
     String? recommendingOffice,
     String? letterNumber,
     DateTime? letterDate,
@@ -87,6 +94,7 @@ class TIDocumentModel {
     return TIDocumentModel(
       omNumber: omNumber ?? this.omNumber,
       omDate: omDate ?? this.omDate,
+      amount: amount ?? this.amount, // ← NEW
       recommendingOffice: recommendingOffice ?? this.recommendingOffice,
       letterNumber: letterNumber ?? this.letterNumber,
       letterDate: letterDate ?? this.letterDate,
@@ -100,26 +108,36 @@ class TIDocumentModel {
 
   // Validation
   bool get isValid {
-    return omNumber.isNotEmpty &&
-        recommendingOffice.isNotEmpty &&
-        letterNumber.isNotEmpty &&
-        divisionName.isNotEmpty &&
-        employeeName.isNotEmpty;
+    return omNumber != null &&
+        omNumber!.isNotEmpty &&
+        amount != null &&
+        amount! > 0 && // ← NEW: Validate amount
+        recommendingOffice != null &&
+        recommendingOffice!.isNotEmpty &&
+        letterNumber != null &&
+        letterNumber!.isNotEmpty &&
+        divisionName != null &&
+        divisionName!.isNotEmpty &&
+        employeeName != null &&
+        employeeName!.isNotEmpty;
   }
 
   // Convert to Isar Document
   TIDocument toIsarDocument() {
     return TIDocument()
-      ..omNumber = omNumber
-      ..omDate = omDate
-      ..recommendingOffice = recommendingOffice
-      ..letterNumber = letterNumber
-      ..letterDate = letterDate
-      ..divisionName = divisionName
-      ..fundsCenter = fundsCenter
-      ..employeeName = employeeName
-      ..employeeDesignation = employeeDesignation
-      ..employeeSapId = employeeSapId
+      ..omNumber = omNumber ?? ''
+      ..omDate = omDate ?? DateTime.now()
+      ..amount =
+          amount ??
+          0.0 // ← NEW
+      ..recommendingOffice = recommendingOffice ?? ''
+      ..letterNumber = letterNumber ?? ''
+      ..letterDate = letterDate ?? DateTime.now()
+      ..divisionName = divisionName ?? ''
+      ..fundsCenter = fundsCenter ?? ''
+      ..employeeName = employeeName ?? ''
+      ..employeeDesignation = employeeDesignation ?? ''
+      ..employeeSapId = employeeSapId ?? ''
       ..createdAt = DateTime.now()
       ..updatedAt = DateTime.now()
       ..status = 'Generated'
@@ -131,10 +149,11 @@ class TIDocumentModel {
     return '''
     {
       "omNumber": "$omNumber",
-      "omDate": "${omDate.toIso8601String()}",
+      "omDate": "${omDate?.toIso8601String()}",
+      "amount": $amount,
       "recommendingOffice": "$recommendingOffice",
       "letterNumber": "$letterNumber",
-      "letterDate": "${letterDate.toIso8601String()}",
+      "letterDate": "${letterDate?.toIso8601String()}",
       "divisionName": "$divisionName",
       "fundsCenter": "$fundsCenter",
       "employeeName": "$employeeName",
@@ -149,6 +168,7 @@ class TIDocumentModel {
     return TIDocumentModel(
       omNumber: doc.omNumber,
       omDate: doc.omDate,
+      amount: doc.amount, // ← NEW
       recommendingOffice: doc.recommendingOffice,
       letterNumber: doc.letterNumber,
       letterDate: doc.letterDate,

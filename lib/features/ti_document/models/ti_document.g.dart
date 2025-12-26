@@ -17,78 +17,83 @@ const TIDocumentSchema = CollectionSchema(
   name: r'TIDocument',
   id: 5414531582560378530,
   properties: {
-    r'createdAt': PropertySchema(
+    r'amount': PropertySchema(
       id: 0,
+      name: r'amount',
+      type: IsarType.double,
+    ),
+    r'createdAt': PropertySchema(
+      id: 1,
       name: r'createdAt',
       type: IsarType.dateTime,
     ),
     r'divisionName': PropertySchema(
-      id: 1,
+      id: 2,
       name: r'divisionName',
       type: IsarType.string,
     ),
     r'employeeDesignation': PropertySchema(
-      id: 2,
+      id: 3,
       name: r'employeeDesignation',
       type: IsarType.string,
     ),
     r'employeeName': PropertySchema(
-      id: 3,
+      id: 4,
       name: r'employeeName',
       type: IsarType.string,
     ),
     r'employeeSapId': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'employeeSapId',
       type: IsarType.string,
     ),
     r'fullJsonData': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'fullJsonData',
       type: IsarType.string,
     ),
     r'fundsCenter': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'fundsCenter',
       type: IsarType.string,
     ),
     r'letterDate': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'letterDate',
       type: IsarType.dateTime,
     ),
     r'letterNumber': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'letterNumber',
       type: IsarType.string,
     ),
     r'omDate': PropertySchema(
-      id: 9,
+      id: 10,
       name: r'omDate',
       type: IsarType.dateTime,
     ),
     r'omNumber': PropertySchema(
-      id: 10,
+      id: 11,
       name: r'omNumber',
       type: IsarType.string,
     ),
     r'pdfPath': PropertySchema(
-      id: 11,
+      id: 12,
       name: r'pdfPath',
       type: IsarType.string,
     ),
     r'recommendingOffice': PropertySchema(
-      id: 12,
+      id: 13,
       name: r'recommendingOffice',
       type: IsarType.string,
     ),
     r'status': PropertySchema(
-      id: 13,
+      id: 14,
       name: r'status',
       type: IsarType.string,
     ),
     r'updatedAt': PropertySchema(
-      id: 14,
+      id: 15,
       name: r'updatedAt',
       type: IsarType.dateTime,
     )
@@ -143,21 +148,22 @@ void _tIDocumentSerialize(
   List<int> offsets,
   Map<Type, List<int>> allOffsets,
 ) {
-  writer.writeDateTime(offsets[0], object.createdAt);
-  writer.writeString(offsets[1], object.divisionName);
-  writer.writeString(offsets[2], object.employeeDesignation);
-  writer.writeString(offsets[3], object.employeeName);
-  writer.writeString(offsets[4], object.employeeSapId);
-  writer.writeString(offsets[5], object.fullJsonData);
-  writer.writeString(offsets[6], object.fundsCenter);
-  writer.writeDateTime(offsets[7], object.letterDate);
-  writer.writeString(offsets[8], object.letterNumber);
-  writer.writeDateTime(offsets[9], object.omDate);
-  writer.writeString(offsets[10], object.omNumber);
-  writer.writeString(offsets[11], object.pdfPath);
-  writer.writeString(offsets[12], object.recommendingOffice);
-  writer.writeString(offsets[13], object.status);
-  writer.writeDateTime(offsets[14], object.updatedAt);
+  writer.writeDouble(offsets[0], object.amount);
+  writer.writeDateTime(offsets[1], object.createdAt);
+  writer.writeString(offsets[2], object.divisionName);
+  writer.writeString(offsets[3], object.employeeDesignation);
+  writer.writeString(offsets[4], object.employeeName);
+  writer.writeString(offsets[5], object.employeeSapId);
+  writer.writeString(offsets[6], object.fullJsonData);
+  writer.writeString(offsets[7], object.fundsCenter);
+  writer.writeDateTime(offsets[8], object.letterDate);
+  writer.writeString(offsets[9], object.letterNumber);
+  writer.writeDateTime(offsets[10], object.omDate);
+  writer.writeString(offsets[11], object.omNumber);
+  writer.writeString(offsets[12], object.pdfPath);
+  writer.writeString(offsets[13], object.recommendingOffice);
+  writer.writeString(offsets[14], object.status);
+  writer.writeDateTime(offsets[15], object.updatedAt);
 }
 
 TIDocument _tIDocumentDeserialize(
@@ -167,22 +173,23 @@ TIDocument _tIDocumentDeserialize(
   Map<Type, List<int>> allOffsets,
 ) {
   final object = TIDocument();
-  object.createdAt = reader.readDateTime(offsets[0]);
-  object.divisionName = reader.readString(offsets[1]);
-  object.employeeDesignation = reader.readString(offsets[2]);
-  object.employeeName = reader.readString(offsets[3]);
-  object.employeeSapId = reader.readString(offsets[4]);
-  object.fullJsonData = reader.readStringOrNull(offsets[5]);
-  object.fundsCenter = reader.readString(offsets[6]);
+  object.amount = reader.readDouble(offsets[0]);
+  object.createdAt = reader.readDateTime(offsets[1]);
+  object.divisionName = reader.readString(offsets[2]);
+  object.employeeDesignation = reader.readString(offsets[3]);
+  object.employeeName = reader.readString(offsets[4]);
+  object.employeeSapId = reader.readString(offsets[5]);
+  object.fullJsonData = reader.readStringOrNull(offsets[6]);
+  object.fundsCenter = reader.readString(offsets[7]);
   object.id = id;
-  object.letterDate = reader.readDateTime(offsets[7]);
-  object.letterNumber = reader.readString(offsets[8]);
-  object.omDate = reader.readDateTime(offsets[9]);
-  object.omNumber = reader.readString(offsets[10]);
-  object.pdfPath = reader.readStringOrNull(offsets[11]);
-  object.recommendingOffice = reader.readString(offsets[12]);
-  object.status = reader.readString(offsets[13]);
-  object.updatedAt = reader.readDateTime(offsets[14]);
+  object.letterDate = reader.readDateTime(offsets[8]);
+  object.letterNumber = reader.readString(offsets[9]);
+  object.omDate = reader.readDateTime(offsets[10]);
+  object.omNumber = reader.readString(offsets[11]);
+  object.pdfPath = reader.readStringOrNull(offsets[12]);
+  object.recommendingOffice = reader.readString(offsets[13]);
+  object.status = reader.readString(offsets[14]);
+  object.updatedAt = reader.readDateTime(offsets[15]);
   return object;
 }
 
@@ -194,9 +201,9 @@ P _tIDocumentDeserializeProp<P>(
 ) {
   switch (propertyId) {
     case 0:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readDouble(offset)) as P;
     case 1:
-      return (reader.readString(offset)) as P;
+      return (reader.readDateTime(offset)) as P;
     case 2:
       return (reader.readString(offset)) as P;
     case 3:
@@ -204,24 +211,26 @@ P _tIDocumentDeserializeProp<P>(
     case 4:
       return (reader.readString(offset)) as P;
     case 5:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 6:
-      return (reader.readString(offset)) as P;
-    case 7:
-      return (reader.readDateTime(offset)) as P;
-    case 8:
-      return (reader.readString(offset)) as P;
-    case 9:
-      return (reader.readDateTime(offset)) as P;
-    case 10:
-      return (reader.readString(offset)) as P;
-    case 11:
       return (reader.readStringOrNull(offset)) as P;
-    case 12:
+    case 7:
       return (reader.readString(offset)) as P;
+    case 8:
+      return (reader.readDateTime(offset)) as P;
+    case 9:
+      return (reader.readString(offset)) as P;
+    case 10:
+      return (reader.readDateTime(offset)) as P;
+    case 11:
+      return (reader.readString(offset)) as P;
+    case 12:
+      return (reader.readStringOrNull(offset)) as P;
     case 13:
       return (reader.readString(offset)) as P;
     case 14:
+      return (reader.readString(offset)) as P;
+    case 15:
       return (reader.readDateTime(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -319,6 +328,68 @@ extension TIDocumentQueryWhere
 
 extension TIDocumentQueryFilter
     on QueryBuilder<TIDocument, TIDocument, QFilterCondition> {
+  QueryBuilder<TIDocument, TIDocument, QAfterFilterCondition> amountEqualTo(
+    double value, {
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'amount',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<TIDocument, TIDocument, QAfterFilterCondition> amountGreaterThan(
+    double value, {
+    bool include = false,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'amount',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<TIDocument, TIDocument, QAfterFilterCondition> amountLessThan(
+    double value, {
+    bool include = false,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'amount',
+        value: value,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
+  QueryBuilder<TIDocument, TIDocument, QAfterFilterCondition> amountBetween(
+    double lower,
+    double upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    double epsilon = Query.epsilon,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'amount',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        epsilon: epsilon,
+      ));
+    });
+  }
+
   QueryBuilder<TIDocument, TIDocument, QAfterFilterCondition> createdAtEqualTo(
       DateTime value) {
     return QueryBuilder.apply(this, (query) {
@@ -2117,6 +2188,18 @@ extension TIDocumentQueryLinks
 
 extension TIDocumentQuerySortBy
     on QueryBuilder<TIDocument, TIDocument, QSortBy> {
+  QueryBuilder<TIDocument, TIDocument, QAfterSortBy> sortByAmount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'amount', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TIDocument, TIDocument, QAfterSortBy> sortByAmountDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'amount', Sort.desc);
+    });
+  }
+
   QueryBuilder<TIDocument, TIDocument, QAfterSortBy> sortByCreatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'createdAt', Sort.asc);
@@ -2304,6 +2387,18 @@ extension TIDocumentQuerySortBy
 
 extension TIDocumentQuerySortThenBy
     on QueryBuilder<TIDocument, TIDocument, QSortThenBy> {
+  QueryBuilder<TIDocument, TIDocument, QAfterSortBy> thenByAmount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'amount', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TIDocument, TIDocument, QAfterSortBy> thenByAmountDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'amount', Sort.desc);
+    });
+  }
+
   QueryBuilder<TIDocument, TIDocument, QAfterSortBy> thenByCreatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'createdAt', Sort.asc);
@@ -2503,6 +2598,12 @@ extension TIDocumentQuerySortThenBy
 
 extension TIDocumentQueryWhereDistinct
     on QueryBuilder<TIDocument, TIDocument, QDistinct> {
+  QueryBuilder<TIDocument, TIDocument, QDistinct> distinctByAmount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'amount');
+    });
+  }
+
   QueryBuilder<TIDocument, TIDocument, QDistinct> distinctByCreatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'createdAt');
@@ -2613,6 +2714,12 @@ extension TIDocumentQueryProperty
   QueryBuilder<TIDocument, int, QQueryOperations> idProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'id');
+    });
+  }
+
+  QueryBuilder<TIDocument, double, QQueryOperations> amountProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'amount');
     });
   }
 
