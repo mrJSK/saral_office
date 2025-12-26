@@ -11,10 +11,10 @@ class IOSTextField extends StatelessWidget {
   final int maxLines;
   final Widget? prefix;
   final Widget? suffix;
-
-  /// Optional background color for the text field area.
-  /// Defaults to AppTheme.backgroundLight to keep existing UI unchanged.
   final Color? fillColor;
+  final TextCapitalization textCapitalization;
+  final void Function(String)? onChanged;
+  final bool enabled;
 
   const IOSTextField({
     super.key,
@@ -26,6 +26,9 @@ class IOSTextField extends StatelessWidget {
     this.prefix,
     this.suffix,
     this.fillColor,
+    this.textCapitalization = TextCapitalization.none,
+    this.onChanged,
+    this.enabled = true,
   });
 
   @override
@@ -46,6 +49,9 @@ class IOSTextField extends StatelessWidget {
           placeholder: placeholder,
           keyboardType: keyboardType,
           maxLines: maxLines,
+          textCapitalization: textCapitalization,
+          onChanged: onChanged,
+          enabled: enabled,
           prefix: prefix != null
               ? Padding(padding: const EdgeInsets.only(left: 12), child: prefix)
               : null,
@@ -57,11 +63,21 @@ class IOSTextField extends StatelessWidget {
               : null,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           decoration: BoxDecoration(
-            color: fillColor ?? AppTheme.backgroundLight,
+            color: enabled
+                ? (fillColor ?? AppTheme.backgroundLight)
+                : AppTheme.backgroundLight.withOpacity(0.5),
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: AppTheme.dividerColor, width: 1),
+            border: Border.all(
+              color: enabled
+                  ? AppTheme.dividerColor
+                  : AppTheme.dividerColor.withOpacity(0.5),
+              width: 1,
+            ),
           ),
-          style: AppTheme.body1.copyWith(fontSize: 15),
+          style: AppTheme.body1.copyWith(
+            fontSize: 15,
+            color: enabled ? AppTheme.textPrimary : AppTheme.textSecondary,
+          ),
           placeholderStyle: AppTheme.body2,
         ),
       ],

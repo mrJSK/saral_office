@@ -1,6 +1,8 @@
 // lib/core/di/injection.dart
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:isar/isar.dart';
 import 'package:saral_office/core/database/services/isar_service.dart';
 
 // ✅ GLOBAL variables (outside any function)
@@ -29,3 +31,18 @@ IsarService getIsarService() {
   }
   return _isarServiceInstance!;
 }
+
+// ============================================================================
+// ✅ RIVERPOD PROVIDERS - ADD THESE
+// ============================================================================
+
+/// Provider for IsarService singleton
+final isarServiceProvider = Provider<IsarService>((ref) {
+  return getIsarService();
+});
+
+/// Provider for Isar instance
+final isarProvider = Provider<Isar>((ref) {
+  final service = ref.watch(isarServiceProvider);
+  return service.isar;
+});

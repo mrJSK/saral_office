@@ -10,6 +10,8 @@ import 'package:saral_office/core/database/models/recent_division.dart';
 import 'package:saral_office/core/database/models/recent_gl.dart';
 import 'package:saral_office/core/database/models/recent_vendor.dart';
 import 'package:saral_office/core/database/models/saved_authority.dart'; // Added import
+import 'package:saral_office/features/employee/models/employee.dart';
+import 'package:saral_office/features/ti_document/models/ti_document.dart';
 import '../models/vendor.dart';
 import '../models/gl_account.dart';
 import '../models/division.dart';
@@ -35,6 +37,8 @@ class IsarService {
           RecentVendorSchema,
           RecentDivisionSchema,
           SavedAuthoritySchema, // Added Schema
+          TIDocumentSchema,
+          EmployeeSchema,
         ],
         directory: dir.path,
         inspector: kDebugMode,

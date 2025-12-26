@@ -1,14 +1,14 @@
+// lib/features/home/screens/home_screen.dart
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:saral_office/core/database/models/division.dart';
-import 'package:saral_office/core/database/models/gl_account.dart';
-import 'package:saral_office/core/database/models/vendor.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/di/injection.dart';
-import '../../../core/database/services/isar_service.dart';
 import '../../payment_authority/screens/create_authority_screen.dart';
 import '../../payment_authority/providers/payment_authority_provider.dart';
+import '../../ti_document/screens/create_ti_document_screen.dart';
+import '../../ti_document/providers/ti_document_provider.dart';
+import '../../employee/screens/employee_management_screen.dart'; // ✅ ADD THIS
 import '../widgets/stats_card.dart';
 import '../widgets/recent_authorities_list.dart';
 import '../widgets/quick_action_button.dart';
@@ -29,17 +29,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   @override
   void initState() {
     super.initState();
-
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 600),
       vsync: this,
     );
-
     _fadeAnimation = CurvedAnimation(
       parent: _animationController,
       curve: Curves.easeOut,
     );
-
     _slideAnimation =
         Tween<Offset>(begin: const Offset(0, 0.1), end: Offset.zero).animate(
           CurvedAnimation(
@@ -47,7 +44,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             curve: Curves.easeOutCubic,
           ),
         );
-
     _animationController.forward();
   }
 
@@ -83,7 +79,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               child: const Icon(CupertinoIcons.settings, size: 24),
             ),
           ),
-
           // Content
           SliverToBoxAdapter(
             child: FadeTransition(
@@ -97,19 +92,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     children: [
                       // Welcome Section
                       _buildWelcomeSection(),
-
                       const SizedBox(height: AppTheme.spacingL),
-
                       // Quick Actions
                       _buildQuickActions(),
-
                       const SizedBox(height: AppTheme.spacingXL),
-
-                      // Stats Section - NOW WITH REAL DATA
+                      // Stats Section
                       _buildStatsSection(),
-
                       const SizedBox(height: AppTheme.spacingXL),
-
                       // Recent Authorities
                       _buildRecentSection(),
                     ],
@@ -126,7 +115,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   Widget _buildWelcomeSection() {
     final hour = DateTime.now().hour;
     String greeting;
-
     if (hour < 12) {
       greeting = 'Good Morning';
     } else if (hour < 17) {
@@ -170,35 +158,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             iconColor: AppTheme.primaryBlue,
             onTap: () => _navigateToCreateAuthority(),
           ),
-
           const Divider(height: 1, color: AppTheme.dividerColor),
-
           QuickActionButton(
-            icon: CupertinoIcons.search,
-            title: 'Search Vendors',
-            subtitle: 'Find vendor details quickly',
-            iconColor: AppTheme.secondaryBlue,
-            onTap: () => _navigateToVendorSearch(),
-          ),
-
-          const Divider(height: 1, color: AppTheme.dividerColor),
-
-          QuickActionButton(
-            icon: CupertinoIcons.doc_text_search,
-            title: 'Browse GL Accounts',
-            subtitle: 'View all GL codes',
-            iconColor: AppTheme.warningOrange,
-            onTap: () => _navigateToGLBrowser(),
-          ),
-
-          const Divider(height: 1, color: AppTheme.dividerColor),
-
-          QuickActionButton(
-            icon: CupertinoIcons.chart_bar_square,
-            title: 'View History',
-            subtitle: 'Past payment authorities',
+            icon: CupertinoIcons.doc_append,
+            title: 'Create TI Document',
+            subtitle: 'Generate transfer information PDFs',
             iconColor: AppTheme.successGreen,
-            onTap: () => _navigateToHistory(),
+            onTap: () => _navigateToCreateTIDocument(),
           ),
         ],
       ),
@@ -211,18 +177,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       children: [
         Text('Statistics', style: AppTheme.headline3),
         const SizedBox(height: AppTheme.spacingM),
-
-        // Watch the authorities provider for real data
         Consumer(
           builder: (context, ref, child) {
             final authoritiesAsync = ref.watch(recentAuthoritiesProvider);
-
             return authoritiesAsync.when(
               data: (authorities) {
-                // Calculate real stats
                 final totalCount = authorities.length;
-
-                // This month's count
                 final now = DateTime.now();
                 final thisMonthCount = authorities
                     .where(
@@ -231,8 +191,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                           a.createdAt.month == now.month,
                     )
                     .length;
-
-                // This month's total amount
                 final thisMonthAmount = authorities
                     .where(
                       (a) =>
@@ -241,7 +199,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     )
                     .fold(0.0, (sum, a) => sum + a.amount);
 
-                // Format amount
                 String formattedAmount;
                 if (thisMonthAmount >= 100000) {
                   formattedAmount =
@@ -356,56 +313,49 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   }
 
   void _navigateToCreateAuthority() {
-    // Reset the provider to ensure clean state for new authority
     ref.read(paymentAuthorityProvider.notifier).reset();
-
     Navigator.of(
       context,
     ).push(CupertinoPageRoute(builder: (_) => const CreateAuthorityScreen()));
   }
 
-  void _navigateToVendorSearch() {
-    // TODO: Implement vendor search screen
-    _showComingSoon('Vendor Search');
+  void _navigateToCreateTIDocument() {
+    ref.read(tiDocumentProvider.notifier).reset();
+    Navigator.of(
+      context,
+    ).push(CupertinoPageRoute(builder: (_) => const CreateTIDocumentScreen()));
   }
 
-  void _navigateToGLBrowser() {
-    // TODO: Implement GL browser screen
-    _showComingSoon('GL Browser');
-  }
-
-  void _navigateToHistory() {
-    // TODO: Implement history screen
-    _showComingSoon('History');
-  }
-
+  // ✅ UPDATED SETTINGS SHEET - ONLY EMPLOYEE MANAGEMENT
   void _showSettingsSheet(BuildContext context) {
     showCupertinoModalPopup(
       context: context,
       builder: (context) => CupertinoActionSheet(
         title: const Text('Settings'),
-        message: const Text('Manage your SaralOffice preferences'),
+        message: const Text('Manage application settings'),
         actions: [
           CupertinoActionSheetAction(
             onPressed: () {
               Navigator.pop(context);
-              _showComingSoon('Sync Data');
+              Navigator.push(
+                context,
+                CupertinoPageRoute(
+                  builder: (_) => const EmployeeManagementScreen(),
+                ),
+              );
             },
-            child: const Text('Sync Data'),
-          ),
-          CupertinoActionSheetAction(
-            onPressed: () {
-              Navigator.pop(context);
-              _showComingSoon('Export Settings');
-            },
-            child: const Text('Export Settings'),
-          ),
-          CupertinoActionSheetAction(
-            onPressed: () {
-              Navigator.pop(context);
-              _showAboutDialog();
-            },
-            child: const Text('About'),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  CupertinoIcons.person_2_fill,
+                  color: AppTheme.primaryBlue,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                const Text('Manage Employees'),
+              ],
+            ),
           ),
         ],
         cancelButton: CupertinoActionSheetAction(
@@ -413,40 +363,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           onPressed: () => Navigator.pop(context),
           child: const Text('Cancel'),
         ),
-      ),
-    );
-  }
-
-  void _showAboutDialog() {
-    showCupertinoDialog(
-      context: context,
-      builder: (context) => CupertinoAlertDialog(
-        title: const Text('SaralOffice'),
-        content: const Text(
-          'Version 1.0.0\n\nProfessional Payment Authority Generator for Government Offices',
-        ),
-        actions: [
-          CupertinoDialogAction(
-            child: const Text('OK'),
-            onPressed: () => Navigator.pop(context),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showComingSoon(String feature) {
-    showCupertinoDialog(
-      context: context,
-      builder: (context) => CupertinoAlertDialog(
-        title: Text(feature),
-        content: const Text('This feature is coming soon!'),
-        actions: [
-          CupertinoDialogAction(
-            child: const Text('OK'),
-            onPressed: () => Navigator.pop(context),
-          ),
-        ],
       ),
     );
   }
