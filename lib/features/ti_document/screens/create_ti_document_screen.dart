@@ -32,6 +32,7 @@ class _CreateTIDocumentScreenState extends ConsumerState<CreateTIDocumentScreen>
   // Controllers
   final _omNumberController = TextEditingController();
   final _amountController = TextEditingController();
+  final _purposeController = TextEditingController(); // ✅ NEW Controller
   final _recommendingOfficeController = TextEditingController();
   final _letterNumberController = TextEditingController();
 
@@ -73,9 +74,10 @@ class _CreateTIDocumentScreenState extends ConsumerState<CreateTIDocumentScreen>
     if (document.amount != null) {
       _amountController.text = document.amount!.toStringAsFixed(0);
     }
-    if (document.recommendingOffice != null) {
-      _omNumberController.text = document.omNumber!;
+    if (document.purpose != null) {
+      _purposeController.text = document.purpose!; // ✅ NEW
     }
+    // Fixed bug: Removed duplicate incorrect assignment to _omNumberController
     if (document.recommendingOffice != null) {
       _recommendingOfficeController.text = document.recommendingOffice!;
     }
@@ -130,6 +132,7 @@ class _CreateTIDocumentScreenState extends ConsumerState<CreateTIDocumentScreen>
     _scrollController.dispose();
     _omNumberController.dispose();
     _amountController.dispose();
+    _purposeController.dispose(); // ✅ NEW
     _recommendingOfficeController.dispose();
     _letterNumberController.dispose();
     super.dispose();
@@ -146,6 +149,9 @@ class _CreateTIDocumentScreenState extends ConsumerState<CreateTIDocumentScreen>
       letterNo: _letterNumberController.text.trim(),
       letterDate: _letterDate,
     );
+    // Note: Ensure updatePurpose exists in your TiDocumentNotifier
+    notifier.updatePurpose(_purposeController.text.trim()); // ✅ NEW
+
     if (_selectedDivision != null) {
       notifier.updateDivision(_selectedDivision!);
     }
@@ -166,6 +172,11 @@ class _CreateTIDocumentScreenState extends ConsumerState<CreateTIDocumentScreen>
     }
     if (_amountController.text.trim().isEmpty) {
       _showErrorDialog('Please enter Amount');
+      return;
+    }
+    if (_purposeController.text.trim().isEmpty) {
+      // ✅ NEW Validation
+      _showErrorDialog('Please enter Purpose');
       return;
     }
     if (_recommendingOfficeController.text.trim().isEmpty) {
@@ -330,6 +341,7 @@ class _CreateTIDocumentScreenState extends ConsumerState<CreateTIDocumentScreen>
     final hasData =
         _omNumberController.text.isNotEmpty ||
         _amountController.text.isNotEmpty ||
+        _purposeController.text.isNotEmpty || // ✅ NEW
         _recommendingOfficeController.text.isNotEmpty ||
         _letterNumberController.text.isNotEmpty ||
         _selectedDivision != null ||
@@ -370,6 +382,7 @@ class _CreateTIDocumentScreenState extends ConsumerState<CreateTIDocumentScreen>
     final canGenerate =
         _omNumberController.text.trim().isNotEmpty &&
         _amountController.text.trim().isNotEmpty &&
+        _purposeController.text.trim().isNotEmpty && // ✅ NEW Check
         _recommendingOfficeController.text.trim().isNotEmpty &&
         _letterNumberController.text.trim().isNotEmpty &&
         _selectedDivision != null &&
@@ -449,9 +462,23 @@ class _CreateTIDocumentScreenState extends ConsumerState<CreateTIDocumentScreen>
                   ]),
                   const SizedBox(height: 24),
 
-                  // Section 3: Recommending Office
+                  // ✅ NEW Section 3: Purpose
+                  _buildSectionHeader('3. Purpose', CupertinoIcons.text_quote),
+                  const SizedBox(height: 10),
+                  _buildSectionCard([
+                    IOSTextField(
+                      controller: _purposeController,
+                      label: 'Purpose',
+                      placeholder: 'e.g. For official travel / purchase',
+                      textCapitalization: TextCapitalization.sentences,
+                      onChanged: (_) => setState(() {}),
+                    ),
+                  ]),
+                  const SizedBox(height: 24),
+
+                  // Section 4: Recommending Office (Renumbered from 3)
                   _buildSectionHeader(
-                    '3. Recommending Office',
+                    '4. Recommending Office',
                     CupertinoIcons.building_2_fill,
                   ),
                   const SizedBox(height: 10),
@@ -479,9 +506,9 @@ class _CreateTIDocumentScreenState extends ConsumerState<CreateTIDocumentScreen>
                   ]),
                   const SizedBox(height: 24),
 
-                  // Section 4: Division & Employee
+                  // Section 5: Division & Employee (Renumbered from 4)
                   _buildSectionHeader(
-                    '4. Division & Employee',
+                    '5. Division & Employee',
                     CupertinoIcons.person_2_fill,
                   ),
                   const SizedBox(height: 10),

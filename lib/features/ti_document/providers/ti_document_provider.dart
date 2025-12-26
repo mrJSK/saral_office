@@ -37,7 +37,12 @@ class TIDocumentNotifier extends StateNotifier<TIDocumentModel> {
     state = state.copyWith(amount: amount);
   }
 
-  // 3. Update Recommending Office Details
+  // 3. Update Purpose (✅ NEW METHOD)
+  void updatePurpose(String purpose) {
+    state = state.copyWith(purpose: purpose);
+  }
+
+  // 4. Update Recommending Office Details
   void updateRecommendingOffice(String office) {
     state = state.copyWith(recommendingOffice: office);
   }
@@ -62,7 +67,7 @@ class TIDocumentNotifier extends StateNotifier<TIDocumentModel> {
     );
   }
 
-  // 4. Update Division Details
+  // 5. Update Division Details
   void updateDivision(Division division) {
     state = state.copyWith(
       divisionName: division.name,
@@ -80,7 +85,7 @@ class TIDocumentNotifier extends StateNotifier<TIDocumentModel> {
     );
   }
 
-  // 5. Update Employee Details
+  // 6. Update Employee Details
   void updateEmployee(Employee employee) {
     state = state.copyWith(
       employeeName: employee.employeeName,

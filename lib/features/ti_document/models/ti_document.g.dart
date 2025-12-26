@@ -82,18 +82,23 @@ const TIDocumentSchema = CollectionSchema(
       name: r'pdfPath',
       type: IsarType.string,
     ),
-    r'recommendingOffice': PropertySchema(
+    r'purpose': PropertySchema(
       id: 13,
+      name: r'purpose',
+      type: IsarType.string,
+    ),
+    r'recommendingOffice': PropertySchema(
+      id: 14,
       name: r'recommendingOffice',
       type: IsarType.string,
     ),
     r'status': PropertySchema(
-      id: 14,
+      id: 15,
       name: r'status',
       type: IsarType.string,
     ),
     r'updatedAt': PropertySchema(
-      id: 15,
+      id: 16,
       name: r'updatedAt',
       type: IsarType.dateTime,
     )
@@ -137,6 +142,7 @@ int _tIDocumentEstimateSize(
       bytesCount += 3 + value.length * 3;
     }
   }
+  bytesCount += 3 + object.purpose.length * 3;
   bytesCount += 3 + object.recommendingOffice.length * 3;
   bytesCount += 3 + object.status.length * 3;
   return bytesCount;
@@ -161,9 +167,10 @@ void _tIDocumentSerialize(
   writer.writeDateTime(offsets[10], object.omDate);
   writer.writeString(offsets[11], object.omNumber);
   writer.writeString(offsets[12], object.pdfPath);
-  writer.writeString(offsets[13], object.recommendingOffice);
-  writer.writeString(offsets[14], object.status);
-  writer.writeDateTime(offsets[15], object.updatedAt);
+  writer.writeString(offsets[13], object.purpose);
+  writer.writeString(offsets[14], object.recommendingOffice);
+  writer.writeString(offsets[15], object.status);
+  writer.writeDateTime(offsets[16], object.updatedAt);
 }
 
 TIDocument _tIDocumentDeserialize(
@@ -187,9 +194,10 @@ TIDocument _tIDocumentDeserialize(
   object.omDate = reader.readDateTime(offsets[10]);
   object.omNumber = reader.readString(offsets[11]);
   object.pdfPath = reader.readStringOrNull(offsets[12]);
-  object.recommendingOffice = reader.readString(offsets[13]);
-  object.status = reader.readString(offsets[14]);
-  object.updatedAt = reader.readDateTime(offsets[15]);
+  object.purpose = reader.readString(offsets[13]);
+  object.recommendingOffice = reader.readString(offsets[14]);
+  object.status = reader.readString(offsets[15]);
+  object.updatedAt = reader.readDateTime(offsets[16]);
   return object;
 }
 
@@ -231,6 +239,8 @@ P _tIDocumentDeserializeProp<P>(
     case 14:
       return (reader.readString(offset)) as P;
     case 15:
+      return (reader.readString(offset)) as P;
+    case 16:
       return (reader.readDateTime(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -1858,6 +1868,138 @@ extension TIDocumentQueryFilter
     });
   }
 
+  QueryBuilder<TIDocument, TIDocument, QAfterFilterCondition> purposeEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'purpose',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TIDocument, TIDocument, QAfterFilterCondition>
+      purposeGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'purpose',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TIDocument, TIDocument, QAfterFilterCondition> purposeLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'purpose',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TIDocument, TIDocument, QAfterFilterCondition> purposeBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'purpose',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TIDocument, TIDocument, QAfterFilterCondition> purposeStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'purpose',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TIDocument, TIDocument, QAfterFilterCondition> purposeEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'purpose',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TIDocument, TIDocument, QAfterFilterCondition> purposeContains(
+      String value,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'purpose',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TIDocument, TIDocument, QAfterFilterCondition> purposeMatches(
+      String pattern,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'purpose',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TIDocument, TIDocument, QAfterFilterCondition> purposeIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'purpose',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<TIDocument, TIDocument, QAfterFilterCondition>
+      purposeIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'purpose',
+        value: '',
+      ));
+    });
+  }
+
   QueryBuilder<TIDocument, TIDocument, QAfterFilterCondition>
       recommendingOfficeEqualTo(
     String value, {
@@ -2346,6 +2488,18 @@ extension TIDocumentQuerySortBy
     });
   }
 
+  QueryBuilder<TIDocument, TIDocument, QAfterSortBy> sortByPurpose() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'purpose', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TIDocument, TIDocument, QAfterSortBy> sortByPurposeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'purpose', Sort.desc);
+    });
+  }
+
   QueryBuilder<TIDocument, TIDocument, QAfterSortBy>
       sortByRecommendingOffice() {
     return QueryBuilder.apply(this, (query) {
@@ -2557,6 +2711,18 @@ extension TIDocumentQuerySortThenBy
     });
   }
 
+  QueryBuilder<TIDocument, TIDocument, QAfterSortBy> thenByPurpose() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'purpose', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TIDocument, TIDocument, QAfterSortBy> thenByPurposeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'purpose', Sort.desc);
+    });
+  }
+
   QueryBuilder<TIDocument, TIDocument, QAfterSortBy>
       thenByRecommendingOffice() {
     return QueryBuilder.apply(this, (query) {
@@ -2687,6 +2853,13 @@ extension TIDocumentQueryWhereDistinct
     });
   }
 
+  QueryBuilder<TIDocument, TIDocument, QDistinct> distinctByPurpose(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'purpose', caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<TIDocument, TIDocument, QDistinct> distinctByRecommendingOffice(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -2793,6 +2966,12 @@ extension TIDocumentQueryProperty
   QueryBuilder<TIDocument, String?, QQueryOperations> pdfPathProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'pdfPath');
+    });
+  }
+
+  QueryBuilder<TIDocument, String, QQueryOperations> purposeProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'purpose');
     });
   }
 

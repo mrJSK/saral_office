@@ -16,6 +16,9 @@ class TiPdfModel {
   final String employeeName;
   final String employeeDesignation;
 
+  // Purpose of Temporary Advance
+  final String purpose;
+
   // Amount for Temporary Advance Account
   final double amount;
 
@@ -29,10 +32,13 @@ class TiPdfModel {
     required this.divisionCode,
     required this.employeeName,
     required this.employeeDesignation,
+    required this.purpose,
     required this.amount,
   });
 
-  // Optional: Add copyWith method for flexibility
+  // ---------------------------------------------------------------------------
+  // COPY WITH
+  // ---------------------------------------------------------------------------
   TiPdfModel copyWith({
     String? omNumber,
     DateTime? omDate,
@@ -43,6 +49,7 @@ class TiPdfModel {
     String? divisionCode,
     String? employeeName,
     String? employeeDesignation,
+    String? purpose,
     double? amount,
   }) {
     return TiPdfModel(
@@ -55,11 +62,14 @@ class TiPdfModel {
       divisionCode: divisionCode ?? this.divisionCode,
       employeeName: employeeName ?? this.employeeName,
       employeeDesignation: employeeDesignation ?? this.employeeDesignation,
+      purpose: purpose ?? this.purpose,
       amount: amount ?? this.amount,
     );
   }
 
-  // Optional: Add toMap for database storage
+  // ---------------------------------------------------------------------------
+  // TO MAP (DB / API)
+  // ---------------------------------------------------------------------------
   Map<String, dynamic> toMap() {
     return {
       'omNumber': omNumber,
@@ -71,11 +81,14 @@ class TiPdfModel {
       'divisionCode': divisionCode,
       'employeeName': employeeName,
       'employeeDesignation': employeeDesignation,
+      'purpose': purpose,
       'amount': amount,
     };
   }
 
-  // Optional: Add fromMap for database retrieval
+  // ---------------------------------------------------------------------------
+  // FROM MAP
+  // ---------------------------------------------------------------------------
   factory TiPdfModel.fromMap(Map<String, dynamic> map) {
     return TiPdfModel(
       omNumber: map['omNumber'] as String,
@@ -87,11 +100,14 @@ class TiPdfModel {
       divisionCode: map['divisionCode'] as String,
       employeeName: map['employeeName'] as String,
       employeeDesignation: map['employeeDesignation'] as String,
+      purpose: map['purpose'] as String,
       amount: (map['amount'] as num).toDouble(),
     );
   }
 
-  // Optional: Add toString for debugging
+  // ---------------------------------------------------------------------------
+  // DEBUG
+  // ---------------------------------------------------------------------------
   @override
   String toString() {
     return 'TiPdfModel('
@@ -104,11 +120,14 @@ class TiPdfModel {
         'divisionCode: $divisionCode, '
         'employeeName: $employeeName, '
         'employeeDesignation: $employeeDesignation, '
+        'purpose: $purpose, '
         'amount: $amount'
         ')';
   }
 
-  // Optional: Equality comparison
+  // ---------------------------------------------------------------------------
+  // EQUALITY
+  // ---------------------------------------------------------------------------
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
@@ -123,6 +142,7 @@ class TiPdfModel {
         other.divisionCode == divisionCode &&
         other.employeeName == employeeName &&
         other.employeeDesignation == employeeDesignation &&
+        other.purpose == purpose &&
         other.amount == amount;
   }
 
@@ -137,6 +157,7 @@ class TiPdfModel {
         divisionCode.hashCode ^
         employeeName.hashCode ^
         employeeDesignation.hashCode ^
+        purpose.hashCode ^
         amount.hashCode;
   }
 }

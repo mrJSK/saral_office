@@ -91,6 +91,7 @@ class TIDocumentService {
         divisionCode: tiDocument.fundsCenter ?? '',
         employeeName: tiDocument.employeeName ?? '',
         employeeDesignation: tiDocument.employeeDesignation ?? '',
+        purpose: tiDocument.purpose ?? '',
       );
 
       // Generate and open PDF (single PDF with 2 pages)

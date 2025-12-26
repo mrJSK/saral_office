@@ -12,7 +12,7 @@ class TIDocument {
   late String omNumber;
   late DateTime omDate;
 
-  // 2. Amount (NEW)
+  // 2. Amount
   late double amount;
 
   // 3. Recommending Office Details
@@ -28,6 +28,9 @@ class TIDocument {
   late String employeeName;
   late String employeeDesignation;
   late String employeeSapId;
+
+  // 6. Purpose (NEW FIELD ADDED)
+  late String purpose;
 
   // Metadata
   late DateTime createdAt;
@@ -47,7 +50,7 @@ class TIDocumentModel {
   final String? omNumber;
   final DateTime? omDate;
 
-  // 2. Amount (NEW)
+  // 2. Amount
   final double? amount;
 
   // 3. Recommending Office
@@ -64,10 +67,13 @@ class TIDocumentModel {
   final String? employeeDesignation;
   final String? employeeSapId;
 
+  // 6. Purpose (NEW FIELD ADDED)
+  final String? purpose;
+
   TIDocumentModel({
     this.omNumber,
     this.omDate,
-    this.amount, // ← NEW
+    this.amount,
     this.recommendingOffice,
     this.letterNumber,
     this.letterDate,
@@ -76,12 +82,13 @@ class TIDocumentModel {
     this.employeeName,
     this.employeeDesignation,
     this.employeeSapId,
+    this.purpose, // <--- Add to constructor
   });
 
   TIDocumentModel copyWith({
     String? omNumber,
     DateTime? omDate,
-    double? amount, // ← NEW
+    double? amount,
     String? recommendingOffice,
     String? letterNumber,
     DateTime? letterDate,
@@ -90,11 +97,12 @@ class TIDocumentModel {
     String? employeeName,
     String? employeeDesignation,
     String? employeeSapId,
+    String? purpose, // <--- Add to copyWith
   }) {
     return TIDocumentModel(
       omNumber: omNumber ?? this.omNumber,
       omDate: omDate ?? this.omDate,
-      amount: amount ?? this.amount, // ← NEW
+      amount: amount ?? this.amount,
       recommendingOffice: recommendingOffice ?? this.recommendingOffice,
       letterNumber: letterNumber ?? this.letterNumber,
       letterDate: letterDate ?? this.letterDate,
@@ -103,6 +111,7 @@ class TIDocumentModel {
       employeeName: employeeName ?? this.employeeName,
       employeeDesignation: employeeDesignation ?? this.employeeDesignation,
       employeeSapId: employeeSapId ?? this.employeeSapId,
+      purpose: purpose ?? this.purpose, // <--- Add logic
     );
   }
 
@@ -111,7 +120,7 @@ class TIDocumentModel {
     return omNumber != null &&
         omNumber!.isNotEmpty &&
         amount != null &&
-        amount! > 0 && // ← NEW: Validate amount
+        amount! > 0 &&
         recommendingOffice != null &&
         recommendingOffice!.isNotEmpty &&
         letterNumber != null &&
@@ -119,7 +128,9 @@ class TIDocumentModel {
         divisionName != null &&
         divisionName!.isNotEmpty &&
         employeeName != null &&
-        employeeName!.isNotEmpty;
+        employeeName!.isNotEmpty &&
+        purpose != null && // <--- Add validation for purpose
+        purpose!.isNotEmpty;
   }
 
   // Convert to Isar Document
@@ -127,9 +138,7 @@ class TIDocumentModel {
     return TIDocument()
       ..omNumber = omNumber ?? ''
       ..omDate = omDate ?? DateTime.now()
-      ..amount =
-          amount ??
-          0.0 // ← NEW
+      ..amount = amount ?? 0.0
       ..recommendingOffice = recommendingOffice ?? ''
       ..letterNumber = letterNumber ?? ''
       ..letterDate = letterDate ?? DateTime.now()
@@ -138,6 +147,9 @@ class TIDocumentModel {
       ..employeeName = employeeName ?? ''
       ..employeeDesignation = employeeDesignation ?? ''
       ..employeeSapId = employeeSapId ?? ''
+      ..purpose =
+          purpose ??
+          '' // <--- Set purpose
       ..createdAt = DateTime.now()
       ..updatedAt = DateTime.now()
       ..status = 'Generated'
@@ -158,7 +170,8 @@ class TIDocumentModel {
       "fundsCenter": "$fundsCenter",
       "employeeName": "$employeeName",
       "employeeDesignation": "$employeeDesignation",
-      "employeeSapId": "$employeeSapId"
+      "employeeSapId": "$employeeSapId",
+      "purpose": "$purpose"
     }
     ''';
   }
@@ -168,7 +181,7 @@ class TIDocumentModel {
     return TIDocumentModel(
       omNumber: doc.omNumber,
       omDate: doc.omDate,
-      amount: doc.amount, // ← NEW
+      amount: doc.amount,
       recommendingOffice: doc.recommendingOffice,
       letterNumber: doc.letterNumber,
       letterDate: doc.letterDate,
@@ -177,6 +190,7 @@ class TIDocumentModel {
       employeeName: doc.employeeName,
       employeeDesignation: doc.employeeDesignation,
       employeeSapId: doc.employeeSapId,
+      purpose: doc.purpose, // <--- Map from Isar doc
     );
   }
 }
