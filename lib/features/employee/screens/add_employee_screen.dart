@@ -22,10 +22,16 @@ class _AddEmployeeScreenState extends ConsumerState<AddEmployeeScreen>
   final _nameController = TextEditingController();
   final _designationController = TextEditingController();
   final _sapIdController = TextEditingController();
+  final _officeController = TextEditingController();
+  final _officeHeadController = TextEditingController();
+  final _officeHeadDesignationController = TextEditingController();
 
   final _nameFocusNode = FocusNode();
   final _designationFocusNode = FocusNode();
   final _sapIdFocusNode = FocusNode();
+  final _officeFocusNode = FocusNode();
+  final _officeHeadFocusNode = FocusNode();
+  final _officeHeadDesignationFocusNode = FocusNode();
 
   bool _isSaving = false;
 
@@ -54,9 +60,15 @@ class _AddEmployeeScreenState extends ConsumerState<AddEmployeeScreen>
     _nameController.dispose();
     _designationController.dispose();
     _sapIdController.dispose();
+    _officeController.dispose();
+    _officeHeadController.dispose();
+    _officeHeadDesignationController.dispose();
     _nameFocusNode.dispose();
     _designationFocusNode.dispose();
     _sapIdFocusNode.dispose();
+    _officeFocusNode.dispose();
+    _officeHeadFocusNode.dispose();
+    _officeHeadDesignationFocusNode.dispose();
     super.dispose();
   }
 
@@ -80,6 +92,24 @@ class _AddEmployeeScreenState extends ConsumerState<AddEmployeeScreen>
       return;
     }
 
+    if (_officeController.text.trim().isEmpty) {
+      _showErrorDialog('Please enter office');
+      _officeFocusNode.requestFocus();
+      return;
+    }
+
+    if (_officeHeadController.text.trim().isEmpty) {
+      _showErrorDialog('Please enter office head');
+      _officeHeadFocusNode.requestFocus();
+      return;
+    }
+
+    if (_officeHeadDesignationController.text.trim().isEmpty) {
+      _showErrorDialog('Please enter office head designation');
+      _officeHeadDesignationFocusNode.requestFocus();
+      return;
+    }
+
     // Dismiss keyboard
     FocusScope.of(context).unfocus();
 
@@ -92,6 +122,11 @@ class _AddEmployeeScreenState extends ConsumerState<AddEmployeeScreen>
       notifier.updateName(_nameController.text.trim());
       notifier.updateDesignation(_designationController.text.trim());
       notifier.updateSapId(_sapIdController.text.trim());
+      notifier.updateOffice(_officeController.text.trim());
+      notifier.updateOfficeHead(_officeHeadController.text.trim());
+      notifier.updateOfficeHeadDesignation(
+        _officeHeadDesignationController.text.trim(),
+      );
 
       // Save to database
       await notifier.saveEmployee();
@@ -173,7 +208,10 @@ class _AddEmployeeScreenState extends ConsumerState<AddEmployeeScreen>
     final hasData =
         _nameController.text.isNotEmpty ||
         _designationController.text.isNotEmpty ||
-        _sapIdController.text.isNotEmpty;
+        _sapIdController.text.isNotEmpty ||
+        _officeController.text.isNotEmpty ||
+        _officeHeadController.text.isNotEmpty ||
+        _officeHeadDesignationController.text.isNotEmpty;
 
     if (hasData) {
       showCupertinoDialog(
@@ -210,7 +248,10 @@ class _AddEmployeeScreenState extends ConsumerState<AddEmployeeScreen>
     final canSave =
         _nameController.text.trim().isNotEmpty &&
         _designationController.text.trim().isNotEmpty &&
-        _sapIdController.text.trim().isNotEmpty;
+        _sapIdController.text.trim().isNotEmpty &&
+        _officeController.text.trim().isNotEmpty &&
+        _officeHeadController.text.trim().isNotEmpty &&
+        _officeHeadDesignationController.text.trim().isNotEmpty;
 
     return CupertinoPageScaffold(
       backgroundColor: AppTheme.backgroundLight,
@@ -376,6 +417,54 @@ class _AddEmployeeScreenState extends ConsumerState<AddEmployeeScreen>
                         keyboardType: TextInputType.number,
                         prefix: const Icon(
                           CupertinoIcons.number,
+                          size: 18,
+                          color: AppTheme.primaryBlue,
+                        ),
+                        onChanged: (_) => setState(() {}),
+                      ),
+
+                      const SizedBox(height: AppTheme.spacingM),
+
+                      // Office
+                      IOSTextField(
+                        controller: _officeController,
+                        label: 'Office',
+                        placeholder: 'e.g. ETD BSR',
+                        textCapitalization: TextCapitalization.characters,
+                        prefix: const Icon(
+                          CupertinoIcons.building_2_fill,
+                          size: 18,
+                          color: AppTheme.primaryBlue,
+                        ),
+                        onChanged: (_) => setState(() {}),
+                      ),
+
+                      const SizedBox(height: AppTheme.spacingM),
+
+                      // Office Head
+                      IOSTextField(
+                        controller: _officeHeadController,
+                        label: 'Office Head',
+                        placeholder: 'e.g. John Doe',
+                        textCapitalization: TextCapitalization.words,
+                        prefix: const Icon(
+                          CupertinoIcons.person_crop_square,
+                          size: 18,
+                          color: AppTheme.primaryBlue,
+                        ),
+                        onChanged: (_) => setState(() {}),
+                      ),
+
+                      const SizedBox(height: AppTheme.spacingM),
+
+                      // Office Head Designation
+                      IOSTextField(
+                        controller: _officeHeadDesignationController,
+                        label: 'Office Head Designation',
+                        placeholder: 'e.g. Executive Engineer',
+                        textCapitalization: TextCapitalization.words,
+                        prefix: const Icon(
+                          CupertinoIcons.star_fill,
                           size: 18,
                           color: AppTheme.primaryBlue,
                         ),

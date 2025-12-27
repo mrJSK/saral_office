@@ -8,11 +8,8 @@ import '../models/employee.dart';
 // ============================================================================
 // Stream: All employees (live updates)
 // ============================================================================
-
 final employeesProvider = StreamProvider<List<Employee>>((ref) {
   final isar = ref.watch(isarProvider);
-
-  // fires immediately AND whenever employees collection changes
   return isar.employees.watchLazy(fireImmediately: true).asyncMap((_) async {
     return await isar.employees.where().sortByCreatedAtDesc().findAll();
   });
@@ -20,32 +17,26 @@ final employeesProvider = StreamProvider<List<Employee>>((ref) {
 
 // ============================================================================
 // Future: search employees (used for search query)
-// NOTE: we will manually refresh by invalidating this provider when needed.
 // ============================================================================
-
 final employeeSearchProvider = FutureProvider.family<List<Employee>, String>((
   ref,
   query,
 ) async {
   final isar = ref.watch(isarProvider);
-
   if (query.trim().isEmpty) {
     return await isar.employees.where().sortByCreatedAtDesc().findAll();
   }
 
   final q = query.trim().toLowerCase();
-
-  // Isar doesn't support contains ignore-case easily without indexes.
-  // So we fetch and filter in Dart (OK for small lists).
   final all = await isar.employees.where().findAll();
-
   final results = all.where((e) {
     return e.employeeName.toLowerCase().contains(q) ||
         e.designation.toLowerCase().contains(q) ||
-        e.sapId.toLowerCase().contains(q);
+        e.sapId.toLowerCase().contains(q) ||
+        e.office.toLowerCase().contains(q) ||
+        e.officeHead.toLowerCase().contains(q);
   }).toList();
 
-  // Keep same ordering
   results.sort((a, b) => b.createdAt.compareTo(a.createdAt));
   return results;
 });
@@ -53,7 +44,6 @@ final employeeSearchProvider = FutureProvider.family<List<Employee>, String>((
 // ============================================================================
 // Employee Notifier
 // ============================================================================
-
 class EmployeeNotifier extends StateNotifier<Employee> {
   final Ref ref;
 
@@ -64,16 +54,30 @@ class EmployeeNotifier extends StateNotifier<Employee> {
       ..employeeName = ''
       ..designation = ''
       ..sapId = ''
+      ..office = ''
+      ..officeHead = ''
+      ..officeHeadDesignation = ''
       ..createdAt = DateTime.now()
       ..updatedAt = DateTime.now();
   }
 
-  Employee _copy({String? name, String? designation, String? sapId}) {
+  Employee _copy({
+    String? name,
+    String? designation,
+    String? sapId,
+    String? office,
+    String? officeHead,
+    String? officeHeadDesignation,
+  }) {
     return Employee()
       ..id = state.id
       ..employeeName = name ?? state.employeeName
       ..designation = designation ?? state.designation
       ..sapId = sapId ?? state.sapId
+      ..office = office ?? state.office
+      ..officeHead = officeHead ?? state.officeHead
+      ..officeHeadDesignation =
+          officeHeadDesignation ?? state.officeHeadDesignation
       ..createdAt = state.createdAt
       ..updatedAt = DateTime.now();
   }
@@ -81,6 +85,10 @@ class EmployeeNotifier extends StateNotifier<Employee> {
   void updateName(String name) => state = _copy(name: name);
   void updateDesignation(String value) => state = _copy(designation: value);
   void updateSapId(String value) => state = _copy(sapId: value);
+  void updateOffice(String value) => state = _copy(office: value);
+  void updateOfficeHead(String value) => state = _copy(officeHead: value);
+  void updateOfficeHeadDesignation(String value) =>
+      state = _copy(officeHeadDesignation: value);
 
   void loadEmployee(Employee employee) {
     state = employee;
@@ -90,13 +98,20 @@ class EmployeeNotifier extends StateNotifier<Employee> {
     final name = state.employeeName.trim();
     final desig = state.designation.trim();
     final sap = state.sapId.trim();
+    final off = state.office.trim();
+    final offHead = state.officeHead.trim();
+    final offHeadDesig = state.officeHeadDesignation.trim();
 
-    if (name.isEmpty || desig.isEmpty || sap.isEmpty) {
+    if (name.isEmpty ||
+        desig.isEmpty ||
+        sap.isEmpty ||
+        off.isEmpty ||
+        offHead.isEmpty ||
+        offHeadDesig.isEmpty) {
       throw Exception('All fields are required');
     }
 
     final isar = ref.read(isarProvider);
-
     final isNew = state.id == Isar.autoIncrement;
 
     final toSave = Employee()
@@ -104,6 +119,9 @@ class EmployeeNotifier extends StateNotifier<Employee> {
       ..employeeName = name
       ..designation = desig
       ..sapId = sap
+      ..office = off
+      ..officeHead = offHead
+      ..officeHeadDesignation = offHeadDesig
       ..createdAt = isNew ? DateTime.now() : state.createdAt
       ..updatedAt = DateTime.now();
 
@@ -114,7 +132,6 @@ class EmployeeNotifier extends StateNotifier<Employee> {
     // refresh UI
     ref.invalidate(employeesProvider);
     ref.invalidate(employeeSearchProvider);
-
     reset();
   }
 
@@ -123,7 +140,6 @@ class EmployeeNotifier extends StateNotifier<Employee> {
     await isar.writeTxn(() async {
       await isar.employees.delete(id);
     });
-
     ref.invalidate(employeesProvider);
     ref.invalidate(employeeSearchProvider);
   }

@@ -16,6 +16,12 @@ class IOSTextField extends StatelessWidget {
   final void Function(String)? onChanged;
   final bool enabled;
 
+  /// NEW: helps keep the focused field visible inside scroll views / bottom sheets
+  final EdgeInsets scrollPadding;
+
+  /// NEW: allows parent to manage focus (optional)
+  final FocusNode? focusNode;
+
   const IOSTextField({
     super.key,
     required this.controller,
@@ -29,6 +35,8 @@ class IOSTextField extends StatelessWidget {
     this.textCapitalization = TextCapitalization.none,
     this.onChanged,
     this.enabled = true,
+    this.scrollPadding = const EdgeInsets.all(20),
+    this.focusNode,
   });
 
   @override
@@ -46,6 +54,8 @@ class IOSTextField extends StatelessWidget {
         const SizedBox(height: 6),
         CupertinoTextField(
           controller: controller,
+          focusNode: focusNode,
+          scrollPadding: scrollPadding,
           placeholder: placeholder,
           keyboardType: keyboardType,
           maxLines: maxLines,

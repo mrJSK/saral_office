@@ -1,6 +1,7 @@
-// lib/features/ti_document/models/ti_document.dart
-
+import 'dart:convert';
 import 'package:isar/isar.dart';
+
+import 'ti_pdf_model.dart';
 
 part 'ti_document.g.dart';
 
@@ -24,13 +25,21 @@ class TIDocument {
   late String divisionName;
   late String fundsCenter;
 
-  // 5. Employee Details (Person creating/opening the TI)
+  // 5. Employee Details
   late String employeeName;
   late String employeeDesignation;
   late String employeeSapId;
 
-  // 6. Purpose (NEW FIELD ADDED)
+  // NEW FIELDS (Added to support the required parameters)
+  late String employeeOffice;
+  late String employeeOfficeHead;
+  late String employeeOfficeHeadDesignation;
+
+  // 6. Purpose
   late String purpose;
+
+  // 7. Number of vouchers (page-3 footer)
+  late int vouchersCount;
 
   // Metadata
   late DateTime createdAt;
@@ -38,13 +47,14 @@ class TIDocument {
   late String status; // Draft, Generated, etc.
 
   String? pdfPath;
-  String? fullJsonData; // Backup of all data in JSON format
+
+  /// Backup of all data in JSON format (includes imprestEntries)
+  String? fullJsonData;
 }
 
 // ============================================================================
 // State Model for Riverpod (Immutable)
 // ============================================================================
-
 class TIDocumentModel {
   // 1. OM Details
   final String? omNumber;
@@ -67,10 +77,19 @@ class TIDocumentModel {
   final String? employeeDesignation;
   final String? employeeSapId;
 
-  // 6. Purpose (NEW FIELD ADDED)
+  // NEW FIELDS
+  final String? employeeOffice;
+  final String? employeeOfficeHead;
+  final String? employeeOfficeHeadDesignation;
+
+  // 6. Purpose
   final String? purpose;
 
-  TIDocumentModel({
+  // 7. Page-3 inputs
+  final int? vouchersCount;
+  final List<ImprestLedgerEntry> imprestEntries;
+
+  const TIDocumentModel({
     this.omNumber,
     this.omDate,
     this.amount,
@@ -82,9 +101,15 @@ class TIDocumentModel {
     this.employeeName,
     this.employeeDesignation,
     this.employeeSapId,
-    this.purpose, // <--- Add to constructor
+    this.employeeOffice,
+    this.employeeOfficeHead,
+    this.employeeOfficeHeadDesignation,
+    this.purpose,
+    this.vouchersCount,
+    this.imprestEntries = const <ImprestLedgerEntry>[],
   });
 
+  // FIX: All parameters in copyWith are now optional (nullable).
   TIDocumentModel copyWith({
     String? omNumber,
     DateTime? omDate,
@@ -97,7 +122,12 @@ class TIDocumentModel {
     String? employeeName,
     String? employeeDesignation,
     String? employeeSapId,
-    String? purpose, // <--- Add to copyWith
+    String? employeeOffice,
+    String? employeeOfficeHead,
+    String? employeeOfficeHeadDesignation,
+    String? purpose,
+    int? vouchersCount,
+    List<ImprestLedgerEntry>? imprestEntries,
   }) {
     return TIDocumentModel(
       omNumber: omNumber ?? this.omNumber,
@@ -111,73 +141,146 @@ class TIDocumentModel {
       employeeName: employeeName ?? this.employeeName,
       employeeDesignation: employeeDesignation ?? this.employeeDesignation,
       employeeSapId: employeeSapId ?? this.employeeSapId,
-      purpose: purpose ?? this.purpose, // <--- Add logic
+      employeeOffice: employeeOffice ?? this.employeeOffice,
+      employeeOfficeHead: employeeOfficeHead ?? this.employeeOfficeHead,
+      employeeOfficeHeadDesignation:
+          employeeOfficeHeadDesignation ?? this.employeeOfficeHeadDesignation,
+      purpose: purpose ?? this.purpose,
+      vouchersCount: vouchersCount ?? this.vouchersCount,
+      imprestEntries: imprestEntries ?? this.imprestEntries,
     );
   }
 
-  // Validation
   bool get isValid {
-    return omNumber != null &&
-        omNumber!.isNotEmpty &&
-        amount != null &&
-        amount! > 0 &&
-        recommendingOffice != null &&
-        recommendingOffice!.isNotEmpty &&
-        letterNumber != null &&
-        letterNumber!.isNotEmpty &&
-        divisionName != null &&
-        divisionName!.isNotEmpty &&
-        employeeName != null &&
-        employeeName!.isNotEmpty &&
-        purpose != null && // <--- Add validation for purpose
-        purpose!.isNotEmpty;
+    return (omNumber != null && omNumber!.trim().isNotEmpty) &&
+        (omDate != null) &&
+        (amount != null && amount! > 0) &&
+        (recommendingOffice != null && recommendingOffice!.trim().isNotEmpty) &&
+        (letterNumber != null && letterNumber!.trim().isNotEmpty) &&
+        (letterDate != null) &&
+        (divisionName != null && divisionName!.trim().isNotEmpty) &&
+        (fundsCenter != null && fundsCenter!.trim().isNotEmpty) &&
+        (employeeName != null && employeeName!.trim().isNotEmpty) &&
+        (employeeDesignation != null &&
+            employeeDesignation!.trim().isNotEmpty) &&
+        (employeeSapId != null && employeeSapId!.trim().isNotEmpty) &&
+        // New validation checks (Optional: comment out if not strictly required)
+        (employeeOffice != null && employeeOffice!.trim().isNotEmpty) &&
+        (employeeOfficeHead != null && employeeOfficeHead!.trim().isNotEmpty) &&
+        (employeeOfficeHeadDesignation != null &&
+            employeeOfficeHeadDesignation!.trim().isNotEmpty) &&
+        (purpose != null && purpose!.trim().isNotEmpty);
   }
 
-  // Convert to Isar Document
-  TIDocument toIsarDocument() {
-    return TIDocument()
+  TIDocument toIsarDocument({
+    String status = 'Generated',
+    DateTime? now,
+    String? pdfPath,
+  }) {
+    final ts = now ?? DateTime.now();
+
+    final doc = TIDocument()
       ..omNumber = omNumber ?? ''
-      ..omDate = omDate ?? DateTime.now()
+      ..omDate = omDate ?? ts
       ..amount = amount ?? 0.0
       ..recommendingOffice = recommendingOffice ?? ''
       ..letterNumber = letterNumber ?? ''
-      ..letterDate = letterDate ?? DateTime.now()
+      ..letterDate = letterDate ?? ts
       ..divisionName = divisionName ?? ''
       ..fundsCenter = fundsCenter ?? ''
       ..employeeName = employeeName ?? ''
       ..employeeDesignation = employeeDesignation ?? ''
       ..employeeSapId = employeeSapId ?? ''
-      ..purpose =
-          purpose ??
-          '' // <--- Set purpose
-      ..createdAt = DateTime.now()
-      ..updatedAt = DateTime.now()
-      ..status = 'Generated'
+      ..employeeOffice = employeeOffice ?? ''
+      ..employeeOfficeHead = employeeOfficeHead ?? ''
+      ..employeeOfficeHeadDesignation = employeeOfficeHeadDesignation ?? ''
+      ..purpose = purpose ?? ''
+      ..vouchersCount = vouchersCount ?? 0
+      ..createdAt = ts
+      ..updatedAt = ts
+      ..status = status
+      ..pdfPath = pdfPath
       ..fullJsonData = toJson();
+
+    return doc;
   }
 
-  // Serialization
-  String toJson() {
-    return '''
-    {
-      "omNumber": "$omNumber",
-      "omDate": "${omDate?.toIso8601String()}",
-      "amount": $amount,
-      "recommendingOffice": "$recommendingOffice",
-      "letterNumber": "$letterNumber",
-      "letterDate": "${letterDate?.toIso8601String()}",
-      "divisionName": "$divisionName",
-      "fundsCenter": "$fundsCenter",
-      "employeeName": "$employeeName",
-      "employeeDesignation": "$employeeDesignation",
-      "employeeSapId": "$employeeSapId",
-      "purpose": "$purpose"
+  Map<String, dynamic> toMap() {
+    return <String, dynamic>{
+      'omNumber': omNumber,
+      'omDate': omDate?.toIso8601String(),
+      'amount': amount,
+      'recommendingOffice': recommendingOffice,
+      'letterNumber': letterNumber,
+      'letterDate': letterDate?.toIso8601String(),
+      'divisionName': divisionName,
+      'fundsCenter': fundsCenter,
+      'employeeName': employeeName,
+      'employeeDesignation': employeeDesignation,
+      'employeeSapId': employeeSapId,
+      'employeeOffice': employeeOffice,
+      'employeeOfficeHead': employeeOfficeHead,
+      'employeeOfficeHeadDesignation': employeeOfficeHeadDesignation,
+      'purpose': purpose,
+      'vouchersCount': vouchersCount,
+      'imprestEntries': imprestEntries.map((e) => e.toMap()).toList(),
+    };
+  }
+
+  String toJson() => jsonEncode(toMap());
+
+  factory TIDocumentModel.fromMap(Map<String, dynamic> map) {
+    DateTime? dt(String? s) =>
+        (s == null || s.isEmpty) ? null : DateTime.parse(s);
+
+    final entriesRaw = map['imprestEntries'];
+    final entries = <ImprestLedgerEntry>[];
+    if (entriesRaw is List) {
+      for (final item in entriesRaw) {
+        if (item is Map) {
+          entries.add(
+            ImprestLedgerEntry.fromMap(Map<String, dynamic>.from(item)),
+          );
+        }
+      }
     }
-    ''';
+
+    return TIDocumentModel(
+      omNumber: map['omNumber'] as String?,
+      omDate: dt(map['omDate'] as String?),
+      amount: (map['amount'] as num?)?.toDouble(),
+      recommendingOffice: map['recommendingOffice'] as String?,
+      letterNumber: map['letterNumber'] as String?,
+      letterDate: dt(map['letterDate'] as String?),
+      divisionName: map['divisionName'] as String?,
+      fundsCenter: map['fundsCenter'] as String?,
+      employeeName: map['employeeName'] as String?,
+      employeeDesignation: map['employeeDesignation'] as String?,
+      employeeSapId: map['employeeSapId'] as String?,
+      employeeOffice: map['employeeOffice'] as String?,
+      employeeOfficeHead: map['employeeOfficeHead'] as String?,
+      employeeOfficeHeadDesignation:
+          map['employeeOfficeHeadDesignation'] as String?,
+      purpose: map['purpose'] as String?,
+      vouchersCount: (map['vouchersCount'] as num?)?.toInt(),
+      imprestEntries: entries,
+    );
   }
 
-  // Create from Isar Document
+  factory TIDocumentModel.fromJson(String source) =>
+      TIDocumentModel.fromMap(jsonDecode(source) as Map<String, dynamic>);
+
   static TIDocumentModel fromIsarDocument(TIDocument doc) {
+    // Prefer restoring full state (including imprestEntries) from fullJsonData.
+    final json = doc.fullJsonData;
+    if (json != null && json.trim().isNotEmpty) {
+      try {
+        return TIDocumentModel.fromJson(json);
+      } catch (_) {
+        // fall through to field mapping
+      }
+    }
+
     return TIDocumentModel(
       omNumber: doc.omNumber,
       omDate: doc.omDate,
@@ -190,7 +293,12 @@ class TIDocumentModel {
       employeeName: doc.employeeName,
       employeeDesignation: doc.employeeDesignation,
       employeeSapId: doc.employeeSapId,
-      purpose: doc.purpose, // <--- Map from Isar doc
+      employeeOffice: doc.employeeOffice,
+      employeeOfficeHead: doc.employeeOfficeHead,
+      employeeOfficeHeadDesignation: doc.employeeOfficeHeadDesignation,
+      purpose: doc.purpose,
+      vouchersCount: doc.vouchersCount,
+      imprestEntries: const <ImprestLedgerEntry>[],
     );
   }
 }

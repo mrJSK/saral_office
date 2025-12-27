@@ -413,6 +413,7 @@ final generatePaymentAuthorityPdfProvider =
           payeeBankAccount: state.vendor?.bankAccount, // <--- NEW
           payeeEmail: state.vendor?.email, // <--- NEW
           paymentParticulars: state.particulars,
+          payeeCode: state.vendor?.vendorCode,
           authorityOrderNo: state.authorityOrderNo,
           authorityOrderDate: state.date,
           billNo: state.billNumber,

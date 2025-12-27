@@ -10,6 +10,11 @@ class Employee {
   late String designation;
   late String sapId;
 
+  // NEW FIELDS
+  late String office;
+  late String officeHead;
+  late String officeHeadDesignation;
+
   late DateTime createdAt;
   late DateTime updatedAt;
 

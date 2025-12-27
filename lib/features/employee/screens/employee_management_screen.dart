@@ -181,7 +181,7 @@ class _EmployeeManagementScreenState
               padding: const EdgeInsets.all(AppTheme.spacingM),
               child: CupertinoSearchTextField(
                 controller: _searchController,
-                placeholder: 'Search by name, designation, or SAP ID',
+                placeholder: 'Search by name, designation, office, or SAP ID',
                 onChanged: (value) {
                   setState(() => _searchQuery = value);
                 },
@@ -350,6 +350,7 @@ class _EmployeeCard extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.all(AppTheme.spacingM),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Avatar
               Container(
@@ -425,6 +426,44 @@ class _EmployeeCard extends StatelessWidget {
                         ),
                       ],
                     ),
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        const Icon(
+                          CupertinoIcons.building_2_fill,
+                          size: 13,
+                          color: AppTheme.textSecondary,
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            employee.office,
+                            style: AppTheme.caption.copyWith(fontSize: 12),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        const Icon(
+                          CupertinoIcons.person_crop_square,
+                          size: 13,
+                          color: AppTheme.textSecondary,
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            '${employee.officeHead} (${employee.officeHeadDesignation})',
+                            style: AppTheme.caption.copyWith(fontSize: 11),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -432,40 +471,44 @@ class _EmployeeCard extends StatelessWidget {
               // Action Buttons
               if (!isSelectionMode) ...[
                 const SizedBox(width: 8),
-                CupertinoButton(
-                  padding: EdgeInsets.zero,
-                  minSize: 0,
-                  onPressed: onEdit,
-                  child: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: AppTheme.primaryBlue.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(6),
+                Column(
+                  children: [
+                    CupertinoButton(
+                      padding: EdgeInsets.zero,
+                      minSize: 0,
+                      onPressed: onEdit,
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppTheme.primaryBlue.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Icon(
+                          CupertinoIcons.pencil,
+                          size: 16,
+                          color: AppTheme.primaryBlue,
+                        ),
+                      ),
                     ),
-                    child: const Icon(
-                      CupertinoIcons.pencil,
-                      size: 16,
-                      color: AppTheme.primaryBlue,
+                    const SizedBox(height: 8),
+                    CupertinoButton(
+                      padding: EdgeInsets.zero,
+                      minSize: 0,
+                      onPressed: onDelete,
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppTheme.errorRed.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Icon(
+                          CupertinoIcons.trash,
+                          size: 16,
+                          color: AppTheme.errorRed,
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                CupertinoButton(
-                  padding: EdgeInsets.zero,
-                  minSize: 0,
-                  onPressed: onDelete,
-                  child: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: AppTheme.errorRed.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: const Icon(
-                      CupertinoIcons.trash,
-                      size: 16,
-                      color: AppTheme.errorRed,
-                    ),
-                  ),
+                  ],
                 ),
               ] else
                 const Icon(

@@ -2,11 +2,14 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:isar/isar.dart';
-import '../models/ti_document.dart';
+
 import '../../../core/di/injection.dart';
-import '../services/ti_document_service.dart';
-import '../../employee/models/employee.dart';
 import '../../../core/database/models/division.dart';
+import '../../employee/models/employee.dart';
+
+import '../models/ti_document.dart';
+import '../models/ti_pdf_model.dart';
+import '../services/ti_document_service.dart';
 
 // ============================================================================
 // TI Document State Notifier
@@ -17,43 +20,46 @@ class TIDocumentNotifier extends StateNotifier<TIDocumentModel> {
   final TIDocumentService _tiDocumentService;
 
   TIDocumentNotifier(this.isar, this._tiDocumentService)
-    : super(TIDocumentModel());
+    : super(const TIDocumentModel());
 
-  // 1. Update OM (Office Memorandum) Details
-  void updateOMNumber(String number) {
-    state = state.copyWith(omNumber: number);
-  }
+  // --------------------------------------------------------------------------
+  // 1) OM
+  // --------------------------------------------------------------------------
 
-  void updateOMDate(DateTime date) {
-    state = state.copyWith(omDate: date);
-  }
+  void updateOMNumber(String number) =>
+      state = state.copyWith(omNumber: number);
+
+  void updateOMDate(DateTime date) => state = state.copyWith(omDate: date);
 
   void updateOMDetails({required String number, required DateTime date}) {
     state = state.copyWith(omNumber: number, omDate: date);
   }
 
-  // 2. Update Amount
-  void updateAmount(double amount) {
-    state = state.copyWith(amount: amount);
-  }
+  // --------------------------------------------------------------------------
+  // 2) Amount
+  // --------------------------------------------------------------------------
 
-  // 3. Update Purpose (✅ NEW METHOD)
-  void updatePurpose(String purpose) {
-    state = state.copyWith(purpose: purpose);
-  }
+  void updateAmount(double amount) => state = state.copyWith(amount: amount);
 
-  // 4. Update Recommending Office Details
-  void updateRecommendingOffice(String office) {
-    state = state.copyWith(recommendingOffice: office);
-  }
+  // --------------------------------------------------------------------------
+  // 3) Purpose
+  // --------------------------------------------------------------------------
 
-  void updateLetterNumber(String letterNo) {
-    state = state.copyWith(letterNumber: letterNo);
-  }
+  void updatePurpose(String purpose) =>
+      state = state.copyWith(purpose: purpose);
 
-  void updateLetterDate(DateTime date) {
-    state = state.copyWith(letterDate: date);
-  }
+  // --------------------------------------------------------------------------
+  // 4) Recommending Office
+  // --------------------------------------------------------------------------
+
+  void updateRecommendingOffice(String office) =>
+      state = state.copyWith(recommendingOffice: office);
+
+  void updateLetterNumber(String letterNo) =>
+      state = state.copyWith(letterNumber: letterNo);
+
+  void updateLetterDate(DateTime date) =>
+      state = state.copyWith(letterDate: date);
 
   void updateRecommendingOfficeDetails({
     required String office,
@@ -67,7 +73,22 @@ class TIDocumentNotifier extends StateNotifier<TIDocumentModel> {
     );
   }
 
-  // 5. Update Division Details
+  void updateEmployeeOfficeDetails({
+    String? office,
+    String? head,
+    String? headDesignation,
+  }) {
+    state = state.copyWith(
+      employeeOffice: office,
+      employeeOfficeHead: head,
+      employeeOfficeHeadDesignation: headDesignation,
+    );
+  }
+
+  // --------------------------------------------------------------------------
+  // 5) Division
+  // --------------------------------------------------------------------------
+
   void updateDivision(Division division) {
     state = state.copyWith(
       divisionName: division.name,
@@ -85,7 +106,10 @@ class TIDocumentNotifier extends StateNotifier<TIDocumentModel> {
     );
   }
 
-  // 6. Update Employee Details
+  // --------------------------------------------------------------------------
+  // 6) Employee
+  // --------------------------------------------------------------------------
+
   void updateEmployee(Employee employee) {
     state = state.copyWith(
       employeeName: employee.employeeName,
@@ -106,104 +130,102 @@ class TIDocumentNotifier extends StateNotifier<TIDocumentModel> {
     );
   }
 
-  // Load existing document
-  void load(TIDocumentModel document) {
-    state = document;
+  // --------------------------------------------------------------------------
+  // 7) Page-3: vouchers count
+  // --------------------------------------------------------------------------
+
+  void updateVouchersCount(int count) =>
+      state = state.copyWith(vouchersCount: count);
+
+  void addImprestEntry(ImprestLedgerEntry entry) {
+    final next = <ImprestLedgerEntry>[...state.imprestEntries, entry];
+    state = state.copyWith(imprestEntries: _withRunningTotals(next));
   }
 
-  // Reset to initial state
-  void reset() {
-    state = TIDocumentModel();
+  void removeImprestEntry(int index) {
+    final next = <ImprestLedgerEntry>[...state.imprestEntries]..removeAt(index);
+    state = state.copyWith(imprestEntries: _withRunningTotals(next));
   }
 
-  // Generate and save PDF
+  void updateImprestEntry(int index, ImprestLedgerEntry updated) {
+    final next = <ImprestLedgerEntry>[...state.imprestEntries];
+    next[index] = updated;
+    state = state.copyWith(imprestEntries: _withRunningTotals(next));
+  }
+
+  void clearImprestEntries() {
+    state = state.copyWith(imprestEntries: const <ImprestLedgerEntry>[]);
+  }
+
+  List<ImprestLedgerEntry> _withRunningTotals(List<ImprestLedgerEntry> list) {
+    double running = 0.0;
+    return list.map((e) {
+      running += e.payment;
+      return e.copyWith(total: running);
+    }).toList();
+  }
+
+  // --------------------------------------------------------------------------
+  // Load / Reset
+  // --------------------------------------------------------------------------
+
+  void load(TIDocumentModel document) => state = document;
+
+  void reset() => state = const TIDocumentModel();
+
+  bool validate() => state.isValid;
+
+  // --------------------------------------------------------------------------
+  // Generate + Save
+  // --------------------------------------------------------------------------
+
   Future<void> generateAndSavePDF() async {
     if (!state.isValid) {
       throw Exception('Please fill all required fields');
     }
 
-    try {
-      await _tiDocumentService.generateTIDocumentPDF(state);
-      await _tiDocumentService.saveTIDocument(state);
-    } catch (e) {
-      throw Exception('Failed to generate PDF: $e');
-    }
-  }
-
-  // Validate current state
-  bool validate() {
-    return state.isValid;
+    await _tiDocumentService.generateTIDocumentPDF(state);
+    await _tiDocumentService.saveTIDocument(state);
   }
 }
 
 // ============================================================================
-// Riverpod Providers
+// Providers
 // ============================================================================
 
-// Main TI Document Provider
-final tiDocumentProvider =
-    StateNotifierProvider<TIDocumentNotifier, TIDocumentModel>((ref) {
-      final isar = ref.watch(isarProvider);
-      final tiDocumentService = ref.watch(tiDocumentServiceProvider);
-      return TIDocumentNotifier(isar, tiDocumentService);
-    });
-
-// TI Document Service Provider
 final tiDocumentServiceProvider = Provider<TIDocumentService>((ref) {
   final isar = ref.watch(isarProvider);
   return TIDocumentService(isar);
 });
 
-// Recent TI Documents Provider (for history/listing)
+final tiDocumentProvider =
+    StateNotifierProvider<TIDocumentNotifier, TIDocumentModel>((ref) {
+      final isar = ref.watch(isarProvider);
+      final service = ref.watch(tiDocumentServiceProvider);
+      return TIDocumentNotifier(isar, service);
+    });
+
 final recentTIDocumentsProvider = FutureProvider<List<TIDocument>>((ref) async {
   final isar = ref.watch(isarProvider);
-  return await isar.tIDocuments
-      .where()
-      .sortByCreatedAtDesc()
-      .limit(50)
-      .findAll();
+  return isar.tIDocuments.where().sortByCreatedAtDesc().limit(50).findAll();
 });
 
-// Get TI Document by ID
 final tiDocumentByIdProvider = FutureProvider.family<TIDocument?, int>((
   ref,
   id,
 ) async {
   final isar = ref.watch(isarProvider);
-  return await isar.tIDocuments.get(id);
+  return isar.tIDocuments.get(id);
 });
 
-// Generate PDF Provider (for one-shot operations)
-final generateTIDocumentPdfProvider = FutureProvider<void>((ref) async {
-  final tiDocument = ref.watch(tiDocumentProvider);
-  final tiDocumentService = ref.watch(tiDocumentServiceProvider);
-
-  if (!tiDocument.isValid) {
-    throw Exception('Please fill all required fields before generating PDF');
-  }
-
-  try {
-    await tiDocumentService.generateTIDocumentPDF(tiDocument);
-    await tiDocumentService.saveTIDocument(tiDocument);
-  } catch (e) {
-    throw Exception('PDF generation failed: $e');
-  }
-});
-
-// Provider to count total TI documents (for stats)
 final tiDocumentCountProvider = FutureProvider<int>((ref) async {
   final isar = ref.watch(isarProvider);
-  return await isar.tIDocuments.count();
+  return isar.tIDocuments.count();
 });
 
-// Provider for this month's TI documents count
 final thisMonthTIDocumentsProvider = FutureProvider<int>((ref) async {
   final isar = ref.watch(isarProvider);
   final now = DateTime.now();
   final startOfMonth = DateTime(now.year, now.month, 1);
-
-  return await isar.tIDocuments
-      .filter()
-      .createdAtGreaterThan(startOfMonth)
-      .count();
+  return isar.tIDocuments.filter().createdAtGreaterThan(startOfMonth).count();
 });

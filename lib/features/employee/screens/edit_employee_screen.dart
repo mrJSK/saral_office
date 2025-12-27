@@ -21,6 +21,9 @@ class _EditEmployeeScreenState extends ConsumerState<EditEmployeeScreen> {
   late final TextEditingController _nameController;
   late final TextEditingController _designationController;
   late final TextEditingController _sapIdController;
+  late final TextEditingController _officeController;
+  late final TextEditingController _officeHeadController;
+  late final TextEditingController _officeHeadDesignationController;
 
   bool _isSaving = false;
 
@@ -32,6 +35,13 @@ class _EditEmployeeScreenState extends ConsumerState<EditEmployeeScreen> {
       text: widget.employee.designation,
     );
     _sapIdController = TextEditingController(text: widget.employee.sapId);
+    _officeController = TextEditingController(text: widget.employee.office);
+    _officeHeadController = TextEditingController(
+      text: widget.employee.officeHead,
+    );
+    _officeHeadDesignationController = TextEditingController(
+      text: widget.employee.officeHeadDesignation,
+    );
   }
 
   @override
@@ -39,13 +49,19 @@ class _EditEmployeeScreenState extends ConsumerState<EditEmployeeScreen> {
     _nameController.dispose();
     _designationController.dispose();
     _sapIdController.dispose();
+    _officeController.dispose();
+    _officeHeadController.dispose();
+    _officeHeadDesignationController.dispose();
     super.dispose();
   }
 
   void _saveEmployee() async {
     if (_nameController.text.trim().isEmpty ||
         _designationController.text.trim().isEmpty ||
-        _sapIdController.text.trim().isEmpty) {
+        _sapIdController.text.trim().isEmpty ||
+        _officeController.text.trim().isEmpty ||
+        _officeHeadController.text.trim().isEmpty ||
+        _officeHeadDesignationController.text.trim().isEmpty) {
       _showErrorDialog('All fields are required');
       return;
     }
@@ -62,6 +78,11 @@ class _EditEmployeeScreenState extends ConsumerState<EditEmployeeScreen> {
       notifier.updateName(_nameController.text.trim());
       notifier.updateDesignation(_designationController.text.trim());
       notifier.updateSapId(_sapIdController.text.trim());
+      notifier.updateOffice(_officeController.text.trim());
+      notifier.updateOfficeHead(_officeHeadController.text.trim());
+      notifier.updateOfficeHeadDesignation(
+        _officeHeadDesignationController.text.trim(),
+      );
 
       await notifier.saveEmployee();
 
@@ -147,6 +168,11 @@ class _EditEmployeeScreenState extends ConsumerState<EditEmployeeScreen> {
                       label: 'Employee Name',
                       placeholder: 'Enter full name',
                       textCapitalization: TextCapitalization.words,
+                      prefix: const Icon(
+                        CupertinoIcons.person,
+                        size: 18,
+                        color: AppTheme.primaryBlue,
+                      ),
                     ),
                     const SizedBox(height: AppTheme.spacingM),
                     IOSTextField(
@@ -154,6 +180,11 @@ class _EditEmployeeScreenState extends ConsumerState<EditEmployeeScreen> {
                       label: 'Designation',
                       placeholder: 'e.g. Junior Engineer',
                       textCapitalization: TextCapitalization.words,
+                      prefix: const Icon(
+                        CupertinoIcons.briefcase,
+                        size: 18,
+                        color: AppTheme.primaryBlue,
+                      ),
                     ),
                     const SizedBox(height: AppTheme.spacingM),
                     IOSTextField(
@@ -161,6 +192,47 @@ class _EditEmployeeScreenState extends ConsumerState<EditEmployeeScreen> {
                       label: 'SAP ID',
                       placeholder: 'Enter SAP ID',
                       keyboardType: TextInputType.number,
+                      prefix: const Icon(
+                        CupertinoIcons.number,
+                        size: 18,
+                        color: AppTheme.primaryBlue,
+                      ),
+                    ),
+                    const SizedBox(height: AppTheme.spacingM),
+                    IOSTextField(
+                      controller: _officeController,
+                      label: 'Office',
+                      placeholder: 'e.g. ETD BSR',
+                      textCapitalization: TextCapitalization.characters,
+                      prefix: const Icon(
+                        CupertinoIcons.building_2_fill,
+                        size: 18,
+                        color: AppTheme.primaryBlue,
+                      ),
+                    ),
+                    const SizedBox(height: AppTheme.spacingM),
+                    IOSTextField(
+                      controller: _officeHeadController,
+                      label: 'Office Head',
+                      placeholder: 'e.g. John Doe',
+                      textCapitalization: TextCapitalization.words,
+                      prefix: const Icon(
+                        CupertinoIcons.person_crop_square,
+                        size: 18,
+                        color: AppTheme.primaryBlue,
+                      ),
+                    ),
+                    const SizedBox(height: AppTheme.spacingM),
+                    IOSTextField(
+                      controller: _officeHeadDesignationController,
+                      label: 'Office Head Designation',
+                      placeholder: 'e.g. Executive Engineer',
+                      textCapitalization: TextCapitalization.words,
+                      prefix: const Icon(
+                        CupertinoIcons.star_fill,
+                        size: 18,
+                        color: AppTheme.primaryBlue,
+                      ),
                     ),
                   ],
                 ),

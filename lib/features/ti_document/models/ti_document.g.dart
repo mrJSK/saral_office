@@ -42,65 +42,85 @@ const TIDocumentSchema = CollectionSchema(
       name: r'employeeName',
       type: IsarType.string,
     ),
-    r'employeeSapId': PropertySchema(
+    r'employeeOffice': PropertySchema(
       id: 5,
+      name: r'employeeOffice',
+      type: IsarType.string,
+    ),
+    r'employeeOfficeHead': PropertySchema(
+      id: 6,
+      name: r'employeeOfficeHead',
+      type: IsarType.string,
+    ),
+    r'employeeOfficeHeadDesignation': PropertySchema(
+      id: 7,
+      name: r'employeeOfficeHeadDesignation',
+      type: IsarType.string,
+    ),
+    r'employeeSapId': PropertySchema(
+      id: 8,
       name: r'employeeSapId',
       type: IsarType.string,
     ),
     r'fullJsonData': PropertySchema(
-      id: 6,
+      id: 9,
       name: r'fullJsonData',
       type: IsarType.string,
     ),
     r'fundsCenter': PropertySchema(
-      id: 7,
+      id: 10,
       name: r'fundsCenter',
       type: IsarType.string,
     ),
     r'letterDate': PropertySchema(
-      id: 8,
+      id: 11,
       name: r'letterDate',
       type: IsarType.dateTime,
     ),
     r'letterNumber': PropertySchema(
-      id: 9,
+      id: 12,
       name: r'letterNumber',
       type: IsarType.string,
     ),
     r'omDate': PropertySchema(
-      id: 10,
+      id: 13,
       name: r'omDate',
       type: IsarType.dateTime,
     ),
     r'omNumber': PropertySchema(
-      id: 11,
+      id: 14,
       name: r'omNumber',
       type: IsarType.string,
     ),
     r'pdfPath': PropertySchema(
-      id: 12,
+      id: 15,
       name: r'pdfPath',
       type: IsarType.string,
     ),
     r'purpose': PropertySchema(
-      id: 13,
+      id: 16,
       name: r'purpose',
       type: IsarType.string,
     ),
     r'recommendingOffice': PropertySchema(
-      id: 14,
+      id: 17,
       name: r'recommendingOffice',
       type: IsarType.string,
     ),
     r'status': PropertySchema(
-      id: 15,
+      id: 18,
       name: r'status',
       type: IsarType.string,
     ),
     r'updatedAt': PropertySchema(
-      id: 16,
+      id: 19,
       name: r'updatedAt',
       type: IsarType.dateTime,
+    ),
+    r'vouchersCount': PropertySchema(
+      id: 20,
+      name: r'vouchersCount',
+      type: IsarType.long,
     )
   },
   estimateSize: _tIDocumentEstimateSize,
@@ -126,6 +146,9 @@ int _tIDocumentEstimateSize(
   bytesCount += 3 + object.divisionName.length * 3;
   bytesCount += 3 + object.employeeDesignation.length * 3;
   bytesCount += 3 + object.employeeName.length * 3;
+  bytesCount += 3 + object.employeeOffice.length * 3;
+  bytesCount += 3 + object.employeeOfficeHead.length * 3;
+  bytesCount += 3 + object.employeeOfficeHeadDesignation.length * 3;
   bytesCount += 3 + object.employeeSapId.length * 3;
   {
     final value = object.fullJsonData;
@@ -159,18 +182,22 @@ void _tIDocumentSerialize(
   writer.writeString(offsets[2], object.divisionName);
   writer.writeString(offsets[3], object.employeeDesignation);
   writer.writeString(offsets[4], object.employeeName);
-  writer.writeString(offsets[5], object.employeeSapId);
-  writer.writeString(offsets[6], object.fullJsonData);
-  writer.writeString(offsets[7], object.fundsCenter);
-  writer.writeDateTime(offsets[8], object.letterDate);
-  writer.writeString(offsets[9], object.letterNumber);
-  writer.writeDateTime(offsets[10], object.omDate);
-  writer.writeString(offsets[11], object.omNumber);
-  writer.writeString(offsets[12], object.pdfPath);
-  writer.writeString(offsets[13], object.purpose);
-  writer.writeString(offsets[14], object.recommendingOffice);
-  writer.writeString(offsets[15], object.status);
-  writer.writeDateTime(offsets[16], object.updatedAt);
+  writer.writeString(offsets[5], object.employeeOffice);
+  writer.writeString(offsets[6], object.employeeOfficeHead);
+  writer.writeString(offsets[7], object.employeeOfficeHeadDesignation);
+  writer.writeString(offsets[8], object.employeeSapId);
+  writer.writeString(offsets[9], object.fullJsonData);
+  writer.writeString(offsets[10], object.fundsCenter);
+  writer.writeDateTime(offsets[11], object.letterDate);
+  writer.writeString(offsets[12], object.letterNumber);
+  writer.writeDateTime(offsets[13], object.omDate);
+  writer.writeString(offsets[14], object.omNumber);
+  writer.writeString(offsets[15], object.pdfPath);
+  writer.writeString(offsets[16], object.purpose);
+  writer.writeString(offsets[17], object.recommendingOffice);
+  writer.writeString(offsets[18], object.status);
+  writer.writeDateTime(offsets[19], object.updatedAt);
+  writer.writeLong(offsets[20], object.vouchersCount);
 }
 
 TIDocument _tIDocumentDeserialize(
@@ -185,19 +212,23 @@ TIDocument _tIDocumentDeserialize(
   object.divisionName = reader.readString(offsets[2]);
   object.employeeDesignation = reader.readString(offsets[3]);
   object.employeeName = reader.readString(offsets[4]);
-  object.employeeSapId = reader.readString(offsets[5]);
-  object.fullJsonData = reader.readStringOrNull(offsets[6]);
-  object.fundsCenter = reader.readString(offsets[7]);
+  object.employeeOffice = reader.readString(offsets[5]);
+  object.employeeOfficeHead = reader.readString(offsets[6]);
+  object.employeeOfficeHeadDesignation = reader.readString(offsets[7]);
+  object.employeeSapId = reader.readString(offsets[8]);
+  object.fullJsonData = reader.readStringOrNull(offsets[9]);
+  object.fundsCenter = reader.readString(offsets[10]);
   object.id = id;
-  object.letterDate = reader.readDateTime(offsets[8]);
-  object.letterNumber = reader.readString(offsets[9]);
-  object.omDate = reader.readDateTime(offsets[10]);
-  object.omNumber = reader.readString(offsets[11]);
-  object.pdfPath = reader.readStringOrNull(offsets[12]);
-  object.purpose = reader.readString(offsets[13]);
-  object.recommendingOffice = reader.readString(offsets[14]);
-  object.status = reader.readString(offsets[15]);
-  object.updatedAt = reader.readDateTime(offsets[16]);
+  object.letterDate = reader.readDateTime(offsets[11]);
+  object.letterNumber = reader.readString(offsets[12]);
+  object.omDate = reader.readDateTime(offsets[13]);
+  object.omNumber = reader.readString(offsets[14]);
+  object.pdfPath = reader.readStringOrNull(offsets[15]);
+  object.purpose = reader.readString(offsets[16]);
+  object.recommendingOffice = reader.readString(offsets[17]);
+  object.status = reader.readString(offsets[18]);
+  object.updatedAt = reader.readDateTime(offsets[19]);
+  object.vouchersCount = reader.readLong(offsets[20]);
   return object;
 }
 
@@ -221,27 +252,35 @@ P _tIDocumentDeserializeProp<P>(
     case 5:
       return (reader.readString(offset)) as P;
     case 6:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 7:
       return (reader.readString(offset)) as P;
     case 8:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 9:
-      return (reader.readString(offset)) as P;
-    case 10:
-      return (reader.readDateTime(offset)) as P;
-    case 11:
-      return (reader.readString(offset)) as P;
-    case 12:
       return (reader.readStringOrNull(offset)) as P;
-    case 13:
+    case 10:
       return (reader.readString(offset)) as P;
+    case 11:
+      return (reader.readDateTime(offset)) as P;
+    case 12:
+      return (reader.readString(offset)) as P;
+    case 13:
+      return (reader.readDateTime(offset)) as P;
     case 14:
       return (reader.readString(offset)) as P;
     case 15:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 16:
+      return (reader.readString(offset)) as P;
+    case 17:
+      return (reader.readString(offset)) as P;
+    case 18:
+      return (reader.readString(offset)) as P;
+    case 19:
       return (reader.readDateTime(offset)) as P;
+    case 20:
+      return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
@@ -857,6 +896,416 @@ extension TIDocumentQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.greaterThan(
         property: r'employeeName',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<TIDocument, TIDocument, QAfterFilterCondition>
+      employeeOfficeEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'employeeOffice',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TIDocument, TIDocument, QAfterFilterCondition>
+      employeeOfficeGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'employeeOffice',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TIDocument, TIDocument, QAfterFilterCondition>
+      employeeOfficeLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'employeeOffice',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TIDocument, TIDocument, QAfterFilterCondition>
+      employeeOfficeBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'employeeOffice',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TIDocument, TIDocument, QAfterFilterCondition>
+      employeeOfficeStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'employeeOffice',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TIDocument, TIDocument, QAfterFilterCondition>
+      employeeOfficeEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'employeeOffice',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TIDocument, TIDocument, QAfterFilterCondition>
+      employeeOfficeContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'employeeOffice',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TIDocument, TIDocument, QAfterFilterCondition>
+      employeeOfficeMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'employeeOffice',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TIDocument, TIDocument, QAfterFilterCondition>
+      employeeOfficeIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'employeeOffice',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<TIDocument, TIDocument, QAfterFilterCondition>
+      employeeOfficeIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'employeeOffice',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<TIDocument, TIDocument, QAfterFilterCondition>
+      employeeOfficeHeadEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'employeeOfficeHead',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TIDocument, TIDocument, QAfterFilterCondition>
+      employeeOfficeHeadGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'employeeOfficeHead',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TIDocument, TIDocument, QAfterFilterCondition>
+      employeeOfficeHeadLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'employeeOfficeHead',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TIDocument, TIDocument, QAfterFilterCondition>
+      employeeOfficeHeadBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'employeeOfficeHead',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TIDocument, TIDocument, QAfterFilterCondition>
+      employeeOfficeHeadStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'employeeOfficeHead',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TIDocument, TIDocument, QAfterFilterCondition>
+      employeeOfficeHeadEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'employeeOfficeHead',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TIDocument, TIDocument, QAfterFilterCondition>
+      employeeOfficeHeadContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'employeeOfficeHead',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TIDocument, TIDocument, QAfterFilterCondition>
+      employeeOfficeHeadMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'employeeOfficeHead',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TIDocument, TIDocument, QAfterFilterCondition>
+      employeeOfficeHeadIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'employeeOfficeHead',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<TIDocument, TIDocument, QAfterFilterCondition>
+      employeeOfficeHeadIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'employeeOfficeHead',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<TIDocument, TIDocument, QAfterFilterCondition>
+      employeeOfficeHeadDesignationEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'employeeOfficeHeadDesignation',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TIDocument, TIDocument, QAfterFilterCondition>
+      employeeOfficeHeadDesignationGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'employeeOfficeHeadDesignation',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TIDocument, TIDocument, QAfterFilterCondition>
+      employeeOfficeHeadDesignationLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'employeeOfficeHeadDesignation',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TIDocument, TIDocument, QAfterFilterCondition>
+      employeeOfficeHeadDesignationBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'employeeOfficeHeadDesignation',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TIDocument, TIDocument, QAfterFilterCondition>
+      employeeOfficeHeadDesignationStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'employeeOfficeHeadDesignation',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TIDocument, TIDocument, QAfterFilterCondition>
+      employeeOfficeHeadDesignationEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'employeeOfficeHeadDesignation',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TIDocument, TIDocument, QAfterFilterCondition>
+      employeeOfficeHeadDesignationContains(String value,
+          {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'employeeOfficeHeadDesignation',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TIDocument, TIDocument, QAfterFilterCondition>
+      employeeOfficeHeadDesignationMatches(String pattern,
+          {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'employeeOfficeHeadDesignation',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<TIDocument, TIDocument, QAfterFilterCondition>
+      employeeOfficeHeadDesignationIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'employeeOfficeHeadDesignation',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<TIDocument, TIDocument, QAfterFilterCondition>
+      employeeOfficeHeadDesignationIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'employeeOfficeHeadDesignation',
         value: '',
       ));
     });
@@ -2320,6 +2769,62 @@ extension TIDocumentQueryFilter
       ));
     });
   }
+
+  QueryBuilder<TIDocument, TIDocument, QAfterFilterCondition>
+      vouchersCountEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'vouchersCount',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<TIDocument, TIDocument, QAfterFilterCondition>
+      vouchersCountGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'vouchersCount',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<TIDocument, TIDocument, QAfterFilterCondition>
+      vouchersCountLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'vouchersCount',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<TIDocument, TIDocument, QAfterFilterCondition>
+      vouchersCountBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'vouchersCount',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
 }
 
 extension TIDocumentQueryObject
@@ -2389,6 +2894,47 @@ extension TIDocumentQuerySortBy
   QueryBuilder<TIDocument, TIDocument, QAfterSortBy> sortByEmployeeNameDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'employeeName', Sort.desc);
+    });
+  }
+
+  QueryBuilder<TIDocument, TIDocument, QAfterSortBy> sortByEmployeeOffice() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'employeeOffice', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TIDocument, TIDocument, QAfterSortBy>
+      sortByEmployeeOfficeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'employeeOffice', Sort.desc);
+    });
+  }
+
+  QueryBuilder<TIDocument, TIDocument, QAfterSortBy>
+      sortByEmployeeOfficeHead() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'employeeOfficeHead', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TIDocument, TIDocument, QAfterSortBy>
+      sortByEmployeeOfficeHeadDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'employeeOfficeHead', Sort.desc);
+    });
+  }
+
+  QueryBuilder<TIDocument, TIDocument, QAfterSortBy>
+      sortByEmployeeOfficeHeadDesignation() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'employeeOfficeHeadDesignation', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TIDocument, TIDocument, QAfterSortBy>
+      sortByEmployeeOfficeHeadDesignationDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'employeeOfficeHeadDesignation', Sort.desc);
     });
   }
 
@@ -2537,6 +3083,18 @@ extension TIDocumentQuerySortBy
       return query.addSortBy(r'updatedAt', Sort.desc);
     });
   }
+
+  QueryBuilder<TIDocument, TIDocument, QAfterSortBy> sortByVouchersCount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'vouchersCount', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TIDocument, TIDocument, QAfterSortBy> sortByVouchersCountDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'vouchersCount', Sort.desc);
+    });
+  }
 }
 
 extension TIDocumentQuerySortThenBy
@@ -2600,6 +3158,47 @@ extension TIDocumentQuerySortThenBy
   QueryBuilder<TIDocument, TIDocument, QAfterSortBy> thenByEmployeeNameDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'employeeName', Sort.desc);
+    });
+  }
+
+  QueryBuilder<TIDocument, TIDocument, QAfterSortBy> thenByEmployeeOffice() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'employeeOffice', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TIDocument, TIDocument, QAfterSortBy>
+      thenByEmployeeOfficeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'employeeOffice', Sort.desc);
+    });
+  }
+
+  QueryBuilder<TIDocument, TIDocument, QAfterSortBy>
+      thenByEmployeeOfficeHead() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'employeeOfficeHead', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TIDocument, TIDocument, QAfterSortBy>
+      thenByEmployeeOfficeHeadDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'employeeOfficeHead', Sort.desc);
+    });
+  }
+
+  QueryBuilder<TIDocument, TIDocument, QAfterSortBy>
+      thenByEmployeeOfficeHeadDesignation() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'employeeOfficeHeadDesignation', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TIDocument, TIDocument, QAfterSortBy>
+      thenByEmployeeOfficeHeadDesignationDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'employeeOfficeHeadDesignation', Sort.desc);
     });
   }
 
@@ -2760,6 +3359,18 @@ extension TIDocumentQuerySortThenBy
       return query.addSortBy(r'updatedAt', Sort.desc);
     });
   }
+
+  QueryBuilder<TIDocument, TIDocument, QAfterSortBy> thenByVouchersCount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'vouchersCount', Sort.asc);
+    });
+  }
+
+  QueryBuilder<TIDocument, TIDocument, QAfterSortBy> thenByVouchersCountDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'vouchersCount', Sort.desc);
+    });
+  }
 }
 
 extension TIDocumentQueryWhereDistinct
@@ -2795,6 +3406,30 @@ extension TIDocumentQueryWhereDistinct
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'employeeName', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<TIDocument, TIDocument, QDistinct> distinctByEmployeeOffice(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'employeeOffice',
+          caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<TIDocument, TIDocument, QDistinct> distinctByEmployeeOfficeHead(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'employeeOfficeHead',
+          caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<TIDocument, TIDocument, QDistinct>
+      distinctByEmployeeOfficeHeadDesignation({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'employeeOfficeHeadDesignation',
+          caseSensitive: caseSensitive);
     });
   }
 
@@ -2880,6 +3515,12 @@ extension TIDocumentQueryWhereDistinct
       return query.addDistinctBy(r'updatedAt');
     });
   }
+
+  QueryBuilder<TIDocument, TIDocument, QDistinct> distinctByVouchersCount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'vouchersCount');
+    });
+  }
 }
 
 extension TIDocumentQueryProperty
@@ -2918,6 +3559,26 @@ extension TIDocumentQueryProperty
   QueryBuilder<TIDocument, String, QQueryOperations> employeeNameProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'employeeName');
+    });
+  }
+
+  QueryBuilder<TIDocument, String, QQueryOperations> employeeOfficeProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'employeeOffice');
+    });
+  }
+
+  QueryBuilder<TIDocument, String, QQueryOperations>
+      employeeOfficeHeadProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'employeeOfficeHead');
+    });
+  }
+
+  QueryBuilder<TIDocument, String, QQueryOperations>
+      employeeOfficeHeadDesignationProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'employeeOfficeHeadDesignation');
     });
   }
 
@@ -2991,6 +3652,12 @@ extension TIDocumentQueryProperty
   QueryBuilder<TIDocument, DateTime, QQueryOperations> updatedAtProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'updatedAt');
+    });
+  }
+
+  QueryBuilder<TIDocument, int, QQueryOperations> vouchersCountProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'vouchersCount');
     });
   }
 }

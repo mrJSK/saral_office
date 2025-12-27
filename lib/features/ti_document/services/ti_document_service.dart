@@ -92,6 +92,8 @@ class TIDocumentService {
         employeeName: tiDocument.employeeName ?? '',
         employeeDesignation: tiDocument.employeeDesignation ?? '',
         purpose: tiDocument.purpose ?? '',
+        vouchersCount: tiDocument.vouchersCount ?? 0,
+        imprestEntries: tiDocument.imprestEntries,
       );
 
       // Generate and open PDF (single PDF with 2 pages)

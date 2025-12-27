@@ -5,12 +5,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:isar/isar.dart';
+import 'package:saral_office/core/database/models/gl_account.dart';
+
 import 'package:saral_office/core/di/injection.dart';
+import 'package:saral_office/features/payment_authority/screens/create_authority_screen.dart';
+import 'package:saral_office/features/ti_document/widgets/imprest_entry_card.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/database/models/division.dart';
 import '../../employee/models/employee.dart';
 import '../../employee/screens/employee_management_screen.dart';
+
 import '../providers/ti_document_provider.dart';
+import '../models/ti_pdf_model.dart'; // ImprestLedgerEntry
 import '../../payment_authority/widgets/ios_text_field.dart';
 import '../../payment_authority/widgets/division_search_field.dart';
 
@@ -24,17 +30,23 @@ class CreateTIDocumentScreen extends ConsumerStatefulWidget {
 
 class _CreateTIDocumentScreenState extends ConsumerState<CreateTIDocumentScreen>
     with SingleTickerProviderStateMixin {
-  late AnimationController _animationController;
-  late Animation<double> _fadeAnimation;
+  late final AnimationController _animationController;
+  late final Animation<double> _fadeAnimation;
 
   final _scrollController = ScrollController();
 
-  // Controllers
+  // Existing Controllers
   final _omNumberController = TextEditingController();
   final _amountController = TextEditingController();
-  final _purposeController = TextEditingController(); // ✅ NEW Controller
+  final _purposeController = TextEditingController();
   final _recommendingOfficeController = TextEditingController();
   final _letterNumberController = TextEditingController();
+  final vouchersCountController = TextEditingController();
+
+  // NEW: Controllers for the new Office fields
+  final _officeNameController = TextEditingController();
+  final _officeHeadController = TextEditingController();
+  final _officeHeadDesignationController = TextEditingController();
 
   DateTime _omDate = DateTime.now();
   DateTime _letterDate = DateTime.now();
@@ -47,27 +59,27 @@ class _CreateTIDocumentScreenState extends ConsumerState<CreateTIDocumentScreen>
   @override
   void initState() {
     super.initState();
+
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 400),
       vsync: this,
     );
+
     _fadeAnimation = CurvedAnimation(
       parent: _animationController,
       curve: Curves.easeOut,
     );
+
     _animationController.forward();
 
-    // ✅ LOAD DATA FROM PROVIDER (after widget is built)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadFromProvider();
     });
   }
 
-  // ✅ NEW: Load data from provider into UI
-  void _loadFromProvider() async {
+  Future<void> _loadFromProvider() async {
     final document = ref.read(tiDocumentProvider);
 
-    // Populate text controllers
     if (document.omNumber != null) {
       _omNumberController.text = document.omNumber!;
     }
@@ -75,17 +87,30 @@ class _CreateTIDocumentScreenState extends ConsumerState<CreateTIDocumentScreen>
       _amountController.text = document.amount!.toStringAsFixed(0);
     }
     if (document.purpose != null) {
-      _purposeController.text = document.purpose!; // ✅ NEW
+      _purposeController.text = document.purpose!;
     }
-    // Fixed bug: Removed duplicate incorrect assignment to _omNumberController
     if (document.recommendingOffice != null) {
       _recommendingOfficeController.text = document.recommendingOffice!;
     }
     if (document.letterNumber != null) {
       _letterNumberController.text = document.letterNumber!;
     }
+    if (document.vouchersCount != null) {
+      vouchersCountController.text = document.vouchersCount!.toString();
+    }
 
-    // Populate dates
+    // NEW: Load Office Details
+    if (document.employeeOffice != null) {
+      _officeNameController.text = document.employeeOffice!;
+    }
+    if (document.employeeOfficeHead != null) {
+      _officeHeadController.text = document.employeeOfficeHead!;
+    }
+    if (document.employeeOfficeHeadDesignation != null) {
+      _officeHeadDesignationController.text =
+          document.employeeOfficeHeadDesignation!;
+    }
+
     if (document.omDate != null) {
       setState(() => _omDate = document.omDate!);
     }
@@ -93,14 +118,16 @@ class _CreateTIDocumentScreenState extends ConsumerState<CreateTIDocumentScreen>
       setState(() => _letterDate = document.letterDate!);
     }
 
-    // Populate Division (need to fetch from database)
-    if (document.divisionName != null && document.fundsCenter != null) {
+    // Division lookup
+    if (document.divisionName != null &&
+        document.divisionName!.trim().isNotEmpty) {
       try {
         final isar = ref.read(isarProvider);
         final division = await isar.divisions
             .filter()
             .nameEqualTo(document.divisionName!)
             .findFirst();
+
         if (division != null && mounted) {
           setState(() => _selectedDivision = division);
         }
@@ -109,14 +136,16 @@ class _CreateTIDocumentScreenState extends ConsumerState<CreateTIDocumentScreen>
       }
     }
 
-    // Populate Employee (need to fetch from database)
-    if (document.employeeSapId != null) {
+    // Employee lookup
+    if (document.employeeSapId != null &&
+        document.employeeSapId!.trim().isNotEmpty) {
       try {
         final isar = ref.read(isarProvider);
         final employee = await isar.employees
             .filter()
             .sapIdEqualTo(document.employeeSapId!)
             .findFirst();
+
         if (employee != null && mounted) {
           setState(() => _selectedEmployee = employee);
         }
@@ -130,27 +159,37 @@ class _CreateTIDocumentScreenState extends ConsumerState<CreateTIDocumentScreen>
   void dispose() {
     _animationController.dispose();
     _scrollController.dispose();
+
     _omNumberController.dispose();
     _amountController.dispose();
-    _purposeController.dispose(); // ✅ NEW
+    _purposeController.dispose();
     _recommendingOfficeController.dispose();
     _letterNumberController.dispose();
+    vouchersCountController.dispose();
+
+    // NEW: Dispose new controllers
+    _officeNameController.dispose();
+    _officeHeadController.dispose();
+    _officeHeadDesignationController.dispose();
+
     super.dispose();
   }
 
   void _syncToState() {
     final notifier = ref.read(tiDocumentProvider.notifier);
+
     notifier.updateOMDetails(
       number: _omNumberController.text.trim(),
       date: _omDate,
     );
+
     notifier.updateRecommendingOfficeDetails(
       office: _recommendingOfficeController.text.trim(),
       letterNo: _letterNumberController.text.trim(),
       letterDate: _letterDate,
     );
-    // Note: Ensure updatePurpose exists in your TiDocumentNotifier
-    notifier.updatePurpose(_purposeController.text.trim()); // ✅ NEW
+
+    notifier.updatePurpose(_purposeController.text.trim());
 
     if (_selectedDivision != null) {
       notifier.updateDivision(_selectedDivision!);
@@ -158,14 +197,23 @@ class _CreateTIDocumentScreenState extends ConsumerState<CreateTIDocumentScreen>
     if (_selectedEmployee != null) {
       notifier.updateEmployee(_selectedEmployee!);
     }
-    if (_amountController.text.trim().isNotEmpty) {
-      final amount = double.tryParse(_amountController.text.trim()) ?? 0.0;
-      notifier.updateAmount(amount);
-    }
+
+    // NEW: Sync Office Details
+    notifier.updateEmployeeOfficeDetails(
+      office: _officeNameController.text.trim(),
+      head: _officeHeadController.text.trim(),
+      headDesignation: _officeHeadDesignationController.text.trim(),
+    );
+
+    final amount = double.tryParse(_amountController.text.trim()) ?? 0.0;
+    notifier.updateAmount(amount);
+
+    final v = int.tryParse(vouchersCountController.text.trim()) ?? 0;
+    notifier.updateVouchersCount(v);
   }
 
   Future<void> _generatePDF() async {
-    // Validate all fields
+    // Validation
     if (_omNumberController.text.trim().isEmpty) {
       _showErrorDialog('Please enter OM Number');
       return;
@@ -175,7 +223,6 @@ class _CreateTIDocumentScreenState extends ConsumerState<CreateTIDocumentScreen>
       return;
     }
     if (_purposeController.text.trim().isEmpty) {
-      // ✅ NEW Validation
       _showErrorDialog('Please enter Purpose');
       return;
     }
@@ -195,75 +242,83 @@ class _CreateTIDocumentScreenState extends ConsumerState<CreateTIDocumentScreen>
       _showErrorDialog('Please select an Employee');
       return;
     }
+    // Optional: Validate new fields if strictly required
+    if (_officeNameController.text.trim().isEmpty) {
+      _showErrorDialog('Please enter Office Name');
+      return;
+    }
+    if (_officeHeadController.text.trim().isEmpty) {
+      _showErrorDialog('Please enter Head of Office');
+      return;
+    }
+    if (_officeHeadDesignationController.text.trim().isEmpty) {
+      _showErrorDialog('Please enter Head Designation');
+      return;
+    }
 
     setState(() => _isGeneratingPdf = true);
 
     try {
-      // Sync data to provider
       _syncToState();
-
-      // Generate PDF (single PDF with 2 pages, auto-opens)
       await ref.read(tiDocumentProvider.notifier).generateAndSavePDF();
 
-      if (mounted) {
-        // Success dialog
-        showCupertinoDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) => CupertinoAlertDialog(
-            title: Row(
-              children: [
-                const Icon(
-                  CupertinoIcons.check_mark_circled_solid,
-                  color: AppTheme.successGreen,
-                  size: 24,
-                ),
-                const SizedBox(width: 8),
-                const Text('Success'),
-              ],
-            ),
-            content: const Text(
-              'TI Document has been generated and opened successfully!',
-            ),
-            actions: [
-              CupertinoDialogAction(
-                isDefaultAction: true,
-                child: const Text('OK'),
-                onPressed: () {
-                  Navigator.pop(context); // Close dialog
-                  Navigator.pop(context); // Return to home
-                  ref.read(tiDocumentProvider.notifier).reset();
-                },
+      if (!mounted) return;
+
+      await showCupertinoDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => CupertinoAlertDialog(
+          title: Row(
+            children: const [
+              Icon(
+                CupertinoIcons.check_mark_circled_solid,
+                color: AppTheme.successGreen,
+                size: 24,
               ),
+              SizedBox(width: 8),
+              Text('Success'),
             ],
           ),
-        );
-      }
+          content: const Text(
+            'TI Document has been generated and opened successfully!',
+          ),
+          actions: [
+            CupertinoDialogAction(
+              isDefaultAction: true,
+              child: const Text('OK'),
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.pop(context);
+                ref.read(tiDocumentProvider.notifier).reset();
+              },
+            ),
+          ],
+        ),
+      );
     } catch (e) {
       if (mounted) {
         _showErrorDialog('Failed to generate PDF: ${e.toString()}');
       }
     } finally {
-      if (mounted) {
-        setState(() => _isGeneratingPdf = false);
-      }
+      if (mounted) setState(() => _isGeneratingPdf = false);
     }
   }
 
   void _showErrorDialog(String message) {
     if (!mounted) return;
-    showCupertinoDialog(
+
+    showCupertinoDialog<void>(
       context: context,
-      builder: (context) => CupertinoAlertDialog(
+      builder: (_) => CupertinoAlertDialog(
         title: Row(
-          children: [
-            const Icon(
+          children: const [
+            Icon(
               CupertinoIcons.exclamationmark_triangle_fill,
               color: AppTheme.errorRed,
               size: 24,
             ),
-            const SizedBox(width: 8),
-            const Text('Error'),
+            SizedBox(width: 8),
+            Text('Error'),
           ],
         ),
         content: Text(message),
@@ -278,10 +333,12 @@ class _CreateTIDocumentScreenState extends ConsumerState<CreateTIDocumentScreen>
     );
   }
 
-  void _showDatePicker(DateTime initial, Function(DateTime) onChanged) {
-    showCupertinoModalPopup(
+  void _showDatePicker(DateTime initial, ValueChanged<DateTime> onChanged) {
+    final normalized = DateTime(initial.year, initial.month, initial.day);
+
+    showCupertinoModalPopup<void>(
       context: context,
-      builder: (context) => Container(
+      builder: (_) => Container(
         height: 300,
         color: AppTheme.surfaceWhite,
         child: Column(
@@ -297,10 +354,12 @@ class _CreateTIDocumentScreenState extends ConsumerState<CreateTIDocumentScreen>
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   CupertinoButton(
+                    padding: EdgeInsets.zero,
                     child: const Text('Cancel'),
                     onPressed: () => Navigator.pop(context),
                   ),
                   CupertinoButton(
+                    padding: EdgeInsets.zero,
                     child: const Text('Done'),
                     onPressed: () => Navigator.pop(context),
                   ),
@@ -310,9 +369,7 @@ class _CreateTIDocumentScreenState extends ConsumerState<CreateTIDocumentScreen>
             Expanded(
               child: CupertinoDatePicker(
                 mode: CupertinoDatePickerMode.date,
-                initialDateTime: initial,
-                maximumDate: DateTime.now().add(const Duration(days: 365)),
-                minimumDate: DateTime.now().subtract(const Duration(days: 365)),
+                initialDateTime: normalized,
                 onDateTimeChanged: onChanged,
               ),
             ),
@@ -329,7 +386,31 @@ class _CreateTIDocumentScreenState extends ConsumerState<CreateTIDocumentScreen>
         builder: (_) => EmployeeManagementScreen(
           isSelectionMode: true,
           onEmployeeSelected: (employee) {
-            setState(() => _selectedEmployee = employee);
+            setState(() {
+              _selectedEmployee = employee;
+
+              // Auto-fill Recommending Office
+              final designation = employee.officeHeadDesignation?.trim() ?? '';
+              final office = employee.office?.trim() ?? '';
+
+              if (designation.isNotEmpty && office.isNotEmpty) {
+                _recommendingOfficeController.text = '$designation, $office';
+              } else if (designation.isNotEmpty) {
+                _recommendingOfficeController.text = designation;
+              } else if (office.isNotEmpty) {
+                _recommendingOfficeController.text = office;
+              }
+
+              // NEW: Auto-fill the new Office fields if available on Employee model
+              // (Assuming Employee model has these fields or you map them from 'office')
+              if (office.isNotEmpty) {
+                _officeNameController.text = office;
+              }
+              // If employee has a stored head designation, use it
+              if (designation.isNotEmpty) {
+                _officeHeadDesignationController.text = designation;
+              }
+            });
           },
         ),
       ),
@@ -337,56 +418,408 @@ class _CreateTIDocumentScreenState extends ConsumerState<CreateTIDocumentScreen>
   }
 
   void _handleBack() {
-    // Check if any data has been entered
     final hasData =
         _omNumberController.text.isNotEmpty ||
         _amountController.text.isNotEmpty ||
-        _purposeController.text.isNotEmpty || // ✅ NEW
+        _purposeController.text.isNotEmpty ||
         _recommendingOfficeController.text.isNotEmpty ||
         _letterNumberController.text.isNotEmpty ||
+        vouchersCountController.text.isNotEmpty ||
         _selectedDivision != null ||
         _selectedEmployee != null;
 
-    if (hasData) {
-      showCupertinoDialog(
-        context: context,
-        builder: (context) => CupertinoAlertDialog(
-          title: const Text('Discard Changes?'),
-          content: const Text(
-            'You have unsaved changes. Are you sure you want to go back?',
-          ),
-          actions: [
-            CupertinoDialogAction(
-              child: const Text('Cancel'),
-              onPressed: () => Navigator.pop(context),
-            ),
-            CupertinoDialogAction(
-              isDestructiveAction: true,
-              child: const Text('Discard'),
-              onPressed: () {
-                Navigator.pop(context); // Close dialog
-                Navigator.pop(context); // Go back
-                ref.read(tiDocumentProvider.notifier).reset();
-              },
-            ),
-          ],
+    if (!hasData) {
+      Navigator.pop(context);
+      return;
+    }
+
+    showCupertinoDialog<void>(
+      context: context,
+      builder: (_) => CupertinoAlertDialog(
+        title: const Text('Discard Changes?'),
+        content: const Text(
+          'You have unsaved changes. Are you sure you want to go back?',
         ),
-      );
-    } else {
+        actions: [
+          CupertinoDialogAction(
+            child: const Text('Cancel'),
+            onPressed: () => Navigator.pop(context),
+          ),
+          CupertinoDialogAction(
+            isDestructiveAction: true,
+            child: const Text('Discard'),
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.pop(context);
+              ref.read(tiDocumentProvider.notifier).reset();
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openImprestEntryEditor({
+    ImprestLedgerEntry? existing,
+    int? index,
+  }) async {
+    final df = DateFormat('dd/MM/yyyy');
+
+    final dateCtrl = TextEditingController(text: existing?.date.trim() ?? '');
+    final vrCtrl = TextEditingController(text: existing?.vrNo ?? '');
+    final headCtrl = TextEditingController(text: existing?.head ?? '');
+    final txnCtrl = TextEditingController(text: existing?.transaction ?? '');
+    final payCtrl = TextEditingController(
+      text: existing == null ? '' : existing.payment.toStringAsFixed(0),
+    );
+
+    GLAccount? selectedGL;
+
+    Future<void> close() async {
+      if (!mounted) return;
+      FocusScope.of(context).unfocus();
       Navigator.pop(context);
     }
+
+    void save() {
+      final date = dateCtrl.text.trim();
+      final vrNo = vrCtrl.text.trim();
+      final head = headCtrl.text.trim();
+      final txn = txnCtrl.text.trim();
+      final pay = double.tryParse(payCtrl.text.trim()) ?? 0.0;
+
+      if (date.isEmpty ||
+          vrNo.isEmpty ||
+          head.isEmpty ||
+          txn.isEmpty ||
+          pay <= 0) {
+        _showErrorDialog('Please fill all entry fields (amount > 0).');
+        return;
+      }
+
+      final entry = ImprestLedgerEntry(
+        date: date,
+        vrNo: vrNo,
+        transaction: txn,
+        payment: pay,
+        total: existing?.total ?? 0.0,
+        head: head,
+      );
+
+      final notifier = ref.read(tiDocumentProvider.notifier);
+
+      if (existing == null) {
+        notifier.addImprestEntry(entry);
+      } else {
+        if (index == null) {
+          _showErrorDialog('Internal error: Missing entry index.');
+          return;
+        }
+        notifier.updateImprestEntry(index, entry);
+      }
+
+      close();
+    }
+
+    // ... (Your existing code for modal popup is correct, reusing structure)
+    // Omitted strict UI repetition for brevity, assuming standard showCupertinoModalPopup structure
+    // as provided in your original file.
+    await showCupertinoModalPopup<void>(
+      context: context,
+      builder: (_) => Material(
+        color: Colors.transparent,
+        child: SafeArea(
+          top: false,
+          bottom: false,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+              final sp = EdgeInsets.only(bottom: bottomInset + 120);
+
+              Future<void> pickDate(
+                void Function(void Function()) setSheetState,
+              ) async {
+                FocusScope.of(context).unfocus();
+                DateTime temp;
+                try {
+                  final txt = dateCtrl.text.trim();
+                  temp = txt.isEmpty ? DateTime.now() : df.parse(txt);
+                } catch (_) {
+                  temp = DateTime.now();
+                }
+
+                await showCupertinoModalPopup<void>(
+                  context: context,
+                  builder: (_) => Container(
+                    height: 300,
+                    color: AppTheme.surfaceWhite,
+                    child: Column(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          decoration: const BoxDecoration(
+                            border: Border(
+                              bottom: BorderSide(
+                                color: AppTheme.dividerColor,
+                                width: 0.5,
+                              ),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              CupertinoButton(
+                                padding: EdgeInsets.zero,
+                                child: const Text('Cancel'),
+                                onPressed: () => Navigator.pop(context),
+                              ),
+                              CupertinoButton(
+                                padding: EdgeInsets.zero,
+                                child: const Text('Done'),
+                                onPressed: () {
+                                  setSheetState(() {
+                                    dateCtrl.text = df.format(temp);
+                                  });
+                                  Navigator.pop(context);
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                        Expanded(
+                          child: CupertinoDatePicker(
+                            mode: CupertinoDatePickerMode.date,
+                            initialDateTime: temp,
+                            onDateTimeChanged: (d) => temp = d,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+
+              return StatefulBuilder(
+                builder: (context, setSheetState) {
+                  return SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
+                    padding: EdgeInsets.fromLTRB(
+                      AppTheme.spacingM,
+                      AppTheme.spacingM,
+                      AppTheme.spacingM,
+                      AppTheme.spacingM + bottomInset,
+                    ),
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minHeight: constraints.maxHeight,
+                      ),
+                      child: Align(
+                        alignment: Alignment.bottomCenter,
+                        child: Container(
+                          padding: const EdgeInsets.all(AppTheme.spacingM),
+                          decoration: const BoxDecoration(
+                            color: AppTheme.surfaceWhite,
+                            borderRadius: BorderRadius.vertical(
+                              top: Radius.circular(16),
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Row(
+                                children: [
+                                  Text(
+                                    existing == null
+                                        ? 'Add Imprest Entry'
+                                        : 'Edit Imprest Entry',
+                                    style: AppTheme.headline3.copyWith(
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                  const Spacer(),
+                                  CupertinoButton(
+                                    padding: EdgeInsets.zero,
+                                    minSize: 0,
+                                    onPressed: close,
+                                    child: const Icon(
+                                      CupertinoIcons.xmark_circle_fill,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              // Simplified Date Row for brevity
+                              GestureDetector(
+                                onTap: () => pickDate(setSheetState),
+                                child: Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.backgroundLight,
+                                    border: Border.all(
+                                      color: AppTheme.dividerColor,
+                                    ),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Text(
+                                    dateCtrl.text.isEmpty
+                                        ? 'Select Date'
+                                        : dateCtrl.text,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              IOSTextField(
+                                controller: vrCtrl,
+                                label: 'Vr. No',
+                                placeholder: 'e.g. 15',
+                                scrollPadding: sp,
+                              ),
+                              const SizedBox(height: 10),
+                              // GL Code logic simplified, assumes text field for now
+                              IOSTextField(
+                                controller: headCtrl,
+                                label: 'Head/GL Code',
+                                placeholder: 'Select/Type GL',
+                                scrollPadding: sp,
+                              ),
+                              const SizedBox(height: 10),
+                              IOSTextField(
+                                controller: txnCtrl,
+                                label: 'Transaction',
+                                placeholder: 'e.g. Stationery purchase',
+                                textCapitalization:
+                                    TextCapitalization.sentences,
+                                maxLines: 2,
+                                scrollPadding: sp,
+                              ),
+                              const SizedBox(height: 10),
+                              IOSTextField(
+                                controller: payCtrl,
+                                label: 'Amount payable',
+                                placeholder: 'e.g. 2500',
+                                keyboardType:
+                                    const TextInputType.numberWithOptions(
+                                      decimal: true,
+                                    ),
+                                scrollPadding: sp,
+                              ),
+                              const SizedBox(height: 16),
+                              CupertinoButton.filled(
+                                onPressed: save,
+                                child: Text(
+                                  existing == null
+                                      ? 'Add Entry'
+                                      : 'Save Changes',
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              CupertinoButton(
+                                onPressed: close,
+                                child: const Text('Cancel'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+      ),
+    );
+
+    dateCtrl.dispose();
+    vrCtrl.dispose();
+    headCtrl.dispose();
+    txnCtrl.dispose();
+    payCtrl.dispose();
+  }
+
+  Widget _buildImprestEntriesSection() {
+    final doc = ref.watch(tiDocumentProvider);
+    final entries = doc.imprestEntries;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionHeader(
+          '6. Imprest Entries (Page-3)',
+          CupertinoIcons.list_bullet_below_rectangle,
+        ),
+        const SizedBox(height: 10),
+        _buildSectionCard([
+          Row(
+            children: [
+              Text('Entries: ${entries.length}', style: AppTheme.caption),
+              const Spacer(),
+              CupertinoButton(
+                padding: EdgeInsets.zero,
+                onPressed: () => _openImprestEntryEditor(),
+                child: const Row(
+                  children: [
+                    Icon(CupertinoIcons.add_circled_solid, size: 18),
+                    SizedBox(width: 6),
+                    Text('Add Entry'),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (entries.isEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Text(
+                'No entries added yet. Tap “Add Entry”.',
+                style: AppTheme.caption.copyWith(color: AppTheme.textSecondary),
+              ),
+            ),
+          if (entries.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            ...List.generate(entries.length, (i) {
+              final e = entries[i];
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: ImprestEntryCard(
+                  entry: e,
+                  index: i,
+                  onDelete: () {
+                    ref.read(tiDocumentProvider.notifier).removeImprestEntry(i);
+                  },
+                  onEdit: () => _openImprestEntryEditor(existing: e, index: i),
+                ),
+              );
+            }),
+          ],
+        ]),
+      ],
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    // 1. ADD THIS LINE to access current values for validation logic
+    final tiDoc = ref.watch(tiDocumentProvider);
+
     final canGenerate =
         _omNumberController.text.trim().isNotEmpty &&
         _amountController.text.trim().isNotEmpty &&
-        _purposeController.text.trim().isNotEmpty && // ✅ NEW Check
+        _purposeController.text.trim().isNotEmpty &&
         _recommendingOfficeController.text.trim().isNotEmpty &&
         _letterNumberController.text.trim().isNotEmpty &&
         _selectedDivision != null &&
-        _selectedEmployee != null;
+        _selectedEmployee != null &&
+        // Added validation for new fields
+        _officeNameController.text.trim().isNotEmpty &&
+        _officeHeadController.text.trim().isNotEmpty &&
+        _officeHeadDesignationController.text.trim().isNotEmpty;
 
     return Stack(
       children: [
@@ -404,8 +837,8 @@ class _CreateTIDocumentScreenState extends ConsumerState<CreateTIDocumentScreen>
             ),
             leading: CupertinoButton(
               padding: EdgeInsets.zero,
-              child: const Icon(CupertinoIcons.back),
               onPressed: _isGeneratingPdf ? null : _handleBack,
+              child: const Icon(CupertinoIcons.back),
             ),
             trailing: _isGeneratingPdf
                 ? const CupertinoActivityIndicator(radius: 10)
@@ -421,7 +854,6 @@ class _CreateTIDocumentScreenState extends ConsumerState<CreateTIDocumentScreen>
                   parent: AlwaysScrollableScrollPhysics(),
                 ),
                 children: [
-                  // Section 1: Office Memorandum
                   _buildSectionHeader(
                     '1. Office Memorandum',
                     CupertinoIcons.doc_text,
@@ -443,7 +875,6 @@ class _CreateTIDocumentScreenState extends ConsumerState<CreateTIDocumentScreen>
                   ]),
                   const SizedBox(height: 24),
 
-                  // Section 2: Amount
                   _buildSectionHeader(
                     '2. Amount',
                     CupertinoIcons.money_dollar_circle,
@@ -459,10 +890,19 @@ class _CreateTIDocumentScreenState extends ConsumerState<CreateTIDocumentScreen>
                       ),
                       onChanged: (_) => setState(() {}),
                     ),
+                    const SizedBox(height: 12),
+                    IOSTextField(
+                      controller: vouchersCountController,
+                      label: 'No. of vouchers',
+                      placeholder: 'e.g. 15',
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: false,
+                      ),
+                      onChanged: (_) => setState(() {}),
+                    ),
                   ]),
                   const SizedBox(height: 24),
 
-                  // ✅ NEW Section 3: Purpose
                   _buildSectionHeader('3. Purpose', CupertinoIcons.text_quote),
                   const SizedBox(height: 10),
                   _buildSectionCard([
@@ -476,7 +916,6 @@ class _CreateTIDocumentScreenState extends ConsumerState<CreateTIDocumentScreen>
                   ]),
                   const SizedBox(height: 24),
 
-                  // Section 4: Recommending Office (Renumbered from 3)
                   _buildSectionHeader(
                     '4. Recommending Office',
                     CupertinoIcons.building_2_fill,
@@ -506,22 +945,21 @@ class _CreateTIDocumentScreenState extends ConsumerState<CreateTIDocumentScreen>
                   ]),
                   const SizedBox(height: 24),
 
-                  // Section 5: Division & Employee (Renumbered from 4)
+                  // ==========================================================
+                  // 5. Division & Employee (UPDATED SECTION)
+                  // ==========================================================
                   _buildSectionHeader(
                     '5. Division & Employee',
                     CupertinoIcons.person_2_fill,
                   ),
                   const SizedBox(height: 10),
                   _buildSectionCard([
-                    // Division Selection Field
                     DivisionSearchField(
                       selectedDivision: _selectedDivision,
-                      onChanged: (division) {
-                        setState(() => _selectedDivision = division);
-                      },
+                      onChanged: (division) =>
+                          setState(() => _selectedDivision = division),
                     ),
                     const Divider(height: 24, color: AppTheme.dividerColor),
-                    // Employee Selection Field
                     _buildSelectionField(
                       label: 'Employee',
                       value: _selectedEmployee?.displayText,
@@ -529,10 +967,67 @@ class _CreateTIDocumentScreenState extends ConsumerState<CreateTIDocumentScreen>
                       icon: CupertinoIcons.person_fill,
                       onTap: _showEmployeeSelector,
                     ),
+
+                    // ---- START OF NEW FIELDS ----
+                    const Divider(height: 30),
+                    Text(
+                      'Office Details',
+                      style: AppTheme.caption.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.primaryBlue,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // 1. Office Name
+                    IOSTextField(
+                      controller: _officeNameController, // FIX: Use controller
+                      label: 'Office Name',
+                      placeholder: 'e.g. Electricity Trans. Division',
+                      onChanged: (val) {
+                        ref
+                            .read(tiDocumentProvider.notifier)
+                            .updateEmployeeOfficeDetails(office: val);
+                        setState(() {});
+                      },
+                    ),
+                    const SizedBox(height: 12),
+
+                    // 2. Head of Office
+                    IOSTextField(
+                      controller: _officeHeadController, // FIX: Use controller
+                      label: 'Head of Office',
+                      placeholder: 'e.g. Superintending Engineer',
+                      onChanged: (val) {
+                        ref
+                            .read(tiDocumentProvider.notifier)
+                            .updateEmployeeOfficeDetails(head: val);
+                        setState(() {});
+                      },
+                    ),
+                    const SizedBox(height: 12),
+
+                    // 3. Head Designation
+                    IOSTextField(
+                      controller:
+                          _officeHeadDesignationController, // FIX: Use controller
+                      label: 'Head Designation',
+                      placeholder: 'e.g. SE',
+                      onChanged: (val) {
+                        ref
+                            .read(tiDocumentProvider.notifier)
+                            .updateEmployeeOfficeDetails(headDesignation: val);
+                        setState(() {});
+                      },
+                    ),
+                    // ---- END OF NEW FIELDS ----
                   ]),
+                  const SizedBox(height: 24),
+
+                  // NEW: Entries UI
+                  _buildImprestEntriesSection(),
                   const SizedBox(height: 32),
 
-                  // Generate Button
                   CupertinoButton(
                     padding: EdgeInsets.zero,
                     onPressed: (canGenerate && !_isGeneratingPdf)
@@ -554,15 +1049,6 @@ class _CreateTIDocumentScreenState extends ConsumerState<CreateTIDocumentScreen>
                             ? null
                             : AppTheme.dividerColor,
                         borderRadius: BorderRadius.circular(12),
-                        boxShadow: (canGenerate && !_isGeneratingPdf)
-                            ? [
-                                BoxShadow(
-                                  color: AppTheme.primaryBlue.withOpacity(0.3),
-                                  blurRadius: 12,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ]
-                            : null,
                       ),
                       alignment: Alignment.center,
                       child: Row(
@@ -591,41 +1077,6 @@ class _CreateTIDocumentScreenState extends ConsumerState<CreateTIDocumentScreen>
                       ),
                     ),
                   ),
-
-                  const SizedBox(height: 16),
-
-                  // Helper Text
-                  if (!canGenerate)
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: AppTheme.warningOrange.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: AppTheme.warningOrange.withOpacity(0.3),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            CupertinoIcons.info_circle_fill,
-                            color: AppTheme.warningOrange,
-                            size: 16,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              'Please fill all required fields to generate PDF',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: AppTheme.warningOrange.withOpacity(0.9),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
                   const SizedBox(height: AppTheme.spacingXL),
                 ],
               ),
@@ -633,7 +1084,6 @@ class _CreateTIDocumentScreenState extends ConsumerState<CreateTIDocumentScreen>
           ),
         ),
 
-        // Loading Overlay
         if (_isGeneratingPdf)
           Container(
             color: Colors.black.withOpacity(0.4),
@@ -643,13 +1093,6 @@ class _CreateTIDocumentScreenState extends ConsumerState<CreateTIDocumentScreen>
                 decoration: BoxDecoration(
                   color: AppTheme.surfaceWhite,
                   borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.2),
-                      blurRadius: 20,
-                      offset: const Offset(0, 10),
-                    ),
-                  ],
                 ),
                 child: const Column(
                   mainAxisSize: MainAxisSize.min,
@@ -685,6 +1128,7 @@ class _CreateTIDocumentScreenState extends ConsumerState<CreateTIDocumentScreen>
     );
   }
 
+  // Copied helper methods to ensure completeness
   Widget _buildSectionHeader(String title, IconData icon) {
     return Row(
       children: [
@@ -731,7 +1175,7 @@ class _CreateTIDocumentScreenState extends ConsumerState<CreateTIDocumentScreen>
   Widget _buildDateField(
     String label,
     DateTime date,
-    Function(DateTime) onChanged,
+    ValueChanged<DateTime> onChanged,
   ) {
     return GestureDetector(
       onTap: () => _showDatePicker(date, onChanged),

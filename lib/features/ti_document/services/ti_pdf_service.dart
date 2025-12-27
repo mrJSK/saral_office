@@ -49,6 +49,16 @@ class TiPdfService {
       ),
     );
 
+    // PAGE 3: Imprest Cash Account Book
+    doc.addPage(
+      pw.Page(
+        pageFormat: PdfPageFormat.a4,
+        margin: const pw.EdgeInsets.all(20),
+        build: (context) =>
+            _buildPage3ImprestCashAccountBook(model, ttf, ttfBold),
+      ),
+    );
+
     return doc.save();
   }
 
@@ -320,14 +330,12 @@ class TiPdfService {
   // ============================================================================
   // PAGE 2: COPY FORWARDED / ETD FORM
   // ============================================================================
-
   pw.Widget _buildPage2UPPCLForm(
     TiPdfModel model,
     pw.Font regular,
     pw.Font bold,
   ) {
     final df = DateFormat('dd/MM/yyyy');
-
     pw.TextStyle r(double s) => pw.TextStyle(font: regular, fontSize: s);
     pw.TextStyle b(double s) => pw.TextStyle(font: bold, fontSize: s);
 
@@ -348,13 +356,14 @@ class TiPdfService {
         pw.SizedBox(height: 16),
 
         // -----------------------------------------------------------------------
-        // NAME OF OFFICE + DATE
+        // NAME OF OFFICE + DATE (REQUISITION SECTION)
         // -----------------------------------------------------------------------
         pw.Row(
           children: [
             pw.Expanded(
               child: pw.Text(
-                'Name of the Office : ${model.divisionName}',
+                // UPDATED: Using Recommending Officer's Office as requested
+                'Name of the Office : ${model.recommendingOffice}',
                 style: r(10),
               ),
             ),
@@ -365,7 +374,6 @@ class TiPdfService {
 
         pw.Text('Sir,', style: r(10)),
         pw.SizedBox(height: 6),
-
         pw.Text(
           'Please open a temporary imprest / temporary advance for Rs. '
           '${model.amount.toStringAsFixed(0)} '
@@ -375,14 +383,12 @@ class TiPdfService {
           textAlign: pw.TextAlign.justify,
         ),
         pw.SizedBox(height: 10),
-
         pw.Text(
           'I certify that no temporary imprest / temporary advance is outstanding '
           'in my name as on date.',
           style: r(10),
         ),
         pw.SizedBox(height: 6),
-
         pw.Text(
           'I undertake that the account of above temporary imprest / temporary '
           'advance will be submitted within one month of the receipt of amount '
@@ -390,7 +396,6 @@ class TiPdfService {
           style: r(10),
           textAlign: pw.TextAlign.justify,
         ),
-
         pw.SizedBox(height: 30),
 
         // -----------------------------------------------------------------------
@@ -416,26 +421,26 @@ class TiPdfService {
             ],
           ),
         ),
-
         pw.SizedBox(height: 20),
 
         // -----------------------------------------------------------------------
-        // FOR USE IN RECOMMENDING / AUTHORISING OFFICER (CORRECTED AS PER SCAN)
+        // FOR USE IN RECOMMENDING / AUTHORISING OFFICER
         // -----------------------------------------------------------------------
         pw.SizedBox(height: 20),
-
         pw.Center(
           child: pw.Text(
             'For use in Recommending / Authorising Officer',
             style: b(10),
           ),
         ),
-
         pw.SizedBox(height: 12),
 
         // Name of Office (TWO LINES)
-        pw.Text('Name of the Office: ', style: r(10)),
-
+        pw.Text(
+          // UPDATED: Ensuring this is Recommending Officer's Office
+          'Name of the Office: ${model.recommendingOffice}',
+          style: r(10),
+        ),
         pw.SizedBox(height: 6),
 
         // No. + Date
@@ -445,22 +450,19 @@ class TiPdfService {
             pw.Text('Date ${df.format(model.letterDate)}', style: r(10)),
           ],
         ),
-
         pw.SizedBox(height: 6),
 
-        // Designation list (EXACT)
+        // Designation list
         pw.Text(
           'G.M. / Dy. G.M. / E.E. / S.D.O. /\n'
           'C.A.O. / Dy. C.A.O. / S.A.O. / A.O.',
           style: r(10),
         ),
-
         pw.SizedBox(height: 10),
-
         pw.Text('Sir,', style: r(10)),
         pw.SizedBox(height: 6),
 
-        // Main forwarding paragraph (EXACT STRUCTURE)
+        // Main forwarding paragraph
         pw.Text(
           'I forward the above requisition for opening of temporary imprest / '
           'temporary advance of Rs. ${model.amount.toStringAsFixed(0)} '
@@ -469,16 +471,13 @@ class TiPdfService {
           style: r(10),
           textAlign: pw.TextAlign.justify,
         ),
-
         pw.SizedBox(height: 8),
-
         pw.Text(
           'The account of this amount will be submitted for closing and adjustment '
           'at the earliest but within one month positively.',
           style: r(10),
           textAlign: pw.TextAlign.justify,
         ),
-
         pw.SizedBox(height: 28),
 
         // Signature & Seal
@@ -499,42 +498,42 @@ class TiPdfService {
         ),
 
         // ---------------------------------------------------------------------------
-        // FOR USE IN DRAWING AND DISBURSING OFFICER (CORRECTED AS PER SCAN)
+        // FOR USE IN DRAWING AND DISBURSING OFFICER
         // ---------------------------------------------------------------------------
         pw.SizedBox(height: 18),
-
         pw.Center(
           child: pw.Text(
             'For use in Drawing and Disbursing Officer',
             style: b(10),
           ),
         ),
-
         pw.SizedBox(height: 12),
 
         // Name of Office + Date
         pw.Row(
           children: [
-            pw.Expanded(child: pw.Text('Name of the Office: ', style: r(10))),
+            pw.Expanded(
+              child: pw.Text(
+                // Keeps Division Name for DDO section as is standard
+                'Name of the Office: ${model.divisionName}',
+                style: r(10),
+              ),
+            ),
             pw.Text('Date: ', style: r(10)),
           ],
         ),
-
         pw.SizedBox(height: 6),
-
         pw.Text('No. ', style: r(10)),
-
+        // ... (Rest of DDO section)
         pw.SizedBox(height: 6),
-
         pw.Text(
           'G.M. / Dy. G.M. / E.E. / S.D.O. /\n'
           'C.A.O. / Dy. C.A.O. / S.A.O. / A.O.',
           style: r(10),
         ),
-
         pw.SizedBox(height: 14),
 
-        // Certification sentence (EXACT TEXT)
+        // Certification sentence
         pw.Text(
           'The certificate given above by Shri ......................................................... '
           'has been checked and found correct / following temporary imprest / temporary '
@@ -542,7 +541,6 @@ class TiPdfService {
           style: r(10),
           textAlign: pw.TextAlign.justify,
         ),
-
         pw.SizedBox(height: 12),
 
         // TABLE (ONLY Sl., Date, Amount)
@@ -577,7 +575,6 @@ class TiPdfService {
             ),
           ],
         ),
-
         pw.SizedBox(height: 28),
 
         // Signature
@@ -594,6 +591,201 @@ class TiPdfService {
               style: r(9),
               textAlign: pw.TextAlign.center,
             ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  pw.Widget _buildPage3ImprestCashAccountBook(
+    TiPdfModel model,
+    pw.Font regular,
+    pw.Font bold,
+  ) {
+    pw.TextStyle r(double s) => pw.TextStyle(font: regular, fontSize: s);
+    pw.TextStyle b(double s) => pw.TextStyle(font: bold, fontSize: s);
+
+    String money(double v) => v.toStringAsFixed(0);
+
+    pw.Widget cell(
+      String text, {
+      pw.TextStyle? style,
+      pw.TextAlign align = pw.TextAlign.center,
+      double minHeight = 22,
+      pw.EdgeInsets pad = const pw.EdgeInsets.symmetric(
+        horizontal: 4,
+        vertical: 3,
+      ),
+    }) {
+      return pw.Container(
+        constraints: pw.BoxConstraints(minHeight: minHeight),
+        padding: pad,
+        alignment: align == pw.TextAlign.left
+            ? pw.Alignment.centerLeft
+            : (align == pw.TextAlign.right
+                  ? pw.Alignment.centerRight
+                  : pw.Alignment.center),
+        child: pw.Text(text, style: style ?? r(9), textAlign: align),
+      );
+    }
+
+    // Body rows from model.imprestEntries
+    final entryRows = model.imprestEntries.map((e) {
+      return pw.TableRow(
+        children: [
+          cell(e.date), // Date
+          cell(e.vrNo), // Vr. No
+          cell(e.transaction, align: pw.TextAlign.left), // Transaction
+          cell(money(e.payment), align: pw.TextAlign.right), // Amount payable
+          cell(money(e.total), align: pw.TextAlign.right), // Total (running)
+          cell(e.head, align: pw.TextAlign.left), // Head/GL Code
+        ],
+      );
+    }).toList();
+
+    // Totals
+    final totalPayable = model.imprestEntries.fold<double>(
+      0.0,
+      (s, e) => s + e.payment,
+    );
+
+    final finalTotal = model.imprestEntries.isEmpty
+        ? 0.0
+        : model.imprestEntries.last.total;
+
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+      children: [
+        pw.Center(child: pw.Text('IMPREST CASH ACCOUNT BOOK', style: b(16))),
+        pw.SizedBox(height: 3),
+        pw.Text(
+          'Cash Book of ${model.employeeName}, ${model.employeeDesignation}, '
+          'Office: ${model.divisionName}',
+          style: r(10),
+        ),
+        pw.SizedBox(height: 8),
+
+        pw.Table(
+          border: pw.TableBorder.all(width: 1),
+          columnWidths: const {
+            0: pw.FlexColumnWidth(1.2), // Date
+            1: pw.FlexColumnWidth(1.0), // Vr. No
+            2: pw.FlexColumnWidth(4.2), // Transaction
+            3: pw.FlexColumnWidth(1.4), // Amount payable
+            4: pw.FlexColumnWidth(1.3), // Total
+            5: pw.FlexColumnWidth(1.6), // Head/GL Code
+          },
+          children: [
+            // Header row
+            pw.TableRow(
+              children: [
+                cell('Date', style: b(9)),
+                cell('Vr.\nNo', style: b(9)),
+                cell('Transaction', style: b(9), align: pw.TextAlign.left),
+                cell('Amount\npayable', style: b(9)),
+                cell('Total', style: b(9)),
+                cell('Head/GL Code', style: b(9), align: pw.TextAlign.left),
+              ],
+            ),
+
+            // Entry rows (N rows)
+            ...entryRows,
+
+            // Total row
+            pw.TableRow(
+              children: [
+                cell(''),
+                cell(''),
+                cell('Total', style: b(10)),
+                cell(
+                  money(totalPayable),
+                  style: b(10),
+                  align: pw.TextAlign.right,
+                ),
+                cell(
+                  money(finalTotal),
+                  style: b(10),
+                  align: pw.TextAlign.right,
+                ),
+                cell(''),
+              ],
+            ),
+          ],
+        ),
+
+        pw.SizedBox(height: 10),
+
+        // Submission text
+        pw.Text(
+          'Submitted for adjustment: ${model.vouchersCount} passed vouchers, '
+          'Amount Rs. ${money(model.amount)}/-',
+          style: r(9),
+        ),
+
+        pw.SizedBox(height: 16),
+
+        // Handwritten-style paragraph
+        pw.Container(
+          padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          decoration: pw.BoxDecoration(
+            border: pw.Border.all(width: 0.5, color: PdfColors.grey400),
+            borderRadius: const pw.BorderRadius.all(pw.Radius.circular(4)),
+          ),
+          child: pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Text(
+                'It is submitted to ${model.divisionName} via              ',
+                style: pw.TextStyle(
+                  font: regular,
+                  fontSize: 10,
+                  fontStyle: pw.FontStyle.italic,
+                ),
+              ),
+              pw.SizedBox(height: 4),
+              pw.Text(
+                'for adjustment & enclosed.',
+                style: pw.TextStyle(
+                  font: regular,
+                  fontSize: 10,
+                  fontStyle: pw.FontStyle.italic,
+                ),
+              ),
+              pw.SizedBox(height: 20),
+              // Signature area
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Text('Seen:', style: r(9)),
+                      pw.SizedBox(height: 20),
+                      pw.Container(
+                        width: 120,
+                        decoration: const pw.BoxDecoration(
+                          border: pw.Border(bottom: pw.BorderSide(width: 0.5)),
+                        ),
+                      ),
+                    ],
+                  ),
+                  pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.end,
+                    children: [
+                      pw.SizedBox(height: 20),
+                      pw.Container(
+                        width: 120,
+                        decoration: const pw.BoxDecoration(
+                          border: pw.Border(bottom: pw.BorderSide(width: 0.5)),
+                        ),
+                      ),
+                      pw.SizedBox(height: 4),
+                      pw.Text('Recommeding authority', style: r(9)),
+                    ],
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ],

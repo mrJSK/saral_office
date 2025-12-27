@@ -237,7 +237,13 @@ class PaymentAuthorityPdfService {
         // Vendor/Payee details
         pw.Text('TO:', style: styles['bold']),
         pw.SizedBox(height: 3),
-        pw.Text('Name: ${pa.payeeName}', style: styles['bold']),
+        pw.Text(
+          pa.payeeCode != null && pa.payeeCode!.trim().isNotEmpty
+              ? 'Name: ${pa.payeeName} (${pa.payeeCode})'
+              : 'Name: ${pa.payeeName}',
+          style: styles['bold'],
+        ),
+
         pw.SizedBox(height: 2),
 
         // Address wrapped in Expanded to prevent overflow
