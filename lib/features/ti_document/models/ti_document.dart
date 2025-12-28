@@ -1,7 +1,9 @@
+// lib/features/ti_document/models/ti_document.dart
 import 'dart:convert';
+
 import 'package:isar/isar.dart';
 
-import 'ti_pdf_model.dart';
+import 'imprest_ledger_entry.dart';
 
 part 'ti_document.g.dart';
 
@@ -9,83 +11,81 @@ part 'ti_document.g.dart';
 class TIDocument {
   Id id = Isar.autoIncrement;
 
-  // 1. OM (Office Memorandum) Details
+  // 1) OM Details
   late String omNumber;
   late DateTime omDate;
 
-  // 2. Amount
+  // 2) Amount
   late double amount;
 
-  // 3. Recommending Office Details
+  // 3) Recommending office details
   late String recommendingOffice;
   late String letterNumber;
   late DateTime letterDate;
 
-  // 4. Division Details
+  // 4) Division details
   late String divisionName;
   late String fundsCenter;
 
-  // 5. Employee Details
+  // 5) Employee details
   late String employeeName;
   late String employeeDesignation;
   late String employeeSapId;
 
-  // NEW FIELDS (Added to support the required parameters)
+  // Optional “office details” (keep if you want; don’t force validation)
   late String employeeOffice;
   late String employeeOfficeHead;
   late String employeeOfficeHeadDesignation;
 
-  // 6. Purpose
+  // 6) Purpose
   late String purpose;
 
-  // 7. Number of vouchers (page-3 footer)
+  // 7) Page-3 metadata (optional even if you don’t render page-3)
   late int vouchersCount;
 
   // Metadata
   late DateTime createdAt;
   late DateTime updatedAt;
-  late String status; // Draft, Generated, etc.
+  late String status; // Draft/Generated/...
 
   String? pdfPath;
 
-  /// Backup of all data in JSON format (includes imprestEntries)
+  /// Stores full state (including imprest entries) as JSON.
   String? fullJsonData;
 }
 
-// ============================================================================
-// State Model for Riverpod (Immutable)
-// ============================================================================
+/// Riverpod state model (immutable)
 class TIDocumentModel {
-  // 1. OM Details
+  // 1) OM Details
   final String? omNumber;
   final DateTime? omDate;
 
-  // 2. Amount
+  // 2) Amount
   final double? amount;
 
-  // 3. Recommending Office
+  // 3) Recommending office details
   final String? recommendingOffice;
   final String? letterNumber;
   final DateTime? letterDate;
 
-  // 4. Division
+  // 4) Division details
   final String? divisionName;
   final String? fundsCenter;
 
-  // 5. Employee
+  // 5) Employee details
   final String? employeeName;
   final String? employeeDesignation;
   final String? employeeSapId;
 
-  // NEW FIELDS
+  // Optional office details
   final String? employeeOffice;
   final String? employeeOfficeHead;
   final String? employeeOfficeHeadDesignation;
 
-  // 6. Purpose
+  // 6) Purpose
   final String? purpose;
 
-  // 7. Page-3 inputs
+  // 7) Optional page-3 inputs
   final int? vouchersCount;
   final List<ImprestLedgerEntry> imprestEntries;
 
@@ -109,7 +109,6 @@ class TIDocumentModel {
     this.imprestEntries = const <ImprestLedgerEntry>[],
   });
 
-  // FIX: All parameters in copyWith are now optional (nullable).
   TIDocumentModel copyWith({
     String? omNumber,
     DateTime? omDate,
@@ -152,24 +151,19 @@ class TIDocumentModel {
   }
 
   bool get isValid {
-    return (omNumber != null && omNumber!.trim().isNotEmpty) &&
-        (omDate != null) &&
-        (amount != null && amount! > 0) &&
-        (recommendingOffice != null && recommendingOffice!.trim().isNotEmpty) &&
-        (letterNumber != null && letterNumber!.trim().isNotEmpty) &&
-        (letterDate != null) &&
-        (divisionName != null && divisionName!.trim().isNotEmpty) &&
-        (fundsCenter != null && fundsCenter!.trim().isNotEmpty) &&
-        (employeeName != null && employeeName!.trim().isNotEmpty) &&
-        (employeeDesignation != null &&
-            employeeDesignation!.trim().isNotEmpty) &&
-        (employeeSapId != null && employeeSapId!.trim().isNotEmpty) &&
-        // New validation checks (Optional: comment out if not strictly required)
-        (employeeOffice != null && employeeOffice!.trim().isNotEmpty) &&
-        (employeeOfficeHead != null && employeeOfficeHead!.trim().isNotEmpty) &&
-        (employeeOfficeHeadDesignation != null &&
-            employeeOfficeHeadDesignation!.trim().isNotEmpty) &&
-        (purpose != null && purpose!.trim().isNotEmpty);
+    final amt = amount ?? 0.0;
+    return (omNumber ?? '').trim().isNotEmpty &&
+        omDate != null &&
+        amt > 0 &&
+        (recommendingOffice ?? '').trim().isNotEmpty &&
+        (letterNumber ?? '').trim().isNotEmpty &&
+        letterDate != null &&
+        (divisionName ?? '').trim().isNotEmpty &&
+        (fundsCenter ?? '').trim().isNotEmpty &&
+        (employeeName ?? '').trim().isNotEmpty &&
+        (employeeDesignation ?? '').trim().isNotEmpty &&
+        (employeeSapId ?? '').trim().isNotEmpty &&
+        (purpose ?? '').trim().isNotEmpty;
   }
 
   TIDocument toIsarDocument({
@@ -177,7 +171,7 @@ class TIDocumentModel {
     DateTime? now,
     String? pdfPath,
   }) {
-    final ts = now ?? DateTime.now();
+    final DateTime ts = now ?? DateTime.now(); // <-- IMPORTANT: now()
 
     final doc = TIDocument()
       ..omNumber = omNumber ?? ''
@@ -206,7 +200,7 @@ class TIDocumentModel {
   }
 
   Map<String, dynamic> toMap() {
-    return <String, dynamic>{
+    return {
       'omNumber': omNumber,
       'omDate': omDate?.toIso8601String(),
       'amount': amount,
@@ -233,13 +227,13 @@ class TIDocumentModel {
     DateTime? dt(String? s) =>
         (s == null || s.isEmpty) ? null : DateTime.parse(s);
 
-    final entriesRaw = map['imprestEntries'];
+    final raw = map['imprestEntries'];
     final entries = <ImprestLedgerEntry>[];
-    if (entriesRaw is List) {
-      for (final item in entriesRaw) {
+    if (raw is List) {
+      for (final item in raw) {
         if (item is Map) {
           entries.add(
-            ImprestLedgerEntry.fromMap(Map<String, dynamic>.from(item)),
+            ImprestLedgerEntry.fromMap(Map<String, dynamic>.from(item as Map)),
           );
         }
       }
@@ -271,16 +265,14 @@ class TIDocumentModel {
       TIDocumentModel.fromMap(jsonDecode(source) as Map<String, dynamic>);
 
   static TIDocumentModel fromIsarDocument(TIDocument doc) {
-    // Prefer restoring full state (including imprestEntries) from fullJsonData.
     final json = doc.fullJsonData;
     if (json != null && json.trim().isNotEmpty) {
       try {
         return TIDocumentModel.fromJson(json);
       } catch (_) {
-        // fall through to field mapping
+        // fallthrough
       }
     }
-
     return TIDocumentModel(
       omNumber: doc.omNumber,
       omDate: doc.omDate,

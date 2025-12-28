@@ -1,9 +1,10 @@
 // lib/features/ti_document/services/ti_document_service.dart
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:isar/isar.dart';
+
 import '../models/ti_document.dart';
-import '../models/ti_pdf_model.dart';
 import 'ti_pdf_service.dart';
 
 class TIDocumentService {
@@ -12,12 +13,17 @@ class TIDocumentService {
 
   TIDocumentService(this.isar) : _pdfService = TiPdfService();
 
-  // ============================================================================
-  // Save TI Document to Database
-  // ============================================================================
-
-  Future<void> saveTIDocument(TIDocumentModel tiDocument) async {
-    final doc = tiDocument.toIsarDocument();
+  Future<void> saveTIDocument(
+    TIDocumentModel tiDocument, {
+    String status = 'Generated',
+    String? pdfPath,
+    DateTime? now,
+  }) async {
+    final doc = tiDocument.toIsarDocument(
+      status: status,
+      now: now,
+      pdfPath: pdfPath,
+    );
 
     await isar.writeTxn(() async {
       await isar.tIDocuments.put(doc);
@@ -26,38 +32,25 @@ class TIDocumentService {
     debugPrint('✅ TI Document saved to database: OM ${doc.omNumber}');
   }
 
-  // ============================================================================
-  // Get All TI Documents
-  // ============================================================================
-
   Future<List<TIDocument>> getAllTIDocuments() async {
-    return await isar.tIDocuments.where().sortByCreatedAtDesc().findAll();
+    return isar.tIDocuments.where().sortByCreatedAtDesc().findAll();
   }
-
-  // ============================================================================
-  // Get TI Documents by Date Range
-  // ============================================================================
 
   Future<List<TIDocument>> getTIDocumentsByDateRange(
     DateTime startDate,
     DateTime endDate,
   ) async {
-    return await isar.tIDocuments
+    return isar.tIDocuments
         .filter()
         .createdAtBetween(startDate, endDate)
         .sortByCreatedAtDesc()
         .findAll();
   }
 
-  // ============================================================================
-  // Delete TI Document
-  // ============================================================================
-
   Future<void> deleteTIDocument(int id) async {
     await isar.writeTxn(() async {
       await isar.tIDocuments.delete(id);
     });
-
     debugPrint('🗑️ TI Document deleted: ID $id');
   }
 
@@ -65,58 +58,50 @@ class TIDocumentService {
     await isar.writeTxn(() async {
       await isar.tIDocuments.deleteAll(ids);
     });
-
     debugPrint('🗑️ ${ids.length} TI Documents deleted');
   }
 
-  // ============================================================================
-  // Generate PDF Document (uses TiPdfService)
-  // ============================================================================
-
-  Future<void> generateTIDocumentPDF(TIDocumentModel tiDocument) async {
+  /// Generates PDF and opens it; returns file path.
+  /// Set [includeImprestPage] to true to include Page 3 (Imprest Cash Account Book).
+  Future<String> generateTIDocumentPDF(
+    TIDocumentModel tiDocument, {
+    bool includeImprestPage = false,
+  }) async {
     if (!tiDocument.isValid) {
       throw Exception('Invalid TI Document: Missing required fields');
     }
 
     try {
-      // Convert TIDocumentModel to TiPdfModel
-      final pdfModel = TiPdfModel(
-        omNumber: tiDocument.omNumber ?? '',
-        omDate: tiDocument.omDate ?? DateTime.now(),
-        amount: tiDocument.amount ?? 0.0,
-        recommendingOffice: tiDocument.recommendingOffice ?? '',
-        letterNumber: tiDocument.letterNumber ?? '',
-        letterDate: tiDocument.letterDate ?? DateTime.now(),
-        divisionName: tiDocument.divisionName ?? '',
-        divisionCode: tiDocument.fundsCenter ?? '',
-        employeeName: tiDocument.employeeName ?? '',
-        employeeDesignation: tiDocument.employeeDesignation ?? '',
-        purpose: tiDocument.purpose ?? '',
-        vouchersCount: tiDocument.vouchersCount ?? 0,
-        imprestEntries: tiDocument.imprestEntries,
+      final File file = await _pdfService.generateAndOpen(
+        tiDocument,
+        includeImprestPage: includeImprestPage,
       );
-
-      // Generate and open PDF (single PDF with 2 pages)
-      await _pdfService.generateAndOpen(pdfModel);
-
-      debugPrint('✅ TI Document PDF generated and opened successfully');
+      debugPrint(
+        '✅ TI Document PDF generated and opened successfully: ${file.path}',
+      );
+      return file.path;
     } catch (e) {
       debugPrint('❌ PDF Generation Error: $e');
       throw Exception('PDF Generation Error: $e');
     }
   }
 
-  // ============================================================================
-  // Get PDF Storage Directory
-  // ============================================================================
-
-  Future<String> getPDFStorageDirectory() async {
-    return await _pdfService.getPDFStorageDirectory();
+  Future<String> generateAndSave(
+    TIDocumentModel tiDocument, {
+    String status = 'Generated',
+    bool includeImprestPage = false,
+  }) async {
+    final pdfPath = await generateTIDocumentPDF(
+      tiDocument,
+      includeImprestPage: includeImprestPage,
+    );
+    await saveTIDocument(tiDocument, status: status, pdfPath: pdfPath);
+    return pdfPath;
   }
 
-  // ============================================================================
-  // Get Statistics
-  // ============================================================================
+  Future<String> getPDFStorageDirectory() async {
+    return _pdfService.getPDFStorageDirectory();
+  }
 
   Future<Map<String, dynamic>> getTIDocumentStats() async {
     final allDocs = await getAllTIDocuments();
@@ -134,28 +119,20 @@ class TIDocumentService {
     };
   }
 
-  // ============================================================================
-  // Get Recent TI Documents (for home screen)
-  // ============================================================================
-
   Future<List<TIDocument>> getRecentTIDocuments({int limit = 5}) async {
-    return await isar.tIDocuments
+    return isar.tIDocuments
         .where()
         .sortByCreatedAtDesc()
         .limit(limit)
         .findAll();
   }
 
-  // ============================================================================
-  // Search TI Documents
-  // ============================================================================
-
   Future<List<TIDocument>> searchTIDocuments(String query) async {
-    if (query.isEmpty) {
-      return await getRecentTIDocuments(limit: 50);
+    if (query.trim().isEmpty) {
+      return getRecentTIDocuments(limit: 50);
     }
 
-    return await isar.tIDocuments
+    return isar.tIDocuments
         .filter()
         .omNumberContains(query, caseSensitive: false)
         .or()
@@ -166,33 +143,18 @@ class TIDocumentService {
         .findAll();
   }
 
-  // ============================================================================
-  // Get TI Document by ID
-  // ============================================================================
-
   Future<TIDocument?> getTIDocumentById(int id) async {
-    return await isar.tIDocuments.get(id);
+    return isar.tIDocuments.get(id);
   }
-
-  // ============================================================================
-  // Get TI Documents Count
-  // ============================================================================
 
   Future<int> getTIDocumentsCount() async {
-    return await isar.tIDocuments.count();
+    return isar.tIDocuments.count();
   }
-
-  // ============================================================================
-  // Get This Month's TI Documents Count
-  // ============================================================================
 
   Future<int> getThisMonthTIDocumentsCount() async {
     final now = DateTime.now();
     final startOfMonth = DateTime(now.year, now.month, 1);
 
-    return await isar.tIDocuments
-        .filter()
-        .createdAtGreaterThan(startOfMonth)
-        .count();
+    return isar.tIDocuments.filter().createdAtGreaterThan(startOfMonth).count();
   }
 }

@@ -2,13 +2,13 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:isar/isar.dart';
+import 'package:saral_office/features/ti_document/models/imprest_ledger_entry.dart';
 
 import '../../../core/di/injection.dart';
 import '../../../core/database/models/division.dart';
 import '../../employee/models/employee.dart';
 
 import '../models/ti_document.dart';
-import '../models/ti_pdf_model.dart';
 import '../services/ti_document_service.dart';
 
 // ============================================================================
@@ -179,12 +179,17 @@ class TIDocumentNotifier extends StateNotifier<TIDocumentModel> {
   // Generate + Save
   // --------------------------------------------------------------------------
 
-  Future<void> generateAndSavePDF() async {
+  /// Generate & Save
+  Future<void> generateAndSavePDF({required bool includeImprestPage}) async {
     if (!state.isValid) {
       throw Exception('Please fill all required fields');
     }
 
-    await _tiDocumentService.generateTIDocumentPDF(state);
+    // ✅ PASS includeImprestPage to the service
+    await _tiDocumentService.generateTIDocumentPDF(
+      state,
+      includeImprestPage: includeImprestPage, // ← ADD THIS
+    );
     await _tiDocumentService.saveTIDocument(state);
   }
 }

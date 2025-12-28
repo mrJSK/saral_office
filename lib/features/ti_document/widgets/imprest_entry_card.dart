@@ -1,7 +1,9 @@
+// lib/features/ti_document/widgets/imprest_entry_card.dart
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:saral_office/features/ti_document/models/imprest_ledger_entry.dart';
 import '../../../core/theme/app_theme.dart';
-import '../models/ti_pdf_model.dart';
 
 class ImprestEntryCard extends StatelessWidget {
   final ImprestLedgerEntry entry;
@@ -27,6 +29,7 @@ class ImprestEntryCard extends StatelessWidget {
       ),
       child: Column(
         children: [
+          // Header
           Container(
             padding: const EdgeInsets.symmetric(
               horizontal: AppTheme.spacingM,
@@ -67,19 +70,41 @@ class ImprestEntryCard extends StatelessWidget {
               ],
             ),
           ),
+
+          // Content
           Padding(
             padding: const EdgeInsets.all(AppTheme.spacingM),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _row('Date', entry.date),
-                const SizedBox(height: 8),
-                _row('Vr. No', entry.vrNo),
-                const SizedBox(height: 8),
-                _row('Head/GL Code', entry.head),
-                const Divider(height: 18),
+                // Top Row: Date & Vr No
+                Row(
+                  children: [
+                    Expanded(child: _row('Date', entry.date)),
+                    const SizedBox(width: 16),
+                    Expanded(child: _row('Vr. No', entry.vrNo)),
+                  ],
+                ),
+
+                const SizedBox(height: 12),
+                const Divider(height: 1, color: AppTheme.dividerColor),
+                const SizedBox(height: 12),
+
+                // GL Code Display (Styled like AccountEntryCard)
+                // Assuming entry.head contains "Code - Description" or just Code.
+                // If you have separate fields, use them here.
+                _row('Head/GL Code', entry.head, isBold: true),
+
+                const SizedBox(height: 12),
+                const Divider(height: 1, color: AppTheme.dividerColor),
+                const SizedBox(height: 12),
+
+                // Transaction
                 _row('Transaction', entry.transaction),
-                const SizedBox(height: 10),
+
+                const SizedBox(height: 16),
+
+                // Amount Row
                 Row(
                   children: [
                     Text('Amount', style: AppTheme.caption),
@@ -87,25 +112,34 @@ class ImprestEntryCard extends StatelessWidget {
                     Text(
                       entry.payment.toStringAsFixed(2),
                       style: AppTheme.body1.copyWith(
+                        fontSize: 18,
                         fontWeight: FontWeight.w800,
                         color: AppTheme.successGreen,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    Text('Total', style: AppTheme.caption),
-                    const Spacer(),
-                    Text(
-                      entry.total.toStringAsFixed(2),
-                      style: AppTheme.body1.copyWith(
-                        fontWeight: FontWeight.w800,
+
+                // Optional: Show Running Total if needed
+                if (entry.total > 0) ...[
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Text(
+                        'Running Total',
+                        style: AppTheme.caption.copyWith(fontSize: 11),
                       ),
-                    ),
-                  ],
-                ),
+                      const Spacer(),
+                      Text(
+                        entry.total.toStringAsFixed(2),
+                        style: AppTheme.caption.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),
@@ -114,13 +148,29 @@ class ImprestEntryCard extends StatelessWidget {
     );
   }
 
-  Widget _row(String label, String value) {
+  Widget _row(String label, String value, {bool isBold = false}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: AppTheme.caption),
-        const SizedBox(height: 3),
-        Text(value, style: AppTheme.body2),
+        Text(
+          label,
+          style: AppTheme.caption.copyWith(
+            fontWeight: FontWeight.w500,
+            fontSize: 11,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: isBold
+              ? const TextStyle(
+                  fontFamily: 'SF Pro Display',
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.textPrimary,
+                )
+              : AppTheme.body2.copyWith(color: AppTheme.textPrimary),
+        ),
       ],
     );
   }

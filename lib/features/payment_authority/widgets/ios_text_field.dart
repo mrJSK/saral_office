@@ -15,11 +15,12 @@ class IOSTextField extends StatelessWidget {
   final TextCapitalization textCapitalization;
   final void Function(String)? onChanged;
   final bool enabled;
+  final bool readOnly; // <--- ADDED THIS
 
-  /// NEW: helps keep the focused field visible inside scroll views / bottom sheets
+  /// helps keep the focused field visible inside scroll views / bottom sheets
   final EdgeInsets scrollPadding;
 
-  /// NEW: allows parent to manage focus (optional)
+  /// allows parent to manage focus (optional)
   final FocusNode? focusNode;
 
   const IOSTextField({
@@ -35,6 +36,7 @@ class IOSTextField extends StatelessWidget {
     this.textCapitalization = TextCapitalization.none,
     this.onChanged,
     this.enabled = true,
+    this.readOnly = false, // <--- ADDED THIS
     this.scrollPadding = const EdgeInsets.all(20),
     this.focusNode,
   });
@@ -62,6 +64,7 @@ class IOSTextField extends StatelessWidget {
           textCapitalization: textCapitalization,
           onChanged: onChanged,
           enabled: enabled,
+          readOnly: readOnly, // <--- PASS IT HERE
           prefix: prefix != null
               ? Padding(padding: const EdgeInsets.only(left: 12), child: prefix)
               : null,
@@ -73,9 +76,11 @@ class IOSTextField extends StatelessWidget {
               : null,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           decoration: BoxDecoration(
-            color: enabled
+            color: (enabled && !readOnly)
                 ? (fillColor ?? AppTheme.backgroundLight)
-                : AppTheme.backgroundLight.withOpacity(0.5),
+                : AppTheme.backgroundLight.withOpacity(
+                    0.5,
+                  ), // dim if disabled/readonly
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
               color: enabled

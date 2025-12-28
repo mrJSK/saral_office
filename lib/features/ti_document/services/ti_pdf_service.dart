@@ -2,29 +2,40 @@
 
 import 'dart:io';
 import 'dart:typed_data';
+
 import 'package:flutter/foundation.dart';
+import 'package:intl/intl.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
-import 'package:intl/intl.dart';
-import '../models/ti_pdf_model.dart';
+
+import '../models/ti_document.dart';
 
 class TiPdfService {
-  /// Generate single PDF with 2 pages and auto-open it
-  Future generateAndOpen(TiPdfModel model) async {
-    final pdfBytes = await _buildPdf(model);
+  /// Generate single PDF and auto-open it.
+  /// Set [includeImprestPage] to true if you want the 3rd page.
+  Future<File> generateAndOpen(
+    TIDocumentModel model, {
+    bool includeImprestPage = false,
+  }) async {
+    final pdfBytes = await _buildPdf(
+      model,
+      includeImprestPage: includeImprestPage,
+    );
     final file = await _savePdfToFile(pdfBytes, model);
 
-    // Auto-open the PDF
     await OpenFilex.open(file.path);
     debugPrint('✅ TI PDF generated and opened: ${file.path}');
     return file;
   }
 
-  /// Build single PDF document with 2 pages
-  Future<Uint8List> _buildPdf(TiPdfModel model) async {
+  /// Build single PDF document (Page-1 + Page-2 + optional Page-3).
+  Future<Uint8List> _buildPdf(
+    TIDocumentModel model, {
+    required bool includeImprestPage,
+  }) async {
     final doc = pw.Document();
 
     // Load fonts
@@ -49,15 +60,17 @@ class TiPdfService {
       ),
     );
 
-    // PAGE 3: Imprest Cash Account Book
-    doc.addPage(
-      pw.Page(
-        pageFormat: PdfPageFormat.a4,
-        margin: const pw.EdgeInsets.all(20),
-        build: (context) =>
-            _buildPage3ImprestCashAccountBook(model, ttf, ttfBold),
-      ),
-    );
+    // PAGE 3: Imprest Cash Account Book (optional)
+    if (includeImprestPage) {
+      doc.addPage(
+        pw.Page(
+          pageFormat: PdfPageFormat.a4,
+          margin: const pw.EdgeInsets.all(20),
+          build: (context) =>
+              _buildPage3ImprestCashAccountBook(model, ttf, ttfBold),
+        ),
+      );
+    }
 
     return doc.save();
   }
@@ -65,20 +78,31 @@ class TiPdfService {
   // ============================================================================
   // PAGE 1: OFFICE MEMORANDUM (OM)
   // ============================================================================
-  pw.Widget _buildPage1OM(TiPdfModel model, pw.Font ttf, pw.Font ttfBold) {
+  pw.Widget _buildPage1OM(TIDocumentModel model, pw.Font ttf, pw.Font ttfBold) {
     final df = DateFormat('dd/MM/yyyy');
 
-    // Configurable styles for easy adjustments
     const double bodyFontSize = 12.0;
     const double headerFontSize = 16.0;
-    const double lineSpacing = 10.0; // Increased spacing between lines of text
+
+    final omNumber = (model.omNumber ?? '').trim();
+    final omDate = model.omDate ?? DateTime.now();
+
+    final amount = model.amount ?? 0.0;
+
+    final employeeName = (model.employeeName ?? '').trim();
+    final employeeDesignation = (model.employeeDesignation ?? '').trim();
+    final divisionName = (model.divisionName ?? '').trim();
+
+    final purpose = (model.purpose ?? '').trim();
+    final recommendingOffice = (model.recommendingOffice ?? '').trim();
+
+    final letterNumber = (model.letterNumber ?? '').trim();
+    final letterDate = model.letterDate ?? DateTime.now();
 
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
-        /// ====================================================================
-        /// 1. TITLE
-        /// ====================================================================
+        // 1) TITLE
         pw.Center(
           child: pw.Text(
             'OFFICE MEMORANDUM',
@@ -90,10 +114,9 @@ class TiPdfService {
           ),
         ),
 
-        pw.SizedBox(height: 40), // Increased gap
-        /// ====================================================================
-        /// 2. TOP NO / DATE ROW
-        /// ====================================================================
+        pw.SizedBox(height: 40),
+
+        // 2) TOP NO / DATE ROW
         pw.Row(
           children: [
             pw.Text(
@@ -101,7 +124,7 @@ class TiPdfService {
               style: pw.TextStyle(font: ttf, fontSize: bodyFontSize),
             ),
             pw.Text(
-              model.omNumber,
+              omNumber,
               style: pw.TextStyle(font: ttfBold, fontSize: bodyFontSize),
             ),
             pw.Spacer(),
@@ -110,66 +133,65 @@ class TiPdfService {
               style: pw.TextStyle(font: ttf, fontSize: bodyFontSize),
             ),
             pw.Text(
-              df.format(model.omDate),
+              df.format(omDate),
               style: pw.TextStyle(font: ttfBold, fontSize: bodyFontSize),
             ),
           ],
         ),
 
-        pw.SizedBox(height: 30), // Increased gap
-        /// ====================================================================
-        /// 3. SANCTION TEXT (Main Body)
-        /// ====================================================================
+        pw.SizedBox(height: 30),
+
+        // 3) SANCTION TEXT
         pw.RichText(
           textAlign: pw.TextAlign.justify,
           text: pw.TextSpan(
             style: pw.TextStyle(
               font: ttf,
               fontSize: bodyFontSize,
-              lineSpacing: 8, // Adjust line height here
+              lineSpacing: 1.5,
             ),
             children: [
               const pw.TextSpan(
                 text:
-                    'Sanction is hereby accorded for opening of temporary imperest / temporary advance account for Rs. ',
+                    'Sanction is hereby accorded for opening of temporary imprest / temporary advance account for Rs. ',
               ),
               pw.TextSpan(
-                text: '${model.amount.toStringAsFixed(0)}/-',
+                text: '${amount.toStringAsFixed(0)}/-',
                 style: pw.TextStyle(font: ttfBold),
               ),
               const pw.TextSpan(text: ' in the name of '),
               pw.TextSpan(
-                text: model.employeeName,
+                text: employeeName,
                 style: pw.TextStyle(font: ttfBold),
               ),
               const pw.TextSpan(text: ', Designation '),
               pw.TextSpan(
-                text: model.employeeDesignation,
+                text: employeeDesignation,
                 style: pw.TextStyle(font: ttfBold),
               ),
               const pw.TextSpan(text: ', office '),
               pw.TextSpan(
-                text: model.divisionName,
+                text: divisionName,
                 style: pw.TextStyle(font: ttfBold),
               ),
               const pw.TextSpan(text: ' for the purpose of '),
               pw.TextSpan(
-                text: model.purpose,
+                text: purpose,
                 style: pw.TextStyle(font: ttfBold),
               ),
               const pw.TextSpan(text: ' on the recommendation of '),
               pw.TextSpan(
-                text: model.recommendingOffice,
+                text: recommendingOffice,
                 style: pw.TextStyle(font: ttfBold),
               ),
               const pw.TextSpan(text: ' vide his letter No. '),
               pw.TextSpan(
-                text: model.letterNumber,
+                text: letterNumber,
                 style: pw.TextStyle(font: ttfBold),
               ),
               const pw.TextSpan(text: ' Dated '),
               pw.TextSpan(
-                text: df.format(model.letterDate),
+                text: df.format(letterDate),
                 style: pw.TextStyle(font: ttfBold),
               ),
               const pw.TextSpan(text: '.'),
@@ -179,14 +201,11 @@ class TiPdfService {
 
         pw.SizedBox(height: 25),
 
-        /// ====================================================================
-        /// 4. CONDITIONS
-        /// ====================================================================
+        // 4) CONDITIONS
         pw.Text(
           'The above sanction is subject to the following conditions:',
           style: pw.TextStyle(font: ttf, fontSize: bodyFontSize),
         ),
-
         pw.SizedBox(height: 15),
 
         pw.Padding(
@@ -197,11 +216,7 @@ class TiPdfService {
               pw.Paragraph(
                 text:
                     '1. The amount will be utilized for the purpose for which it has been advanced.',
-                style: pw.TextStyle(
-                  font: ttf,
-                  fontSize: bodyFontSize,
-                  lineSpacing: 1.5,
-                ),
+                style: pw.TextStyle(font: ttf, fontSize: bodyFontSize),
               ),
               pw.SizedBox(height: 10),
               pw.Paragraph(
@@ -210,21 +225,13 @@ class TiPdfService {
                     'the amount will be received from the monthly pay in lump-sum. As soon as the purpose for which '
                     'the advance account has been opened is completed the account of adjustment should be submitted '
                     'without waiting for expiry of one month.',
-                style: pw.TextStyle(
-                  font: ttf,
-                  fontSize: bodyFontSize,
-                  lineSpacing: 1.5,
-                ),
+                style: pw.TextStyle(font: ttf, fontSize: bodyFontSize),
               ),
               pw.SizedBox(height: 10),
               pw.Paragraph(
                 text:
                     '3. In case the amount is not needed, it should be returned to chest, immediately.',
-                style: pw.TextStyle(
-                  font: ttf,
-                  fontSize: bodyFontSize,
-                  lineSpacing: 1.5,
-                ),
+                style: pw.TextStyle(font: ttf, fontSize: bodyFontSize),
               ),
             ],
           ),
@@ -232,9 +239,7 @@ class TiPdfService {
 
         pw.SizedBox(height: 40),
 
-        /// ====================================================================
-        /// 5. FIRST SIGNATURE (Sanctioning Authority)
-        /// ====================================================================
+        // 5) FIRST SIGNATURE (Sanctioning Authority)
         pw.Align(
           alignment: pw.Alignment.centerRight,
           child: pw.Column(
@@ -249,42 +254,37 @@ class TiPdfService {
           ),
         ),
 
-        pw.Spacer(), // Pushes the following section to the bottom
-        /// ====================================================================
-        /// 6. COPY FORWARDED SECTION (The Missing Part)
-        /// ====================================================================
-        // Replicating the No/Date line for the endorsement
+        pw.Spacer(),
+
+        // 6) COPY FORWARDED SECTION
         pw.Row(
           mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
           children: [
             pw.Text(
-              'No. ${model.omNumber}',
+              'No. $omNumber',
               style: pw.TextStyle(font: ttf, fontSize: bodyFontSize),
             ),
             pw.Text(
-              'Date: ${df.format(model.omDate)}',
+              'Date: ${df.format(omDate)}',
               style: pw.TextStyle(font: ttf, fontSize: bodyFontSize),
             ),
           ],
         ),
-
         pw.SizedBox(height: 15),
 
         pw.Text(
           'Copy forwarded to the following for information and necessary action:',
           style: pw.TextStyle(font: ttf, fontSize: bodyFontSize),
         ),
-
         pw.SizedBox(height: 15),
 
-        // List of recipients
         pw.Padding(
           padding: const pw.EdgeInsets.only(left: 20),
           child: pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
               pw.Text(
-                '1. ${model.employeeName}', // The person concerned
+                '1. $employeeName',
                 style: pw.TextStyle(font: ttfBold, fontSize: bodyFontSize),
               ),
               pw.SizedBox(height: 8),
@@ -298,15 +298,12 @@ class TiPdfService {
 
         pw.SizedBox(height: 30),
 
-        /// ====================================================================
-        /// 7. BOTTOM SIGNATURE (Sanctioning Authority)
-        /// ====================================================================
+        // 7) BOTTOM SIGNATURE
         pw.Align(
           alignment: pw.Alignment.centerRight,
           child: pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.center,
             children: [
-              // Visual line for signature
               pw.Container(
                 width: 150,
                 decoration: const pw.BoxDecoration(
@@ -322,7 +319,7 @@ class TiPdfService {
           ),
         ),
 
-        pw.SizedBox(height: 20), // Bottom margin buffer
+        pw.SizedBox(height: 20),
       ],
     );
   }
@@ -331,7 +328,7 @@ class TiPdfService {
   // PAGE 2: COPY FORWARDED / ETD FORM
   // ============================================================================
   pw.Widget _buildPage2UPPCLForm(
-    TiPdfModel model,
+    TIDocumentModel model,
     pw.Font regular,
     pw.Font bold,
   ) {
@@ -339,12 +336,21 @@ class TiPdfService {
     pw.TextStyle r(double s) => pw.TextStyle(font: regular, fontSize: s);
     pw.TextStyle b(double s) => pw.TextStyle(font: bold, fontSize: s);
 
+    final omDate = model.omDate ?? DateTime.now();
+    final letterDate = model.letterDate ?? DateTime.now();
+
+    final recommendingOffice = (model.recommendingOffice ?? '').trim();
+    final divisionName = (model.divisionName ?? '').trim();
+
+    final employeeName = (model.employeeName ?? '').trim();
+    final purpose = (model.purpose ?? '').trim();
+
+    final amount = (model.amount ?? 0.0).toStringAsFixed(0);
+
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
-        // -----------------------------------------------------------------------
         // HEADER
-        // -----------------------------------------------------------------------
         pw.Center(child: pw.Text('U.P. POWER CORPORATION LTD.', style: b(12))),
         pw.SizedBox(height: 4),
         pw.Center(
@@ -355,19 +361,15 @@ class TiPdfService {
         ),
         pw.SizedBox(height: 16),
 
-        // -----------------------------------------------------------------------
-        // NAME OF OFFICE + DATE (REQUISITION SECTION)
-        // -----------------------------------------------------------------------
+        // Row 2: Name of Office (full width)
+        pw.Text('Name of the Office : $recommendingOffice', style: r(10)),
+
+        pw.SizedBox(height: 10),
         pw.Row(
           children: [
-            pw.Expanded(
-              child: pw.Text(
-                // UPDATED: Using Recommending Officer's Office as requested
-                'Name of the Office : ${model.recommendingOffice}',
-                style: r(10),
-              ),
-            ),
-            pw.Text('Date : ${df.format(model.omDate)}', style: r(10)),
+            pw.Text('No. ', style: r(10)),
+            pw.Spacer(),
+            pw.Text('Date : ${df.format(omDate)}', style: r(10)),
           ],
         ),
         pw.SizedBox(height: 10),
@@ -375,10 +377,8 @@ class TiPdfService {
         pw.Text('Sir,', style: r(10)),
         pw.SizedBox(height: 6),
         pw.Text(
-          'Please open a temporary imprest / temporary advance for Rs. '
-          '${model.amount.toStringAsFixed(0)} '
-          'in my name against passed vouchers for payment on account of '
-          '${model.purpose}.',
+          'Please open a temporary imprest / temporary advance for Rs. $amount '
+          'in my name against passed vouchers for payment on account of $purpose.',
           style: r(10),
           textAlign: pw.TextAlign.justify,
         ),
@@ -398,9 +398,7 @@ class TiPdfService {
         ),
         pw.SizedBox(height: 30),
 
-        // -----------------------------------------------------------------------
         // SIGNATURE (APPLICANT)
-        // -----------------------------------------------------------------------
         pw.Align(
           alignment: pw.Alignment.centerRight,
           child: pw.Column(
@@ -421,12 +419,10 @@ class TiPdfService {
             ],
           ),
         ),
+
         pw.SizedBox(height: 20),
 
-        // -----------------------------------------------------------------------
         // FOR USE IN RECOMMENDING / AUTHORISING OFFICER
-        // -----------------------------------------------------------------------
-        pw.SizedBox(height: 20),
         pw.Center(
           child: pw.Text(
             'For use in Recommending / Authorising Officer',
@@ -435,39 +431,31 @@ class TiPdfService {
         ),
         pw.SizedBox(height: 12),
 
-        // Name of Office (TWO LINES)
-        pw.Text(
-          // UPDATED: Ensuring this is Recommending Officer's Office
-          'Name of the Office: ${model.recommendingOffice}',
-          style: r(10),
-        ),
+        pw.Text('Name of the Office: $recommendingOffice', style: r(10)),
         pw.SizedBox(height: 6),
 
-        // No. + Date
         pw.Row(
           children: [
             pw.Expanded(child: pw.Text('No.: ', style: r(10))),
-            pw.Text('Date ${df.format(model.letterDate)}', style: r(10)),
+            pw.Text('Date ${df.format(letterDate)}', style: r(10)),
           ],
         ),
         pw.SizedBox(height: 6),
 
-        // Designation list
         pw.Text(
           'G.M. / Dy. G.M. / E.E. / S.D.O. /\n'
           'C.A.O. / Dy. C.A.O. / S.A.O. / A.O.',
           style: r(10),
         ),
         pw.SizedBox(height: 10),
+
         pw.Text('Sir,', style: r(10)),
         pw.SizedBox(height: 6),
 
-        // Main forwarding paragraph
         pw.Text(
           'I forward the above requisition for opening of temporary imprest / '
-          'temporary advance of Rs. ${model.amount.toStringAsFixed(0)} '
-          'in the name of Shri ${model.employeeName} '
-          'for (purpose) ${model.purpose}.',
+          'temporary advance of Rs. $amount in the name of Shri $employeeName '
+          'for (purpose) $purpose.',
           style: r(10),
           textAlign: pw.TextAlign.justify,
         ),
@@ -480,7 +468,6 @@ class TiPdfService {
         ),
         pw.SizedBox(height: 28),
 
-        // Signature & Seal
         pw.Align(
           alignment: pw.Alignment.centerRight,
           child: pw.Container(
@@ -497,9 +484,7 @@ class TiPdfService {
           ),
         ),
 
-        // ---------------------------------------------------------------------------
         // FOR USE IN DRAWING AND DISBURSING OFFICER
-        // ---------------------------------------------------------------------------
         pw.SizedBox(height: 18),
         pw.Center(
           child: pw.Text(
@@ -509,23 +494,18 @@ class TiPdfService {
         ),
         pw.SizedBox(height: 12),
 
-        // Name of Office + Date
         pw.Row(
           children: [
             pw.Expanded(
-              child: pw.Text(
-                // Keeps Division Name for DDO section as is standard
-                'Name of the Office: ${model.divisionName}',
-                style: r(10),
-              ),
+              child: pw.Text('Name of the Office: $divisionName', style: r(10)),
             ),
             pw.Text('Date: ', style: r(10)),
           ],
         ),
         pw.SizedBox(height: 6),
         pw.Text('No. ', style: r(10)),
-        // ... (Rest of DDO section)
         pw.SizedBox(height: 6),
+
         pw.Text(
           'G.M. / Dy. G.M. / E.E. / S.D.O. /\n'
           'C.A.O. / Dy. C.A.O. / S.A.O. / A.O.',
@@ -533,7 +513,6 @@ class TiPdfService {
         ),
         pw.SizedBox(height: 14),
 
-        // Certification sentence
         pw.Text(
           'The certificate given above by Shri ......................................................... '
           'has been checked and found correct / following temporary imprest / temporary '
@@ -543,7 +522,6 @@ class TiPdfService {
         ),
         pw.SizedBox(height: 12),
 
-        // TABLE (ONLY Sl., Date, Amount)
         pw.Table(
           border: pw.TableBorder.all(width: 1),
           columnWidths: const {
@@ -575,9 +553,9 @@ class TiPdfService {
             ),
           ],
         ),
+
         pw.SizedBox(height: 28),
 
-        // Signature
         pw.Align(
           alignment: pw.Alignment.centerRight,
           child: pw.Container(
@@ -597,8 +575,11 @@ class TiPdfService {
     );
   }
 
+  // ============================================================================
+  // PAGE 3: IMPREST CASH ACCOUNT BOOK (optional)
+  // ============================================================================
   pw.Widget _buildPage3ImprestCashAccountBook(
-    TiPdfModel model,
+    TIDocumentModel model,
     pw.Font regular,
     pw.Font bold,
   ) {
@@ -606,6 +587,14 @@ class TiPdfService {
     pw.TextStyle b(double s) => pw.TextStyle(font: bold, fontSize: s);
 
     String money(double v) => v.toStringAsFixed(0);
+
+    final employeeName = (model.employeeName ?? '').trim();
+    final employeeDesignation = (model.employeeDesignation ?? '').trim();
+    final divisionName = (model.divisionName ?? '').trim();
+
+    // Use derived data directly if your model doesn't store computed counts:
+    final vouchersCount = model.imprestEntries.length;
+    final amount = model.imprestEntries.fold(0.0, (sum, e) => sum + e.payment);
 
     pw.Widget cell(
       String text, {
@@ -659,8 +648,8 @@ class TiPdfService {
         pw.Center(child: pw.Text('IMPREST CASH ACCOUNT BOOK', style: b(16))),
         pw.SizedBox(height: 3),
         pw.Text(
-          'Cash Book of ${model.employeeName}, ${model.employeeDesignation}, '
-          'Office: ${model.divisionName}',
+          'Cash Book of $employeeName, $employeeDesignation, '
+          'Office: $divisionName',
           style: r(10),
         ),
         pw.SizedBox(height: 8),
@@ -717,8 +706,8 @@ class TiPdfService {
 
         // Submission text
         pw.Text(
-          'Submitted for adjustment: ${model.vouchersCount} passed vouchers, '
-          'Amount Rs. ${money(model.amount)}/-',
+          'Submitted for adjustment: $vouchersCount passed vouchers, '
+          'Amount Rs. ${money(amount)}/-',
           style: r(9),
         ),
 
@@ -735,22 +724,14 @@ class TiPdfService {
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
               pw.Text(
-                'It is submitted to ${model.divisionName} via              ',
+                'It is submitted to $divisionName via ${model.recommendingOffice} for adjustment & enclosed.',
                 style: pw.TextStyle(
                   font: regular,
                   fontSize: 10,
                   fontStyle: pw.FontStyle.italic,
                 ),
               ),
-              pw.SizedBox(height: 4),
-              pw.Text(
-                'for adjustment & enclosed.',
-                style: pw.TextStyle(
-                  font: regular,
-                  fontSize: 10,
-                  fontStyle: pw.FontStyle.italic,
-                ),
-              ),
+
               pw.SizedBox(height: 20),
               // Signature area
               pw.Row(
@@ -793,7 +774,7 @@ class TiPdfService {
   }
 
   // ---------------------------------------------------------------------------
-  // SMALL HELPER FOR TABLE CELLS
+  // Small helper for table cells (Page 2)
   // ---------------------------------------------------------------------------
   pw.Widget _cell(String text, pw.Font font) {
     return pw.Padding(
@@ -807,45 +788,22 @@ class TiPdfService {
   }
 
   // ============================================================================
-  // HELPER METHODS
+  // Save PDF with proper filename: Division_Employee_OMNumber.pdf
   // ============================================================================
-
-  /// Build signature box
-  pw.Widget _buildSignatureBox(String label, pw.Font ttf) {
-    return pw.Column(
-      crossAxisAlignment: pw.CrossAxisAlignment.center,
-      children: [
-        pw.SizedBox(height: 40),
-        pw.Container(
-          width: 100,
-          decoration: const pw.BoxDecoration(
-            border: pw.Border(top: pw.BorderSide(width: 1)),
-          ),
-          padding: const pw.EdgeInsets.only(top: 5),
-          child: pw.Text(
-            label,
-            style: pw.TextStyle(font: ttf, fontSize: 8),
-            textAlign: pw.TextAlign.center,
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// Save PDF with proper filename: Division_Employee_OMNumber.pdf
-  Future<File> _savePdfToFile(Uint8List bytes, TiPdfModel model) async {
+  Future<File> _savePdfToFile(Uint8List bytes, TIDocumentModel model) async {
     final output = await getApplicationDocumentsDirectory();
 
-    // Sanitize parts
-    final sanitizedDivision = _sanitizeFilename(model.divisionName);
-    final sanitizedEmployee = _sanitizeFilename(model.employeeName);
-    final sanitizedOM = _sanitizeFilename(model.omNumber);
+    final sanitizedDivision = _sanitizeFilename(
+      (model.divisionName ?? '').trim(),
+    );
+    final sanitizedEmployee = _sanitizeFilename(
+      (model.employeeName ?? '').trim(),
+    );
+    final sanitizedOM = _sanitizeFilename((model.omNumber ?? '').trim());
 
-    // Format: Division_Employee_OMNumber.pdf
     final filename =
         '${sanitizedDivision}_${sanitizedEmployee}_${sanitizedOM}.pdf';
 
-    // Create TI_Documents directory if it doesn't exist
     final pdfDir = Directory('${output.path}/TI_Documents');
     if (!await pdfDir.exists()) {
       await pdfDir.create(recursive: true);
@@ -857,7 +815,6 @@ class TiPdfService {
     return file;
   }
 
-  /// Sanitize filename
   String _sanitizeFilename(String input) {
     return input
         .replaceAll(RegExp(r'[^\w\s-]'), '') // Remove special chars
