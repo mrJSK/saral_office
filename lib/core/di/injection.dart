@@ -3,10 +3,17 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:isar/isar.dart';
+import 'package:saral_office/core/database/services/firebase_service.dart';
 import 'package:saral_office/core/database/services/isar_service.dart';
 
 // ✅ GLOBAL variables (outside any function)
 IsarService? _isarServiceInstance;
+
+// Add global instance
+final _firebaseService = FirebaseService();
+
+// Add getter
+FirebaseService getFirebaseService() => _firebaseService;
 
 /// Single initialization function to be called once in main()
 Future<void> initializeApp() async {

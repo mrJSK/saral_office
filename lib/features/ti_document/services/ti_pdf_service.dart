@@ -19,15 +19,18 @@ class TiPdfService {
   Future<File> generateAndOpen(
     TIDocumentModel model, {
     bool includeImprestPage = false,
+    bool includeHandReceiptPage = false, // ✅ ADD THIS
   }) async {
     final pdfBytes = await _buildPdf(
       model,
       includeImprestPage: includeImprestPage,
+      includeHandReceiptPage: includeHandReceiptPage, // ✅ PASS IT
     );
-    final file = await _savePdfToFile(pdfBytes, model);
 
+    final file = await _savePdfToFile(pdfBytes, model);
     await OpenFilex.open(file.path);
     debugPrint('✅ TI PDF generated and opened: ${file.path}');
+
     return file;
   }
 
@@ -35,6 +38,7 @@ class TiPdfService {
   Future<Uint8List> _buildPdf(
     TIDocumentModel model, {
     required bool includeImprestPage,
+    required bool includeHandReceiptPage, // ✅ ADD THIS
   }) async {
     final doc = pw.Document();
 
@@ -68,6 +72,16 @@ class TiPdfService {
           margin: const pw.EdgeInsets.all(20),
           build: (context) =>
               _buildPage3ImprestCashAccountBook(model, ttf, ttfBold),
+        ),
+      );
+    }
+    if (includeHandReceiptPage &&
+        model.imprestEntries.any((e) => e.isHandReceipt)) {
+      doc.addPage(
+        pw.Page(
+          pageFormat: PdfPageFormat.a4,
+          margin: const pw.EdgeInsets.all(40), // ✅ Match pages 1 & 2
+          build: (context) => buildPage4Form28DualReceipt(model, ttf, ttfBold),
         ),
       );
     }
@@ -771,6 +785,313 @@ class TiPdfService {
         ),
       ],
     );
+  }
+
+  pw.Widget buildPage4Form28DualReceipt(
+    TIDocumentModel model,
+    pw.Font regular,
+    pw.Font bold,
+  ) {
+    final entries = model.imprestEntries.where((e) => e.isHandReceipt).toList();
+
+    if (entries.isEmpty) {
+      return pw.Center(child: pw.Text('No Form-28 Hand Receipt'));
+    }
+
+    return pw.Column(
+      children: [_buildSingleForm28(model, entries.first, regular, bold)],
+    );
+  }
+
+  // ============================================================================
+  // SINGLE FORM-28 HAND RECEIPT
+  // ============================================================================
+  pw.Widget _buildSingleForm28(
+    TIDocumentModel model,
+    dynamic entry,
+    pw.Font regular,
+    pw.Font bold,
+  ) {
+    // ================= TEXT STYLES =================
+    pw.TextStyle r(double s) =>
+        pw.TextStyle(font: regular, fontSize: s, lineSpacing: 1.4);
+
+    pw.TextStyle b(double s) =>
+        pw.TextStyle(font: bold, fontSize: s, lineSpacing: 1.4);
+
+    // ================= DATA =================
+    final employee = model.employeeName ?? '';
+    final employeeDesignation = model.employeeDesignation ?? '';
+    final head = entry.head ?? '';
+    final division = model.divisionName ?? '';
+    final purpose = (model.purpose ?? entry.transaction ?? '').trim();
+    final amount = entry.payment ?? '';
+    final recommendingOffice = model.recommendingOffice ?? '';
+    final amountWords = _convertAmountToWords(amount);
+
+    // ================= HELPERS =================
+    pw.Widget richLine({
+      required double fontSize,
+      required List<pw.InlineSpan> children,
+    }) {
+      return pw.RichText(
+        text: pw.TextSpan(style: r(fontSize), children: children),
+      );
+    }
+
+    pw.Widget paragraph(pw.Widget child) {
+      return pw.Container(
+        width: double.infinity,
+        padding: const pw.EdgeInsets.only(bottom: 4),
+        child: child,
+      );
+    }
+
+    // ================= OUTER BORDER + INNER FRAMES =================
+    return pw.Container(
+      decoration: pw.BoxDecoration(border: pw.Border.all(width: 1)),
+      child: pw.Padding(
+        padding: const pw.EdgeInsets.fromLTRB(16, 14, 16, 14), // frame gap
+        child: pw.Container(
+          padding: const pw.EdgeInsets.fromLTRB(24, 22, 24, 22), // text padding
+          child: pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              // ================= HEADER =================
+              pw.Center(
+                child: pw.Text('Form-28 Hand Receipt', style: b(14)),
+              ), // INCREASED: 9 → 12
+              pw.SizedBox(height: 6),
+              pw.Center(
+                child: pw.Text('Passed & Pay for Rs.', style: r(10)),
+              ), // INCREASED: 6 → 8
+              pw.SizedBox(height: 8),
+
+              paragraph(
+                richLine(
+                  fontSize: 8, // INCREASED: 6 → 8
+                  children: [
+                    const pw.TextSpan(text: 'Head of A/c  '),
+                    pw.TextSpan(text: head, style: b(10)), // INCREASED: 6 → 8
+                    const pw.TextSpan(text: ','),
+                  ],
+                ),
+              ),
+
+              pw.SizedBox(height: 6),
+
+              paragraph(
+                richLine(
+                  fontSize: 8, // INCREASED: 6 → 8
+                  children: [
+                    const pw.TextSpan(text: 'Paid by cheque / Cash Rs. '),
+                    pw.TextSpan(
+                      text: amountWords,
+                      style: b(10),
+                    ), // INCREASED: 6 → 8
+                    const pw.TextSpan(
+                      text: ', to ...............................',
+                    ),
+                  ],
+                ),
+              ),
+
+              paragraph(
+                richLine(
+                  fontSize: 8, // INCREASED: 6 → 8
+                  children: [
+                    const pw.TextSpan(text: 'Paid by me '),
+                    pw.TextSpan(
+                      text: employee,
+                      style: b(8),
+                    ), // INCREASED: 6 → 8
+                    const pw.TextSpan(text: ', '),
+                    pw.TextSpan(
+                      text: employeeDesignation,
+                      style: b(10),
+                    ), // INCREASED: 6 → 8
+                  ],
+                ),
+              ),
+
+              pw.SizedBox(height: 4),
+
+              // ================= BODY =================
+              paragraph(
+                richLine(
+                  fontSize: 10, // INCREASED: 6 → 8
+                  children: [
+                    const pw.TextSpan(text: 'Received from '),
+                    pw.TextSpan(
+                      text: division,
+                      style: b(10),
+                    ), // INCREASED: 6 → 8
+                    const pw.TextSpan(text: ' office of Sub-Division '),
+                    pw.TextSpan(
+                      text: recommendingOffice,
+                      style: b(10),
+                    ), // INCREASED: 6 → 8
+                    const pw.TextSpan(text: ' Division the sum of Rs. ('),
+                    pw.TextSpan(
+                      text: amount.toString(),
+                      style: b(10),
+                    ), // INCREASED: 6 → 8
+                    const pw.TextSpan(
+                      text:
+                          ') Cash book voucher No. ..................... '
+                          'Date ............... to .......................',
+                    ),
+                  ],
+                ),
+              ),
+
+              pw.SizedBox(height: 8),
+
+              pw.Text(
+                'Name of work or purpose which payment is made',
+                style: r(10), // INCREASED: 6 → 8
+              ),
+              pw.SizedBox(height: 2),
+              pw.Text(purpose, style: b(8)), // INCREASED: 6 → 8
+
+              pw.SizedBox(height: 8),
+
+              pw.Text(
+                'Sum of Rs. (in words)',
+                style: r(10),
+              ), // INCREASED: 6 → 8
+              pw.SizedBox(height: 2),
+              pw.Text(amountWords, style: b(10)), // INCREASED: 6 → 8
+              // ================= FOOTER =================
+              pw.SizedBox(height: 14),
+              pw.Divider(thickness: 0.5),
+              pw.SizedBox(height: 8),
+
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text('Verified', style: r(10)), // INCREASED: 6 → 8
+                  pw.Text('Witness', style: r(10)), // INCREASED: 6 → 8
+                  pw.Text('Recd. payment', style: r(10)), // INCREASED: 6 → 8
+                ],
+              ),
+
+              pw.SizedBox(height: 12),
+
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Text('Recd. Payment', style: r(10)), // INCREASED: 6 → 8
+                  pw.Text('AE/EE', style: b(11)), // INCREASED: 7 → 9
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ============================================================================
+  // ✅ ADD THIS: Convert amount to Indian words helper function
+  // ============================================================================
+
+  /// Convert amount to Indian words (Crore, Lakh, Thousand, etc.)
+  String _convertAmountToWords(double amount) {
+    int rupees = amount.toInt();
+    int paise = ((amount - rupees) * 100).round();
+
+    const oneDigits = [
+      '',
+      'One',
+      'Two',
+      'Three',
+      'Four',
+      'Five',
+      'Six',
+      'Seven',
+      'Eight',
+      'Nine',
+    ];
+
+    const teens = [
+      'Ten',
+      'Eleven',
+      'Twelve',
+      'Thirteen',
+      'Fourteen',
+      'Fifteen',
+      'Sixteen',
+      'Seventeen',
+      'Eighteen',
+      'Nineteen',
+    ];
+
+    const tens = [
+      '',
+      '',
+      'Twenty',
+      'Thirty',
+      'Forty',
+      'Fifty',
+      'Sixty',
+      'Seventy',
+      'Eighty',
+      'Ninety',
+    ];
+
+    String convertBelowThousand(int num) {
+      if (num == 0) {
+        return '';
+      } else if (num < 10) {
+        return oneDigits[num];
+      } else if (num < 20) {
+        return teens[num - 10];
+      } else if (num < 100) {
+        return '${tens[num ~/ 10]}${num % 10 != 0 ? ' ${oneDigits[num % 10]}' : ''}'
+            .trim();
+      } else {
+        return '${oneDigits[num ~/ 100]} Hundred${num % 100 != 0 ? ' ${convertBelowThousand(num % 100)}' : ''}'
+            .trim();
+      }
+    }
+
+    final parts = <String>[];
+
+    // Crore (10 million)
+    final crore = rupees ~/ 10000000;
+    if (crore > 0) {
+      parts.add('${convertBelowThousand(crore)} Crore');
+    }
+
+    // Lakh (100 thousand)
+    final lakh = (rupees % 10000000) ~/ 100000;
+    if (lakh > 0) {
+      parts.add('${convertBelowThousand(lakh)} Lakh');
+    }
+
+    // Thousand
+    final thousand = (rupees % 100000) ~/ 1000;
+    if (thousand > 0) {
+      parts.add('${convertBelowThousand(thousand)} Thousand');
+    }
+
+    // Hundreds and below
+    final remainder = rupees % 1000;
+    if (remainder > 0) {
+      parts.add(convertBelowThousand(remainder));
+    }
+
+    String result = parts.join(' ').trim();
+    if (result.isEmpty) {
+      result = 'Zero';
+    }
+
+    if (paise > 0) {
+      result += ' and ${convertBelowThousand(paise)} Paise';
+    }
+
+    return '$result Only';
   }
 
   // ---------------------------------------------------------------------------

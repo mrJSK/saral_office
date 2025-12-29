@@ -66,6 +66,7 @@ class TIDocumentService {
   Future<String> generateTIDocumentPDF(
     TIDocumentModel tiDocument, {
     bool includeImprestPage = false,
+    bool includeHandReceiptPage = false, // ✅ ADD THIS
   }) async {
     if (!tiDocument.isValid) {
       throw Exception('Invalid TI Document: Missing required fields');
@@ -75,7 +76,9 @@ class TIDocumentService {
       final File file = await _pdfService.generateAndOpen(
         tiDocument,
         includeImprestPage: includeImprestPage,
+        includeHandReceiptPage: includeHandReceiptPage, // ✅ PASS THIS
       );
+
       debugPrint(
         '✅ TI Document PDF generated and opened successfully: ${file.path}',
       );
@@ -90,11 +93,14 @@ class TIDocumentService {
     TIDocumentModel tiDocument, {
     String status = 'Generated',
     bool includeImprestPage = false,
+    bool includeHandReceiptPage = false, // ✅ ADD THIS
   }) async {
     final pdfPath = await generateTIDocumentPDF(
       tiDocument,
       includeImprestPage: includeImprestPage,
+      includeHandReceiptPage: includeHandReceiptPage, // ✅ PASS THIS
     );
+
     await saveTIDocument(tiDocument, status: status, pdfPath: pdfPath);
     return pdfPath;
   }

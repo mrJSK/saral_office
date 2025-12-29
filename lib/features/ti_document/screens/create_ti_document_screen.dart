@@ -245,12 +245,16 @@ class _CreateTIDocumentScreenState extends ConsumerState<CreateTIDocumentScreen>
     try {
       _syncToState();
 
-      // Pass true to include Page 3
+      // ✅ Pass both parameters
       await ref
           .read(tiDocumentProvider.notifier)
-          .generateAndSavePDF(includeImprestPage: true);
+          .generateAndSavePDF(
+            includeImprestPage: true, // Page 3: Imprest Cash Account Book
+            includeHandReceiptPage: true, // Page 4: Hand Receipts (Form-2B)
+          );
 
       if (!mounted) return;
+
       await showCupertinoDialog(
         context: context,
         barrierDismissible: false,
@@ -873,14 +877,18 @@ class _CreateTIDocumentScreenState extends ConsumerState<CreateTIDocumentScreen>
                   onDelete: () {
                     // Delete from provider
                     ref.read(tiDocumentProvider.notifier).removeImprestEntry(i);
-
                     // Recalculate totals
                     _recalculateTotals();
-
-                    // Force rebuild to reflect deletion immediately
+                    // Force rebuild
                     if (mounted) setState(() {});
                   },
                   onEdit: () => _openImprestEntryEditor(existing: e, index: i),
+                  // ✅ ADD THIS CALLBACK
+                  onHandReceiptToggle: (updatedEntry) {
+                    ref
+                        .read(tiDocumentProvider.notifier)
+                        .updateImprestEntry(i, updatedEntry);
+                  },
                 ),
               );
             }),

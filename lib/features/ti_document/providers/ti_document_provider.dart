@@ -180,16 +180,27 @@ class TIDocumentNotifier extends StateNotifier<TIDocumentModel> {
   // --------------------------------------------------------------------------
 
   /// Generate & Save
-  Future<void> generateAndSavePDF({required bool includeImprestPage}) async {
+  Future<void> generateAndSavePDF({
+    required bool includeImprestPage,
+    bool includeHandReceiptPage = true, // ✅ ADD THIS (default true)
+  }) async {
     if (!state.isValid) {
       throw Exception('Please fill all required fields');
     }
 
-    // ✅ PASS includeImprestPage to the service
+    // ✅ Check if there are hand receipt entries
+    final hasHandReceipts = state.imprestEntries.any((e) => e.isHandReceipt);
+
+    // Only include hand receipt page if there are marked entries
+    final shouldIncludeHandReceipt = includeHandReceiptPage && hasHandReceipts;
+
+    // PASS both parameters to the service
     await _tiDocumentService.generateTIDocumentPDF(
       state,
-      includeImprestPage: includeImprestPage, // ← ADD THIS
+      includeImprestPage: includeImprestPage,
+      includeHandReceiptPage: shouldIncludeHandReceipt, // ✅ PASS THIS
     );
+
     await _tiDocumentService.saveTIDocument(state);
   }
 }

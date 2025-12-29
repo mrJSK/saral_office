@@ -1,4 +1,5 @@
 // lib/features/ti_document/models/imprest_ledger_entry.dart
+
 import 'dart:convert';
 
 class ImprestLedgerEntry {
@@ -6,8 +7,9 @@ class ImprestLedgerEntry {
   final String vrNo; // voucher no
   final String transaction;
   final double payment; // amount payable
-  final double total; // running total (optional if you want)
+  final double total; // running total
   final String head; // Head/GL code
+  final bool isHandReceipt; // ✅ NEW: Toggle for hand receipt
 
   const ImprestLedgerEntry({
     required this.date,
@@ -16,6 +18,7 @@ class ImprestLedgerEntry {
     required this.payment,
     required this.total,
     required this.head,
+    this.isHandReceipt = false, // Default: not a hand receipt
   });
 
   ImprestLedgerEntry copyWith({
@@ -25,6 +28,7 @@ class ImprestLedgerEntry {
     double? payment,
     double? total,
     String? head,
+    bool? isHandReceipt,
   }) {
     return ImprestLedgerEntry(
       date: date ?? this.date,
@@ -33,6 +37,7 @@ class ImprestLedgerEntry {
       payment: payment ?? this.payment,
       total: total ?? this.total,
       head: head ?? this.head,
+      isHandReceipt: isHandReceipt ?? this.isHandReceipt,
     );
   }
 
@@ -44,6 +49,7 @@ class ImprestLedgerEntry {
       'payment': payment,
       'total': total,
       'head': head,
+      'isHandReceipt': isHandReceipt,
     };
   }
 
@@ -55,6 +61,7 @@ class ImprestLedgerEntry {
       payment: (map['payment'] as num?)?.toDouble() ?? 0.0,
       total: (map['total'] as num?)?.toDouble() ?? 0.0,
       head: (map['head'] ?? '') as String,
+      isHandReceipt: (map['isHandReceipt'] as bool?) ?? false,
     );
   }
 
