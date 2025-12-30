@@ -6,46 +6,36 @@ class FirebaseService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   // ========================================================================
-  // SAVE TI DOCUMENT
+  // SAVE TI DOCUMENT RAW DATA ONLY
   // ========================================================================
-  Future<void> saveTIDocument(
-    Map<String, dynamic> documentData,
-    File? pdfFile,
-  ) async {
+  Future<void> saveTIDocumentData(Map<String, dynamic> documentData) async {
     try {
       // Add metadata
       final dataToSave = {
         ...documentData,
         'documentType': 'TI_DOCUMENT',
         'createdAt': FieldValue.serverTimestamp(),
-        'appVersion': '1.0.0', // Update with your app version
+        'appVersion': '1.0.0',
         'platform': Platform.operatingSystem,
       };
 
-      // Save to Firestore
+      // Save ONLY raw data to Firestore (NO PDF)
       final docRef = await _firestore
           .collection('ti_documents')
           .add(dataToSave);
 
-      debugPrint('✅ TI Document saved to Firebase: ${docRef.id}');
-
-      // Optional: Upload PDF to Firebase Storage
-      // if (pdfFile != null) {
-      //   await _uploadPdfToStorage(docRef.id, pdfFile, 'ti_documents');
-      // }
+      debugPrint('✅ TI Document data saved to Firebase: ${docRef.id}');
     } catch (e) {
       debugPrint('❌ Error saving TI Document to Firebase: $e');
       // Don't throw - we don't want to block PDF generation
-      // Just log the error
     }
   }
 
   // ========================================================================
-  // SAVE PAYMENT AUTHORITY
+  // SAVE PAYMENT AUTHORITY RAW DATA ONLY
   // ========================================================================
-  Future<void> savePaymentAuthority(
+  Future<void> savePaymentAuthorityData(
     Map<String, dynamic> authorityData,
-    File? pdfFile,
   ) async {
     try {
       // Add metadata
@@ -53,21 +43,16 @@ class FirebaseService {
         ...authorityData,
         'documentType': 'PAYMENT_AUTHORITY',
         'createdAt': FieldValue.serverTimestamp(),
-        'appVersion': '1.0.0', // Update with your app version
+        'appVersion': '1.0.0',
         'platform': Platform.operatingSystem,
       };
 
-      // Save to Firestore
+      // Save ONLY raw data to Firestore (NO PDF)
       final docRef = await _firestore
           .collection('payment_authorities')
           .add(dataToSave);
 
-      debugPrint('✅ Payment Authority saved to Firebase: ${docRef.id}');
-
-      // Optional: Upload PDF to Firebase Storage
-      // if (pdfFile != null) {
-      //   await _uploadPdfToStorage(docRef.id, pdfFile, 'payment_authorities');
-      // }
+      debugPrint('✅ Payment Authority data saved to Firebase: ${docRef.id}');
     } catch (e) {
       debugPrint('❌ Error saving Payment Authority to Firebase: $e');
       // Don't throw - we don't want to block PDF generation
@@ -95,34 +80,4 @@ class FirebaseService {
       return {'tiDocuments': 0, 'paymentAuthorities': 0};
     }
   }
-
-  // ========================================================================
-  // OPTIONAL: Upload PDF to Firebase Storage
-  // ========================================================================
-  // Future<String?> _uploadPdfToStorage(
-  //   String documentId,
-  //   File pdfFile,
-  //   String collection,
-  // ) async {
-  //   try {
-  //     final storageRef = FirebaseStorage.instance
-  //         .ref()
-  //         .child('$collection/$documentId.pdf');
-  //
-  //     await storageRef.putFile(pdfFile);
-  //     final downloadUrl = await storageRef.getDownloadURL();
-  //
-  //     // Update Firestore document with PDF URL
-  //     await _firestore
-  //         .collection(collection)
-  //         .doc(documentId)
-  //         .update({'pdfUrl': downloadUrl});
-  //
-  //     debugPrint('✅ PDF uploaded to Storage: $downloadUrl');
-  //     return downloadUrl;
-  //   } catch (e) {
-  //     debugPrint('❌ Error uploading PDF: $e');
-  //     return null;
-  //   }
-  // }
 }

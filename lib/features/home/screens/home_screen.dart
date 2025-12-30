@@ -4,6 +4,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/service_search_field.dart';
+import '../../../core/widgets/material_search_field.dart';
 import '../../payment_authority/screens/create_authority_screen.dart';
 import '../../payment_authority/providers/payment_authority_provider.dart';
 import '../../ti_document/screens/create_ti_document_screen.dart';
@@ -23,7 +25,6 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen>
     with SingleTickerProviderStateMixin, WidgetsBindingObserver {
-  // ← ADD WidgetsBindingObserver
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
@@ -31,18 +32,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   @override
   void initState() {
     super.initState();
-
-    // ✅ ADD: Register observer for app lifecycle
     WidgetsBinding.instance.addObserver(this);
 
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 600),
       vsync: this,
     );
+
     _fadeAnimation = CurvedAnimation(
       parent: _animationController,
       curve: Curves.easeOut,
     );
+
     _slideAnimation =
         Tween<Offset>(begin: const Offset(0, 0.1), end: Offset.zero).animate(
           CurvedAnimation(
@@ -50,27 +51,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             curve: Curves.easeOutCubic,
           ),
         );
+
     _animationController.forward();
   }
 
   @override
   void dispose() {
-    // ✅ ADD: Remove observer
     WidgetsBinding.instance.removeObserver(this);
     _animationController.dispose();
     super.dispose();
   }
 
-  // ✅ ADD: Listen for app lifecycle changes
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      // Refresh data when app comes back to foreground
       _refreshData();
     }
   }
 
-  // ✅ ADD: Refresh all providers
   void _refreshData() {
     ref.invalidate(recentAuthoritiesProvider);
     ref.invalidate(recentTIDocumentsProvider);
@@ -85,7 +83,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           parent: AlwaysScrollableScrollPhysics(),
         ),
         slivers: [
-          // Large Title Navigation Bar
           CupertinoSliverNavigationBar(
             backgroundColor: AppTheme.backgroundLight.withOpacity(0.9),
             border: null,
@@ -102,8 +99,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               child: const Icon(CupertinoIcons.settings, size: 24),
             ),
           ),
-
-          // Content
           SliverToBoxAdapter(
             child: FadeTransition(
               opacity: _fadeAnimation,
@@ -114,23 +109,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Welcome Section
                       _buildWelcomeSection(),
                       const SizedBox(height: AppTheme.spacingL),
-
-                      // Quick Actions
                       _buildQuickActions(),
                       const SizedBox(height: AppTheme.spacingXL),
-
-                      // Stats Section
                       _buildStatsSection(),
                       const SizedBox(height: AppTheme.spacingXL),
-
-                      // Recent Payment Authorities
                       _buildRecentAuthoritiesSection(),
                       const SizedBox(height: AppTheme.spacingXL),
-
-                      // Recent TI Documents
                       _buildRecentTIDocumentsSection(),
                       const SizedBox(height: AppTheme.spacingXL),
                     ],
@@ -205,6 +191,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             subtitle: 'Add or edit employee information',
             iconColor: AppTheme.warningOrange,
             onTap: () => _navigateToEmployeeManagement(),
+          ),
+          const Divider(height: 1, color: AppTheme.dividerColor),
+          QuickActionButton(
+            icon: CupertinoIcons.wrench_fill,
+            title: 'Browse Services',
+            subtitle: 'Search service master database',
+            iconColor: AppTheme.successGreen,
+            onTap: () => _showServiceBrowser(),
+          ),
+          const Divider(height: 1, color: AppTheme.dividerColor),
+          QuickActionButton(
+            icon: CupertinoIcons.cube_box_fill,
+            title: 'Browse Materials',
+            subtitle: 'Search material master database',
+            iconColor: AppTheme.warningOrange,
+            onTap: () => _showMaterialBrowser(),
           ),
         ],
       ),
@@ -356,13 +358,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     return const RecentTIDocumentsList();
   }
 
-  // ✅ UPDATED: Refresh data when returning from create screens
   void _navigateToCreateAuthority() async {
     ref.read(paymentAuthorityProvider.notifier).reset();
     await Navigator.of(
       context,
     ).push(CupertinoPageRoute(builder: (_) => const CreateAuthorityScreen()));
-    // Refresh data after returning
     _refreshData();
   }
 
@@ -371,13 +371,214 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     await Navigator.of(
       context,
     ).push(CupertinoPageRoute(builder: (_) => const CreateTIDocumentScreen()));
-    // Refresh data after returning
     _refreshData();
   }
 
   void _navigateToEmployeeManagement() {
     Navigator.of(context).push(
       CupertinoPageRoute(builder: (_) => const EmployeeManagementScreen()),
+    );
+  }
+
+  void _showServiceBrowser() {
+    Navigator.push(
+      context,
+      CupertinoPageRoute(
+        builder: (context) => ServicePickerScreen(
+          onSelected: (service) {
+            // Show service details in a bottom sheet
+            _showServiceDetails(context, service);
+          },
+        ),
+      ),
+    );
+  }
+
+  void _showMaterialBrowser() {
+    Navigator.push(
+      context,
+      CupertinoPageRoute(
+        builder: (context) => MaterialPickerScreen(
+          onSelected: (material) {
+            // Show material details in a bottom sheet
+            _showMaterialDetails(context, material);
+          },
+        ),
+      ),
+    );
+  }
+
+  void _showServiceDetails(BuildContext context, service) {
+    showCupertinoModalPopup(
+      context: context,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.6,
+        decoration: const BoxDecoration(
+          color: AppTheme.surfaceWhite,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(AppTheme.spacingM),
+              decoration: const BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(color: AppTheme.dividerColor),
+                ),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    CupertinoIcons.wrench_fill,
+                    color: AppTheme.successGreen,
+                  ),
+                  const SizedBox(width: 8),
+                  const Expanded(
+                    child: Text(
+                      'Service Details',
+                      style: TextStyle(
+                        fontFamily: 'SF Pro Display',
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  CupertinoButton(
+                    padding: EdgeInsets.zero,
+                    onPressed: () => Navigator.pop(context),
+                    child: const Icon(CupertinoIcons.xmark_circle_fill),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(AppTheme.spacingM),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildDetailRow('Activity Number', service.activityNumber),
+                    _buildDetailRow('Short Text', service.serviceShortText),
+                    _buildDetailRow('Long Text', service.serviceLongText),
+                    _buildDetailRow(
+                      'Material Group',
+                      service.materialGroupDesc,
+                    ),
+                    _buildDetailRow(
+                      'Service Category',
+                      service.serviceCategoryDesc,
+                    ),
+                    _buildDetailRow('Base Unit', service.baseUnit),
+                    if (service.glAccount != null)
+                      _buildDetailRow('GL Account', service.glAccount!),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showMaterialDetails(BuildContext context, material) {
+    showCupertinoModalPopup(
+      context: context,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.6,
+        decoration: const BoxDecoration(
+          color: AppTheme.surfaceWhite,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(AppTheme.spacingM),
+              decoration: const BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(color: AppTheme.dividerColor),
+                ),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    CupertinoIcons.cube_box_fill,
+                    color: AppTheme.warningOrange,
+                  ),
+                  const SizedBox(width: 8),
+                  const Expanded(
+                    child: Text(
+                      'Material Details',
+                      style: TextStyle(
+                        fontFamily: 'SF Pro Display',
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  CupertinoButton(
+                    padding: EdgeInsets.zero,
+                    onPressed: () => Navigator.pop(context),
+                    child: const Icon(CupertinoIcons.xmark_circle_fill),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(AppTheme.spacingM),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildDetailRow('Material Code', material.material),
+                    _buildDetailRow('Description', material.materialDesc),
+                    _buildDetailRow('Material Type', material.materialType),
+                    _buildDetailRow('Plant', material.plant),
+                    _buildDetailRow(
+                      'Material Group',
+                      material.materialGroupDesc,
+                    ),
+                    _buildDetailRow('Sub Group', material.subGroupDesc),
+                    _buildDetailRow('Base Unit', material.baseUnitOfMeasure),
+                    _buildDetailRow(
+                      'Serial Number Status',
+                      material.serialNumberStatus,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: AppTheme.caption.copyWith(
+              fontWeight: FontWeight.w600,
+              fontSize: 11,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: const TextStyle(
+              fontFamily: 'SF Pro Display',
+              fontSize: 15,
+              fontWeight: FontWeight.w500,
+              color: AppTheme.textPrimary,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -403,6 +604,42 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 ),
                 const SizedBox(width: 8),
                 const Text('Manage Employees'),
+              ],
+            ),
+          ),
+          CupertinoActionSheetAction(
+            onPressed: () {
+              Navigator.pop(context);
+              _showServiceBrowser();
+            },
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  CupertinoIcons.wrench_fill,
+                  color: AppTheme.successGreen,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                const Text('Browse Services'),
+              ],
+            ),
+          ),
+          CupertinoActionSheetAction(
+            onPressed: () {
+              Navigator.pop(context);
+              _showMaterialBrowser();
+            },
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  CupertinoIcons.cube_box_fill,
+                  color: AppTheme.warningOrange,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                const Text('Browse Materials'),
               ],
             ),
           ),
