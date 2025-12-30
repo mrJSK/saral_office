@@ -445,11 +445,20 @@ class _PRLineItemsScreenState extends ConsumerState<PRLineItemsScreen> {
                 child: const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(CupertinoIcons.add, size: 20),
+                    Icon(
+                      CupertinoIcons.add,
+                      size: 20,
+                      color: AppTheme.surfaceWhite, // ADD THIS LINE
+                    ),
                     SizedBox(width: 8),
                     Text(
                       'Add Item',
-                      style: TextStyle(fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                        fontFamily: 'SF Pro Display',
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.surfaceWhite, // ADD THIS LINE
+                      ),
                     ),
                   ],
                 ),
@@ -466,11 +475,20 @@ class _PRLineItemsScreenState extends ConsumerState<PRLineItemsScreen> {
                   child: const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(CupertinoIcons.checkmark_alt, size: 20),
+                      Icon(
+                        CupertinoIcons.checkmark_alt,
+                        size: 20,
+                        color: AppTheme.surfaceWhite, // ADD THIS LINE
+                      ),
                       SizedBox(width: 8),
                       Text(
                         'Complete',
-                        style: TextStyle(fontWeight: FontWeight.w600),
+                        style: TextStyle(
+                          fontFamily: 'SF Pro Display',
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.surfaceWhite, // ADD THIS LINE
+                        ),
                       ),
                     ],
                   ),

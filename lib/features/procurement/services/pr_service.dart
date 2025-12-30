@@ -26,12 +26,16 @@ class PRService {
     required String documentType,
     required String purchasingGroup,
     String? requisitioner,
+    String? glAccount,
+    String? division,
   }) async {
     final pr = PurchaseRequisition(
       prNumber: generatePRNumber(),
       documentType: documentType,
       purchasingGroup: purchasingGroup,
       requisitioner: requisitioner,
+      glAccount: glAccount,
+      division: division,
       createdBy: 'current_user', // Get from auth
     );
 
@@ -158,6 +162,7 @@ class PRService {
       'GL_Account',
       'Delivery_Date',
       'Valuation_Type',
+      'Division',
     ]);
 
     // Data rows
@@ -181,10 +186,11 @@ class PRService {
         item.accountAssignmentCategory,
         item.itemCategory,
         item.assetNumber ?? '',
-        item.costCenter ?? '',
-        item.glAccount ?? '',
+        item.costCenter ?? pr.division ?? '',
+        item.glAccount ?? pr.glAccount ?? '',
         _formatDate(item.deliveryDate!),
         item.valuationType ?? '',
+        pr.division ?? '',
       ]);
     }
 
@@ -614,6 +620,8 @@ class PRService {
       documentType: originalPR.documentType,
       purchasingGroup: originalPR.purchasingGroup,
       requisitioner: originalPR.requisitioner,
+      glAccount: originalPR.glAccount,
+      division: originalPR.division,
       createdBy: 'current_user',
     );
 
@@ -685,6 +693,12 @@ class PRService {
     if (pr.requisitioner != null) {
       buffer.writeln('Requisitioner: ${pr.requisitioner}');
     }
+    if (pr.glAccount != null) {
+      buffer.writeln('G/L Account: ${pr.glAccount}');
+    }
+    if (pr.division != null) {
+      buffer.writeln('Division (Fund Center): ${pr.division}');
+    }
     buffer.writeln('Status: ${pr.status.name}');
     buffer.writeln('Workflow Stage: ${pr.currentStage.name}');
     buffer.writeln('Created: ${_formatDate(pr.createdAt!)}');
@@ -709,6 +723,12 @@ class PRService {
       );
       buffer.writeln('  Plant: ${item.plant}');
       buffer.writeln('  Delivery Date: ${_formatDate(item.deliveryDate!)}');
+      if (item.costCenter != null) {
+        buffer.writeln('  Cost Center: ${item.costCenter}');
+      }
+      if (item.glAccount != null) {
+        buffer.writeln('  G/L Account: ${item.glAccount}');
+      }
       buffer.writeln();
 
       totalValue += item.totalValue;

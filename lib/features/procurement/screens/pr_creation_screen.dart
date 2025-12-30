@@ -20,6 +20,8 @@ class _PRCreationScreenState extends ConsumerState<PRCreationScreen> {
   String _selectedDocType = 'ZFLD';
   final _purchasingGroupController = TextEditingController();
   final _requisitionerController = TextEditingController();
+  final _glAccountController = TextEditingController();
+  final _divisionController = TextEditingController();
   DateTime _documentDate = DateTime.now();
 
   final List<String> _documentTypes = [
@@ -54,6 +56,8 @@ class _PRCreationScreenState extends ConsumerState<PRCreationScreen> {
   void dispose() {
     _purchasingGroupController.dispose();
     _requisitionerController.dispose();
+    _glAccountController.dispose();
+    _divisionController.dispose();
     super.dispose();
   }
 
@@ -266,6 +270,20 @@ class _PRCreationScreenState extends ConsumerState<PRCreationScreen> {
             label: 'Requisitioner',
             controller: _requisitionerController,
             hint: 'Your name',
+          ),
+          const SizedBox(height: AppTheme.spacingM),
+          _buildTextField(
+            label: 'G/L Account',
+            controller: _glAccountController,
+            hint: 'General Ledger account',
+            keyboardType: TextInputType.number,
+          ),
+          const SizedBox(height: AppTheme.spacingM),
+          _buildTextField(
+            label: 'Division (Fund Center)',
+            controller: _divisionController,
+            hint: 'e.g., 1511415999',
+            keyboardType: TextInputType.number,
           ),
         ],
       ),
@@ -533,6 +551,12 @@ class _PRCreationScreenState extends ConsumerState<PRCreationScreen> {
         requisitioner: _requisitionerController.text.isEmpty
             ? null
             : _requisitionerController.text,
+        glAccount: _glAccountController.text.isEmpty
+            ? null
+            : _glAccountController.text,
+        division: _divisionController.text.isEmpty
+            ? null
+            : _divisionController.text,
       );
 
       if (mounted) {

@@ -808,22 +808,44 @@ class _PRLineItemFormScreenState extends ConsumerState<PRLineItemFormScreen> {
       ),
       child: SafeArea(
         top: false,
-        child: SizedBox(
-          width: double.infinity,
-          child: CupertinoButton(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            color: AppTheme.primaryBlue,
-            borderRadius: BorderRadius.circular(12),
-            onPressed: _saveItem,
-            child: Text(
-              widget.existingItem != null ? 'Update Item' : 'Add Item',
-              style: const TextStyle(
-                fontFamily: 'SF Pro Display',
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
+        child: Row(
+          children: [
+            Expanded(
+              child: CupertinoButton(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                color: AppTheme.successGreen,
+                borderRadius: BorderRadius.circular(12),
+                onPressed: () => _saveItem(addAnother: true),
+                child: const Text(
+                  'Save & Add Another',
+                  style: TextStyle(
+                    fontFamily: 'SF Pro Display',
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.surfaceWhite,
+                  ),
+                ),
               ),
             ),
-          ),
+            const SizedBox(width: AppTheme.spacingM),
+            Expanded(
+              child: CupertinoButton(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                color: AppTheme.primaryBlue,
+                borderRadius: BorderRadius.circular(12),
+                onPressed: () => _saveItem(addAnother: false),
+                child: Text(
+                  widget.existingItem != null ? 'Update Item' : 'Save & Close',
+                  style: const TextStyle(
+                    fontFamily: 'SF Pro Display',
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.surfaceWhite,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -1021,7 +1043,7 @@ class _PRLineItemFormScreenState extends ConsumerState<PRLineItemFormScreen> {
     return quantity * price;
   }
 
-  Future<void> _saveItem() async {
+  Future<void> _saveItem({bool addAnother = false}) async {
     if (!_validateForm()) return;
 
     final item = PRLineItem(
@@ -1057,11 +1079,55 @@ class _PRLineItemFormScreenState extends ConsumerState<PRLineItemFormScreen> {
       await prService.addLineItem(widget.prNumber, item);
 
       if (mounted) {
-        Navigator.pop(context);
+        if (addAnother) {
+          // Clear form for next item
+          _resetForm();
+          // Show success message
+          _showSuccessMessage('Item added successfully');
+        } else {
+          Navigator.pop(context);
+        }
       }
     } catch (e) {
       _showError('Error saving item: $e');
     }
+  }
+
+  void _resetForm() {
+    setState(() {
+      _shortTextController.clear();
+      _quantityController.clear();
+      _priceController.clear();
+      _plantController.text = _plantController.text; // Keep plant
+      _storageLocationController.clear();
+      _materialGroupController.clear();
+      _assetNumberController.clear();
+      _costCenterController.text =
+          _costCenterController.text; // Keep cost center
+      _glAccountController.text = _glAccountController.text; // Keep GL account
+      _selectedMaterial = null;
+      _selectedService = null;
+      _selectedUnit = 'EA';
+      _deliveryDate = DateTime.now().add(const Duration(days: 30));
+      _valuationType = null;
+    });
+  }
+
+  void _showSuccessMessage(String message) {
+    showCupertinoDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) => CupertinoAlertDialog(
+        title: const Text('Success'),
+        content: Text(message),
+        actions: [
+          CupertinoDialogAction(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
 
   bool _validateForm() {

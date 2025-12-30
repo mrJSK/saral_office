@@ -54,6 +54,10 @@ class PurchaseRequisition {
   DateTime? exportedAt;
   String? exportFilePath;
 
+  // Header-level defaults for line items
+  String? glAccount; // G/L Account (General Ledger)
+  String? division; // Division (Fund Center)
+
   PurchaseRequisition({
     this.prNumber = '',
     this.documentType = 'ZFLD',
@@ -82,6 +86,8 @@ class PurchaseRequisition {
     this.isExported = false,
     this.exportedAt,
     this.exportFilePath,
+    this.glAccount,
+    this.division,
   }) : documentDate = documentDate ?? DateTime.now(),
        createdAt = createdAt ?? DateTime.now(),
        updatedAt = updatedAt ?? DateTime.now();

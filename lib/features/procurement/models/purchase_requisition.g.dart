@@ -54,114 +54,124 @@ const PurchaseRequisitionSchema = CollectionSchema(
       name: r'displayNumber',
       type: IsarType.string,
     ),
-    r'documentDate': PropertySchema(
+    r'division': PropertySchema(
       id: 7,
+      name: r'division',
+      type: IsarType.string,
+    ),
+    r'documentDate': PropertySchema(
+      id: 8,
       name: r'documentDate',
       type: IsarType.dateTime,
     ),
     r'documentType': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'documentType',
       type: IsarType.string,
     ),
     r'documentTypeDescription': PropertySchema(
-      id: 9,
+      id: 10,
       name: r'documentTypeDescription',
       type: IsarType.string,
     ),
     r'exportFilePath': PropertySchema(
-      id: 10,
+      id: 11,
       name: r'exportFilePath',
       type: IsarType.string,
     ),
     r'exportedAt': PropertySchema(
-      id: 11,
+      id: 12,
       name: r'exportedAt',
       type: IsarType.dateTime,
     ),
+    r'glAccount': PropertySchema(
+      id: 13,
+      name: r'glAccount',
+      type: IsarType.string,
+    ),
     r'isExported': PropertySchema(
-      id: 12,
+      id: 14,
       name: r'isExported',
       type: IsarType.bool,
     ),
     r'isSynced': PropertySchema(
-      id: 13,
+      id: 15,
       name: r'isSynced',
       type: IsarType.bool,
     ),
     r'natureOfTender': PropertySchema(
-      id: 14,
+      id: 16,
       name: r'natureOfTender',
       type: IsarType.string,
     ),
     r'nitNumber': PropertySchema(
-      id: 15,
+      id: 17,
       name: r'nitNumber',
       type: IsarType.string,
     ),
     r'poNumber': PropertySchema(
-      id: 16,
+      id: 18,
       name: r'poNumber',
       type: IsarType.string,
     ),
     r'prNumber': PropertySchema(
-      id: 17,
+      id: 19,
       name: r'prNumber',
       type: IsarType.string,
     ),
     r'purchaseOrganization': PropertySchema(
-      id: 18,
+      id: 20,
       name: r'purchaseOrganization',
       type: IsarType.string,
     ),
     r'purchasingGroup': PropertySchema(
-      id: 19,
+      id: 21,
       name: r'purchasingGroup',
       type: IsarType.string,
     ),
     r'requisitioner': PropertySchema(
-      id: 20,
+      id: 22,
       name: r'requisitioner',
       type: IsarType.string,
     ),
     r'rfqNumber': PropertySchema(
-      id: 21,
+      id: 23,
       name: r'rfqNumber',
       type: IsarType.string,
     ),
     r'sapPrNumber': PropertySchema(
-      id: 22,
+      id: 24,
       name: r'sapPrNumber',
       type: IsarType.string,
     ),
     r'status': PropertySchema(
-      id: 23,
+      id: 25,
       name: r'status',
       type: IsarType.byte,
       enumMap: _PurchaseRequisitionstatusEnumValueMap,
     ),
     r'statusOfTender': PropertySchema(
-      id: 24,
+      id: 26,
       name: r'statusOfTender',
       type: IsarType.string,
     ),
     r'tenderDate': PropertySchema(
-      id: 25,
+      id: 27,
       name: r'tenderDate',
       type: IsarType.dateTime,
     ),
     r'tenderNumber': PropertySchema(
-      id: 26,
+      id: 28,
       name: r'tenderNumber',
       type: IsarType.string,
     ),
     r'trackingNumber': PropertySchema(
-      id: 27,
+      id: 29,
       name: r'trackingNumber',
       type: IsarType.string,
     ),
     r'updatedAt': PropertySchema(
-      id: 28,
+      id: 30,
       name: r'updatedAt',
       type: IsarType.dateTime,
     )
@@ -227,10 +237,22 @@ int _purchaseRequisitionEstimateSize(
   }
   bytesCount += 3 + object.createdBy.length * 3;
   bytesCount += 3 + object.displayNumber.length * 3;
+  {
+    final value = object.division;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   bytesCount += 3 + object.documentType.length * 3;
   bytesCount += 3 + object.documentTypeDescription.length * 3;
   {
     final value = object.exportFilePath;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final value = object.glAccount;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
     }
@@ -308,28 +330,30 @@ void _purchaseRequisitionSerialize(
   writer.writeString(offsets[4], object.createdBy);
   writer.writeByte(offsets[5], object.currentStage.index);
   writer.writeString(offsets[6], object.displayNumber);
-  writer.writeDateTime(offsets[7], object.documentDate);
-  writer.writeString(offsets[8], object.documentType);
-  writer.writeString(offsets[9], object.documentTypeDescription);
-  writer.writeString(offsets[10], object.exportFilePath);
-  writer.writeDateTime(offsets[11], object.exportedAt);
-  writer.writeBool(offsets[12], object.isExported);
-  writer.writeBool(offsets[13], object.isSynced);
-  writer.writeString(offsets[14], object.natureOfTender);
-  writer.writeString(offsets[15], object.nitNumber);
-  writer.writeString(offsets[16], object.poNumber);
-  writer.writeString(offsets[17], object.prNumber);
-  writer.writeString(offsets[18], object.purchaseOrganization);
-  writer.writeString(offsets[19], object.purchasingGroup);
-  writer.writeString(offsets[20], object.requisitioner);
-  writer.writeString(offsets[21], object.rfqNumber);
-  writer.writeString(offsets[22], object.sapPrNumber);
-  writer.writeByte(offsets[23], object.status.index);
-  writer.writeString(offsets[24], object.statusOfTender);
-  writer.writeDateTime(offsets[25], object.tenderDate);
-  writer.writeString(offsets[26], object.tenderNumber);
-  writer.writeString(offsets[27], object.trackingNumber);
-  writer.writeDateTime(offsets[28], object.updatedAt);
+  writer.writeString(offsets[7], object.division);
+  writer.writeDateTime(offsets[8], object.documentDate);
+  writer.writeString(offsets[9], object.documentType);
+  writer.writeString(offsets[10], object.documentTypeDescription);
+  writer.writeString(offsets[11], object.exportFilePath);
+  writer.writeDateTime(offsets[12], object.exportedAt);
+  writer.writeString(offsets[13], object.glAccount);
+  writer.writeBool(offsets[14], object.isExported);
+  writer.writeBool(offsets[15], object.isSynced);
+  writer.writeString(offsets[16], object.natureOfTender);
+  writer.writeString(offsets[17], object.nitNumber);
+  writer.writeString(offsets[18], object.poNumber);
+  writer.writeString(offsets[19], object.prNumber);
+  writer.writeString(offsets[20], object.purchaseOrganization);
+  writer.writeString(offsets[21], object.purchasingGroup);
+  writer.writeString(offsets[22], object.requisitioner);
+  writer.writeString(offsets[23], object.rfqNumber);
+  writer.writeString(offsets[24], object.sapPrNumber);
+  writer.writeByte(offsets[25], object.status.index);
+  writer.writeString(offsets[26], object.statusOfTender);
+  writer.writeDateTime(offsets[27], object.tenderDate);
+  writer.writeString(offsets[28], object.tenderNumber);
+  writer.writeString(offsets[29], object.trackingNumber);
+  writer.writeDateTime(offsets[30], object.updatedAt);
 }
 
 PurchaseRequisition _purchaseRequisitionDeserialize(
@@ -347,29 +371,31 @@ PurchaseRequisition _purchaseRequisitionDeserialize(
     currentStage: _PurchaseRequisitioncurrentStageValueEnumMap[
             reader.readByteOrNull(offsets[5])] ??
         WorkflowStage.prCreation,
-    documentDate: reader.readDateTimeOrNull(offsets[7]),
-    documentType: reader.readStringOrNull(offsets[8]) ?? 'ZFLD',
-    exportFilePath: reader.readStringOrNull(offsets[10]),
-    exportedAt: reader.readDateTimeOrNull(offsets[11]),
-    isExported: reader.readBoolOrNull(offsets[12]) ?? false,
-    isSynced: reader.readBoolOrNull(offsets[13]) ?? false,
-    natureOfTender: reader.readStringOrNull(offsets[14]),
-    nitNumber: reader.readStringOrNull(offsets[15]),
-    poNumber: reader.readStringOrNull(offsets[16]),
-    prNumber: reader.readStringOrNull(offsets[17]) ?? '',
-    purchaseOrganization: reader.readStringOrNull(offsets[18]) ?? '1000',
-    purchasingGroup: reader.readStringOrNull(offsets[19]) ?? '',
-    requisitioner: reader.readStringOrNull(offsets[20]),
-    rfqNumber: reader.readStringOrNull(offsets[21]),
-    sapPrNumber: reader.readStringOrNull(offsets[22]),
+    division: reader.readStringOrNull(offsets[7]),
+    documentDate: reader.readDateTimeOrNull(offsets[8]),
+    documentType: reader.readStringOrNull(offsets[9]) ?? 'ZFLD',
+    exportFilePath: reader.readStringOrNull(offsets[11]),
+    exportedAt: reader.readDateTimeOrNull(offsets[12]),
+    glAccount: reader.readStringOrNull(offsets[13]),
+    isExported: reader.readBoolOrNull(offsets[14]) ?? false,
+    isSynced: reader.readBoolOrNull(offsets[15]) ?? false,
+    natureOfTender: reader.readStringOrNull(offsets[16]),
+    nitNumber: reader.readStringOrNull(offsets[17]),
+    poNumber: reader.readStringOrNull(offsets[18]),
+    prNumber: reader.readStringOrNull(offsets[19]) ?? '',
+    purchaseOrganization: reader.readStringOrNull(offsets[20]) ?? '1000',
+    purchasingGroup: reader.readStringOrNull(offsets[21]) ?? '',
+    requisitioner: reader.readStringOrNull(offsets[22]),
+    rfqNumber: reader.readStringOrNull(offsets[23]),
+    sapPrNumber: reader.readStringOrNull(offsets[24]),
     status: _PurchaseRequisitionstatusValueEnumMap[
-            reader.readByteOrNull(offsets[23])] ??
+            reader.readByteOrNull(offsets[25])] ??
         PRStatus.draft,
-    statusOfTender: reader.readStringOrNull(offsets[24]),
-    tenderDate: reader.readDateTimeOrNull(offsets[25]),
-    tenderNumber: reader.readStringOrNull(offsets[26]),
-    trackingNumber: reader.readStringOrNull(offsets[27]),
-    updatedAt: reader.readDateTimeOrNull(offsets[28]),
+    statusOfTender: reader.readStringOrNull(offsets[26]),
+    tenderDate: reader.readDateTimeOrNull(offsets[27]),
+    tenderNumber: reader.readStringOrNull(offsets[28]),
+    trackingNumber: reader.readStringOrNull(offsets[29]),
+    updatedAt: reader.readDateTimeOrNull(offsets[30]),
   );
   object.id = id;
   return object;
@@ -399,50 +425,54 @@ P _purchaseRequisitionDeserializeProp<P>(
     case 6:
       return (reader.readString(offset)) as P;
     case 7:
-      return (reader.readDateTimeOrNull(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 8:
-      return (reader.readStringOrNull(offset) ?? 'ZFLD') as P;
-    case 9:
-      return (reader.readString(offset)) as P;
-    case 10:
-      return (reader.readStringOrNull(offset)) as P;
-    case 11:
       return (reader.readDateTimeOrNull(offset)) as P;
+    case 9:
+      return (reader.readStringOrNull(offset) ?? 'ZFLD') as P;
+    case 10:
+      return (reader.readString(offset)) as P;
+    case 11:
+      return (reader.readStringOrNull(offset)) as P;
     case 12:
-      return (reader.readBoolOrNull(offset) ?? false) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 13:
-      return (reader.readBoolOrNull(offset) ?? false) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 14:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readBoolOrNull(offset) ?? false) as P;
     case 15:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readBoolOrNull(offset) ?? false) as P;
     case 16:
       return (reader.readStringOrNull(offset)) as P;
     case 17:
-      return (reader.readStringOrNull(offset) ?? '') as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 18:
-      return (reader.readStringOrNull(offset) ?? '1000') as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 19:
       return (reader.readStringOrNull(offset) ?? '') as P;
     case 20:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readStringOrNull(offset) ?? '1000') as P;
     case 21:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readStringOrNull(offset) ?? '') as P;
     case 22:
       return (reader.readStringOrNull(offset)) as P;
     case 23:
-      return (_PurchaseRequisitionstatusValueEnumMap[
-              reader.readByteOrNull(offset)] ??
-          PRStatus.draft) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 24:
       return (reader.readStringOrNull(offset)) as P;
     case 25:
-      return (reader.readDateTimeOrNull(offset)) as P;
+      return (_PurchaseRequisitionstatusValueEnumMap[
+              reader.readByteOrNull(offset)] ??
+          PRStatus.draft) as P;
     case 26:
       return (reader.readStringOrNull(offset)) as P;
     case 27:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 28:
+      return (reader.readStringOrNull(offset)) as P;
+    case 29:
+      return (reader.readStringOrNull(offset)) as P;
+    case 30:
       return (reader.readDateTimeOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -1465,6 +1495,160 @@ extension PurchaseRequisitionQueryFilter on QueryBuilder<PurchaseRequisition,
   }
 
   QueryBuilder<PurchaseRequisition, PurchaseRequisition, QAfterFilterCondition>
+      divisionIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'division',
+      ));
+    });
+  }
+
+  QueryBuilder<PurchaseRequisition, PurchaseRequisition, QAfterFilterCondition>
+      divisionIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'division',
+      ));
+    });
+  }
+
+  QueryBuilder<PurchaseRequisition, PurchaseRequisition, QAfterFilterCondition>
+      divisionEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'division',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PurchaseRequisition, PurchaseRequisition, QAfterFilterCondition>
+      divisionGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'division',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PurchaseRequisition, PurchaseRequisition, QAfterFilterCondition>
+      divisionLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'division',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PurchaseRequisition, PurchaseRequisition, QAfterFilterCondition>
+      divisionBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'division',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PurchaseRequisition, PurchaseRequisition, QAfterFilterCondition>
+      divisionStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'division',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PurchaseRequisition, PurchaseRequisition, QAfterFilterCondition>
+      divisionEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'division',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PurchaseRequisition, PurchaseRequisition, QAfterFilterCondition>
+      divisionContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'division',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PurchaseRequisition, PurchaseRequisition, QAfterFilterCondition>
+      divisionMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'division',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PurchaseRequisition, PurchaseRequisition, QAfterFilterCondition>
+      divisionIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'division',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<PurchaseRequisition, PurchaseRequisition, QAfterFilterCondition>
+      divisionIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'division',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<PurchaseRequisition, PurchaseRequisition, QAfterFilterCondition>
       documentDateIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
@@ -2036,6 +2220,160 @@ extension PurchaseRequisitionQueryFilter on QueryBuilder<PurchaseRequisition,
         includeLower: includeLower,
         upper: upper,
         includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<PurchaseRequisition, PurchaseRequisition, QAfterFilterCondition>
+      glAccountIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'glAccount',
+      ));
+    });
+  }
+
+  QueryBuilder<PurchaseRequisition, PurchaseRequisition, QAfterFilterCondition>
+      glAccountIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'glAccount',
+      ));
+    });
+  }
+
+  QueryBuilder<PurchaseRequisition, PurchaseRequisition, QAfterFilterCondition>
+      glAccountEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'glAccount',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PurchaseRequisition, PurchaseRequisition, QAfterFilterCondition>
+      glAccountGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'glAccount',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PurchaseRequisition, PurchaseRequisition, QAfterFilterCondition>
+      glAccountLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'glAccount',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PurchaseRequisition, PurchaseRequisition, QAfterFilterCondition>
+      glAccountBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'glAccount',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PurchaseRequisition, PurchaseRequisition, QAfterFilterCondition>
+      glAccountStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'glAccount',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PurchaseRequisition, PurchaseRequisition, QAfterFilterCondition>
+      glAccountEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'glAccount',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PurchaseRequisition, PurchaseRequisition, QAfterFilterCondition>
+      glAccountContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'glAccount',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PurchaseRequisition, PurchaseRequisition, QAfterFilterCondition>
+      glAccountMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'glAccount',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<PurchaseRequisition, PurchaseRequisition, QAfterFilterCondition>
+      glAccountIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'glAccount',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<PurchaseRequisition, PurchaseRequisition, QAfterFilterCondition>
+      glAccountIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'glAccount',
+        value: '',
       ));
     });
   }
@@ -4222,6 +4560,20 @@ extension PurchaseRequisitionQuerySortBy
   }
 
   QueryBuilder<PurchaseRequisition, PurchaseRequisition, QAfterSortBy>
+      sortByDivision() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'division', Sort.asc);
+    });
+  }
+
+  QueryBuilder<PurchaseRequisition, PurchaseRequisition, QAfterSortBy>
+      sortByDivisionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'division', Sort.desc);
+    });
+  }
+
+  QueryBuilder<PurchaseRequisition, PurchaseRequisition, QAfterSortBy>
       sortByDocumentDate() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'documentDate', Sort.asc);
@@ -4288,6 +4640,20 @@ extension PurchaseRequisitionQuerySortBy
       sortByExportedAtDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'exportedAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<PurchaseRequisition, PurchaseRequisition, QAfterSortBy>
+      sortByGlAccount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'glAccount', Sort.asc);
+    });
+  }
+
+  QueryBuilder<PurchaseRequisition, PurchaseRequisition, QAfterSortBy>
+      sortByGlAccountDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'glAccount', Sort.desc);
     });
   }
 
@@ -4631,6 +4997,20 @@ extension PurchaseRequisitionQuerySortThenBy
   }
 
   QueryBuilder<PurchaseRequisition, PurchaseRequisition, QAfterSortBy>
+      thenByDivision() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'division', Sort.asc);
+    });
+  }
+
+  QueryBuilder<PurchaseRequisition, PurchaseRequisition, QAfterSortBy>
+      thenByDivisionDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'division', Sort.desc);
+    });
+  }
+
+  QueryBuilder<PurchaseRequisition, PurchaseRequisition, QAfterSortBy>
       thenByDocumentDate() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'documentDate', Sort.asc);
@@ -4697,6 +5077,20 @@ extension PurchaseRequisitionQuerySortThenBy
       thenByExportedAtDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'exportedAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<PurchaseRequisition, PurchaseRequisition, QAfterSortBy>
+      thenByGlAccount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'glAccount', Sort.asc);
+    });
+  }
+
+  QueryBuilder<PurchaseRequisition, PurchaseRequisition, QAfterSortBy>
+      thenByGlAccountDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'glAccount', Sort.desc);
     });
   }
 
@@ -5007,6 +5401,13 @@ extension PurchaseRequisitionQueryWhereDistinct
   }
 
   QueryBuilder<PurchaseRequisition, PurchaseRequisition, QDistinct>
+      distinctByDivision({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'division', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<PurchaseRequisition, PurchaseRequisition, QDistinct>
       distinctByDocumentDate() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'documentDate');
@@ -5040,6 +5441,13 @@ extension PurchaseRequisitionQueryWhereDistinct
       distinctByExportedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'exportedAt');
+    });
+  }
+
+  QueryBuilder<PurchaseRequisition, PurchaseRequisition, QDistinct>
+      distinctByGlAccount({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'glAccount', caseSensitive: caseSensitive);
     });
   }
 
@@ -5226,6 +5634,13 @@ extension PurchaseRequisitionQueryProperty
     });
   }
 
+  QueryBuilder<PurchaseRequisition, String?, QQueryOperations>
+      divisionProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'division');
+    });
+  }
+
   QueryBuilder<PurchaseRequisition, DateTime?, QQueryOperations>
       documentDateProperty() {
     return QueryBuilder.apply(this, (query) {
@@ -5258,6 +5673,13 @@ extension PurchaseRequisitionQueryProperty
       exportedAtProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'exportedAt');
+    });
+  }
+
+  QueryBuilder<PurchaseRequisition, String?, QQueryOperations>
+      glAccountProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'glAccount');
     });
   }
 
