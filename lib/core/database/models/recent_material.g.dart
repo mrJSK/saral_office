@@ -31,7 +31,7 @@ const RecentMaterialSchema = CollectionSchema(
       id: 2,
       name: r'materialDesc',
       type: IsarType.string,
-    ),
+    )
   },
   estimateSize: _recentMaterialEstimateSize,
   serialize: _recentMaterialSerialize,
@@ -110,10 +110,7 @@ List<IsarLinkBase<dynamic>> _recentMaterialGetLinks(RecentMaterial object) {
 }
 
 void _recentMaterialAttach(
-  IsarCollection<dynamic> col,
-  Id id,
-  RecentMaterial object,
-) {
+    IsarCollection<dynamic> col, Id id, RecentMaterial object) {
   object.id = id;
 }
 
@@ -129,16 +126,17 @@ extension RecentMaterialQueryWhereSort
 extension RecentMaterialQueryWhere
     on QueryBuilder<RecentMaterial, RecentMaterial, QWhereClause> {
   QueryBuilder<RecentMaterial, RecentMaterial, QAfterWhereClause> idEqualTo(
-    Id id,
-  ) {
+      Id id) {
     return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IdWhereClause.between(lower: id, upper: id));
+      return query.addWhereClause(IdWhereClause.between(
+        lower: id,
+        upper: id,
+      ));
     });
   }
 
   QueryBuilder<RecentMaterial, RecentMaterial, QAfterWhereClause> idNotEqualTo(
-    Id id,
-  ) {
+      Id id) {
     return QueryBuilder.apply(this, (query) {
       if (query.whereSort == Sort.asc) {
         return query
@@ -161,9 +159,8 @@ extension RecentMaterialQueryWhere
   }
 
   QueryBuilder<RecentMaterial, RecentMaterial, QAfterWhereClause> idGreaterThan(
-    Id id, {
-    bool include = false,
-  }) {
+      Id id,
+      {bool include = false}) {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(
         IdWhereClause.greaterThan(lower: id, includeLower: include),
@@ -172,9 +169,8 @@ extension RecentMaterialQueryWhere
   }
 
   QueryBuilder<RecentMaterial, RecentMaterial, QAfterWhereClause> idLessThan(
-    Id id, {
-    bool include = false,
-  }) {
+      Id id,
+      {bool include = false}) {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(
         IdWhereClause.lessThan(upper: id, includeUpper: include),
@@ -189,14 +185,12 @@ extension RecentMaterialQueryWhere
     bool includeUpper = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(
-        IdWhereClause.between(
-          lower: lowerId,
-          includeLower: includeLower,
-          upper: upperId,
-          includeUpper: includeUpper,
-        ),
-      );
+      return query.addWhereClause(IdWhereClause.between(
+        lower: lowerId,
+        includeLower: includeLower,
+        upper: upperId,
+        includeUpper: includeUpper,
+      ));
     });
   }
 }
@@ -204,38 +198,40 @@ extension RecentMaterialQueryWhere
 extension RecentMaterialQueryFilter
     on QueryBuilder<RecentMaterial, RecentMaterial, QFilterCondition> {
   QueryBuilder<RecentMaterial, RecentMaterial, QAfterFilterCondition> idEqualTo(
-    Id value,
-  ) {
+      Id value) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.equalTo(property: r'id', value: value),
-      );
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'id',
+        value: value,
+      ));
     });
   }
 
   QueryBuilder<RecentMaterial, RecentMaterial, QAfterFilterCondition>
-  idGreaterThan(Id value, {bool include = false}) {
+      idGreaterThan(
+    Id value, {
+    bool include = false,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.greaterThan(
-          include: include,
-          property: r'id',
-          value: value,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'id',
+        value: value,
+      ));
     });
   }
 
   QueryBuilder<RecentMaterial, RecentMaterial, QAfterFilterCondition>
-  idLessThan(Id value, {bool include = false}) {
+      idLessThan(
+    Id value, {
+    bool include = false,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.lessThan(
-          include: include,
-          property: r'id',
-          value: value,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'id',
+        value: value,
+      ));
     });
   }
 
@@ -246,124 +242,120 @@ extension RecentMaterialQueryFilter
     bool includeUpper = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.between(
-          property: r'id',
-          lower: lower,
-          includeLower: includeLower,
-          upper: upper,
-          includeUpper: includeUpper,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'id',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
     });
   }
 
   QueryBuilder<RecentMaterial, RecentMaterial, QAfterFilterCondition>
-  lastUsedAtEqualTo(DateTime value) {
+      lastUsedAtEqualTo(DateTime value) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.equalTo(property: r'lastUsedAt', value: value),
-      );
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'lastUsedAt',
+        value: value,
+      ));
     });
   }
 
   QueryBuilder<RecentMaterial, RecentMaterial, QAfterFilterCondition>
-  lastUsedAtGreaterThan(DateTime value, {bool include = false}) {
+      lastUsedAtGreaterThan(
+    DateTime value, {
+    bool include = false,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.greaterThan(
-          include: include,
-          property: r'lastUsedAt',
-          value: value,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'lastUsedAt',
+        value: value,
+      ));
     });
   }
 
   QueryBuilder<RecentMaterial, RecentMaterial, QAfterFilterCondition>
-  lastUsedAtLessThan(DateTime value, {bool include = false}) {
+      lastUsedAtLessThan(
+    DateTime value, {
+    bool include = false,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.lessThan(
-          include: include,
-          property: r'lastUsedAt',
-          value: value,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'lastUsedAt',
+        value: value,
+      ));
     });
   }
 
   QueryBuilder<RecentMaterial, RecentMaterial, QAfterFilterCondition>
-  lastUsedAtBetween(
+      lastUsedAtBetween(
     DateTime lower,
     DateTime upper, {
     bool includeLower = true,
     bool includeUpper = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.between(
-          property: r'lastUsedAt',
-          lower: lower,
-          includeLower: includeLower,
-          upper: upper,
-          includeUpper: includeUpper,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'lastUsedAt',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
     });
   }
 
   QueryBuilder<RecentMaterial, RecentMaterial, QAfterFilterCondition>
-  materialEqualTo(String value, {bool caseSensitive = true}) {
+      materialEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.equalTo(
-          property: r'material',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'material',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
   QueryBuilder<RecentMaterial, RecentMaterial, QAfterFilterCondition>
-  materialGreaterThan(
+      materialGreaterThan(
     String value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.greaterThan(
-          include: include,
-          property: r'material',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'material',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
   QueryBuilder<RecentMaterial, RecentMaterial, QAfterFilterCondition>
-  materialLessThan(
+      materialLessThan(
     String value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.lessThan(
-          include: include,
-          property: r'material',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'material',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
   QueryBuilder<RecentMaterial, RecentMaterial, QAfterFilterCondition>
-  materialBetween(
+      materialBetween(
     String lower,
     String upper, {
     bool includeLower = true,
@@ -371,140 +363,135 @@ extension RecentMaterialQueryFilter
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.between(
-          property: r'material',
-          lower: lower,
-          includeLower: includeLower,
-          upper: upper,
-          includeUpper: includeUpper,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'material',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
   QueryBuilder<RecentMaterial, RecentMaterial, QAfterFilterCondition>
-  materialStartsWith(String value, {bool caseSensitive = true}) {
+      materialStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.startsWith(
-          property: r'material',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'material',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
   QueryBuilder<RecentMaterial, RecentMaterial, QAfterFilterCondition>
-  materialEndsWith(String value, {bool caseSensitive = true}) {
+      materialEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.endsWith(
-          property: r'material',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'material',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
   QueryBuilder<RecentMaterial, RecentMaterial, QAfterFilterCondition>
-  materialContains(String value, {bool caseSensitive = true}) {
+      materialContains(String value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.contains(
-          property: r'material',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'material',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
   QueryBuilder<RecentMaterial, RecentMaterial, QAfterFilterCondition>
-  materialMatches(String pattern, {bool caseSensitive = true}) {
+      materialMatches(String pattern, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.matches(
-          property: r'material',
-          wildcard: pattern,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'material',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
   QueryBuilder<RecentMaterial, RecentMaterial, QAfterFilterCondition>
-  materialIsEmpty() {
+      materialIsEmpty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.equalTo(property: r'material', value: ''),
-      );
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'material',
+        value: '',
+      ));
     });
   }
 
   QueryBuilder<RecentMaterial, RecentMaterial, QAfterFilterCondition>
-  materialIsNotEmpty() {
+      materialIsNotEmpty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.greaterThan(property: r'material', value: ''),
-      );
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'material',
+        value: '',
+      ));
     });
   }
 
   QueryBuilder<RecentMaterial, RecentMaterial, QAfterFilterCondition>
-  materialDescEqualTo(String value, {bool caseSensitive = true}) {
+      materialDescEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.equalTo(
-          property: r'materialDesc',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'materialDesc',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
   QueryBuilder<RecentMaterial, RecentMaterial, QAfterFilterCondition>
-  materialDescGreaterThan(
+      materialDescGreaterThan(
     String value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.greaterThan(
-          include: include,
-          property: r'materialDesc',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'materialDesc',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
   QueryBuilder<RecentMaterial, RecentMaterial, QAfterFilterCondition>
-  materialDescLessThan(
+      materialDescLessThan(
     String value, {
     bool include = false,
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.lessThan(
-          include: include,
-          property: r'materialDesc',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'materialDesc',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
   QueryBuilder<RecentMaterial, RecentMaterial, QAfterFilterCondition>
-  materialDescBetween(
+      materialDescBetween(
     String lower,
     String upper, {
     bool includeLower = true,
@@ -512,86 +499,84 @@ extension RecentMaterialQueryFilter
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.between(
-          property: r'materialDesc',
-          lower: lower,
-          includeLower: includeLower,
-          upper: upper,
-          includeUpper: includeUpper,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'materialDesc',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
   QueryBuilder<RecentMaterial, RecentMaterial, QAfterFilterCondition>
-  materialDescStartsWith(String value, {bool caseSensitive = true}) {
+      materialDescStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.startsWith(
-          property: r'materialDesc',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'materialDesc',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
   QueryBuilder<RecentMaterial, RecentMaterial, QAfterFilterCondition>
-  materialDescEndsWith(String value, {bool caseSensitive = true}) {
+      materialDescEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.endsWith(
-          property: r'materialDesc',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'materialDesc',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
   QueryBuilder<RecentMaterial, RecentMaterial, QAfterFilterCondition>
-  materialDescContains(String value, {bool caseSensitive = true}) {
+      materialDescContains(String value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.contains(
-          property: r'materialDesc',
-          value: value,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'materialDesc',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
   QueryBuilder<RecentMaterial, RecentMaterial, QAfterFilterCondition>
-  materialDescMatches(String pattern, {bool caseSensitive = true}) {
+      materialDescMatches(String pattern, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.matches(
-          property: r'materialDesc',
-          wildcard: pattern,
-          caseSensitive: caseSensitive,
-        ),
-      );
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'materialDesc',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
     });
   }
 
   QueryBuilder<RecentMaterial, RecentMaterial, QAfterFilterCondition>
-  materialDescIsEmpty() {
+      materialDescIsEmpty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.equalTo(property: r'materialDesc', value: ''),
-      );
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'materialDesc',
+        value: '',
+      ));
     });
   }
 
   QueryBuilder<RecentMaterial, RecentMaterial, QAfterFilterCondition>
-  materialDescIsNotEmpty() {
+      materialDescIsNotEmpty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.greaterThan(property: r'materialDesc', value: ''),
-      );
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'materialDesc',
+        value: '',
+      ));
     });
   }
 }
@@ -605,14 +590,14 @@ extension RecentMaterialQueryLinks
 extension RecentMaterialQuerySortBy
     on QueryBuilder<RecentMaterial, RecentMaterial, QSortBy> {
   QueryBuilder<RecentMaterial, RecentMaterial, QAfterSortBy>
-  sortByLastUsedAt() {
+      sortByLastUsedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'lastUsedAt', Sort.asc);
     });
   }
 
   QueryBuilder<RecentMaterial, RecentMaterial, QAfterSortBy>
-  sortByLastUsedAtDesc() {
+      sortByLastUsedAtDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'lastUsedAt', Sort.desc);
     });
@@ -625,14 +610,15 @@ extension RecentMaterialQuerySortBy
   }
 
   QueryBuilder<RecentMaterial, RecentMaterial, QAfterSortBy>
-  sortByMaterialDesc() {
+      sortByMaterialDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'material', Sort.desc);
     });
   }
 
+
   QueryBuilder<RecentMaterial, RecentMaterial, QAfterSortBy>
-  sortByMaterialDescDesc() {
+      sortByMaterialDescDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'materialDesc', Sort.desc);
     });
@@ -654,14 +640,14 @@ extension RecentMaterialQuerySortThenBy
   }
 
   QueryBuilder<RecentMaterial, RecentMaterial, QAfterSortBy>
-  thenByLastUsedAt() {
+      thenByLastUsedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'lastUsedAt', Sort.asc);
     });
   }
 
   QueryBuilder<RecentMaterial, RecentMaterial, QAfterSortBy>
-  thenByLastUsedAtDesc() {
+      thenByLastUsedAtDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'lastUsedAt', Sort.desc);
     });
@@ -674,14 +660,15 @@ extension RecentMaterialQuerySortThenBy
   }
 
   QueryBuilder<RecentMaterial, RecentMaterial, QAfterSortBy>
-  thenByMaterialDesc() {
+      thenByMaterialDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'material', Sort.desc);
     });
   }
 
+
   QueryBuilder<RecentMaterial, RecentMaterial, QAfterSortBy>
-  thenByMaterialDescDesc() {
+      thenByMaterialDescDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'materialDesc', Sort.desc);
     });
@@ -691,22 +678,21 @@ extension RecentMaterialQuerySortThenBy
 extension RecentMaterialQueryWhereDistinct
     on QueryBuilder<RecentMaterial, RecentMaterial, QDistinct> {
   QueryBuilder<RecentMaterial, RecentMaterial, QDistinct>
-  distinctByLastUsedAt() {
+      distinctByLastUsedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'lastUsedAt');
     });
   }
 
-  QueryBuilder<RecentMaterial, RecentMaterial, QDistinct> distinctByMaterial({
-    bool caseSensitive = true,
-  }) {
+  QueryBuilder<RecentMaterial, RecentMaterial, QDistinct> distinctByMaterial(
+      {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'material', caseSensitive: caseSensitive);
     });
   }
 
   QueryBuilder<RecentMaterial, RecentMaterial, QDistinct>
-  distinctByMaterialDesc({bool caseSensitive = true}) {
+      distinctByMaterialDesc({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'materialDesc', caseSensitive: caseSensitive);
     });
@@ -722,7 +708,7 @@ extension RecentMaterialQueryProperty
   }
 
   QueryBuilder<RecentMaterial, DateTime, QQueryOperations>
-  lastUsedAtProperty() {
+      lastUsedAtProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'lastUsedAt');
     });
@@ -735,7 +721,7 @@ extension RecentMaterialQueryProperty
   }
 
   QueryBuilder<RecentMaterial, String, QQueryOperations>
-  materialDescProperty() {
+      materialDescProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'materialDesc');
     });

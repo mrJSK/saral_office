@@ -12,6 +12,7 @@ import '../../ti_document/screens/create_ti_document_screen.dart';
 import '../../ti_document/providers/ti_document_provider.dart';
 import '../../ti_document/widgets/recent_ti_documents_list.dart';
 import '../../employee/screens/employee_management_screen.dart';
+import '../../procurement/screens/workflow_dashboard_screen.dart';
 import '../widgets/stats_card.dart';
 import '../widgets/recent_authorities_list.dart';
 import '../widgets/quick_action_button.dart';
@@ -28,6 +29,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
+  int _currentTab = 0;
 
   @override
   void initState() {
@@ -76,6 +78,48 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   @override
   Widget build(BuildContext context) {
+    return CupertinoTabScaffold(
+      tabBar: CupertinoTabBar(
+        backgroundColor: AppTheme.surfaceWhite,
+        activeColor: AppTheme.primaryBlue,
+        inactiveColor: AppTheme.textSecondary,
+        border: const Border(
+          top: BorderSide(color: AppTheme.dividerColor, width: 0.5),
+        ),
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(CupertinoIcons.home),
+            activeIcon: Icon(CupertinoIcons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(CupertinoIcons.doc_text),
+            activeIcon: Icon(CupertinoIcons.doc_text_fill),
+            label: 'Procurement',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(CupertinoIcons.person),
+            activeIcon: Icon(CupertinoIcons.person_fill),
+            label: 'Profile',
+          ),
+        ],
+      ),
+      tabBuilder: (context, index) {
+        switch (index) {
+          case 0:
+            return _buildHomeTab();
+          case 1:
+            return const WorkflowDashboardScreen();
+          case 2:
+            return _buildProfileTab();
+          default:
+            return _buildHomeTab();
+        }
+      },
+    );
+  }
+
+  Widget _buildHomeTab() {
     return CupertinoPageScaffold(
       backgroundColor: AppTheme.backgroundLight,
       child: CustomScrollView(
@@ -126,6 +170,119 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildProfileTab() {
+    return CupertinoPageScaffold(
+      backgroundColor: AppTheme.backgroundLight,
+      navigationBar: const CupertinoNavigationBar(
+        backgroundColor: AppTheme.surfaceWhite,
+        border: null,
+        middle: Text('Profile'),
+      ),
+      child: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.all(AppTheme.spacingM),
+          children: [
+            const SizedBox(height: AppTheme.spacingL),
+            const Center(
+              child: Icon(
+                CupertinoIcons.person_circle_fill,
+                size: 100,
+                color: AppTheme.primaryBlue,
+              ),
+            ),
+            const SizedBox(height: AppTheme.spacingM),
+            const Center(
+              child: Text(
+                'User Profile',
+                style: TextStyle(
+                  fontFamily: 'SF Pro Display',
+                  fontSize: 24,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            const SizedBox(height: AppTheme.spacingXL),
+            _buildProfileOption(
+              icon: CupertinoIcons.person_2_fill,
+              title: 'Manage Employees',
+              color: AppTheme.warningOrange,
+              onTap: _navigateToEmployeeManagement,
+            ),
+            const Divider(height: 1, color: AppTheme.dividerColor),
+            _buildProfileOption(
+              icon: CupertinoIcons.wrench_fill,
+              title: 'Browse Services',
+              color: AppTheme.successGreen,
+              onTap: _showServiceBrowser,
+            ),
+            const Divider(height: 1, color: AppTheme.dividerColor),
+            _buildProfileOption(
+              icon: CupertinoIcons.cube_box_fill,
+              title: 'Browse Materials',
+              color: AppTheme.warningOrange,
+              onTap: _showMaterialBrowser,
+            ),
+            const Divider(height: 1, color: AppTheme.dividerColor),
+            _buildProfileOption(
+              icon: CupertinoIcons.settings,
+              title: 'Settings',
+              color: AppTheme.textSecondary,
+              onTap: () => _showSettingsSheet(context),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProfileOption({
+    required IconData icon,
+    required String title,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return CupertinoButton(
+      padding: EdgeInsets.zero,
+      onPressed: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppTheme.spacingM,
+          vertical: AppTheme.spacingM,
+        ),
+        decoration: const BoxDecoration(color: AppTheme.surfaceWhite),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, color: color, size: 24),
+            ),
+            const SizedBox(width: AppTheme.spacingM),
+            Expanded(
+              child: Text(
+                title,
+                style: const TextStyle(
+                  fontFamily: 'SF Pro Display',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
+            ),
+            const Icon(
+              CupertinoIcons.chevron_right,
+              color: AppTheme.textSecondary,
+              size: 20,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -386,7 +543,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       CupertinoPageRoute(
         builder: (context) => ServicePickerScreen(
           onSelected: (service) {
-            // Show service details in a bottom sheet
             _showServiceDetails(context, service);
           },
         ),
@@ -400,7 +556,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       CupertinoPageRoute(
         builder: (context) => MaterialPickerScreen(
           onSelected: (material) {
-            // Show material details in a bottom sheet
             _showMaterialDetails(context, material);
           },
         ),
@@ -594,7 +749,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               Navigator.pop(context);
               _navigateToEmployeeManagement();
             },
-            child: Row(
+            child: const Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(
@@ -602,8 +757,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   color: AppTheme.primaryBlue,
                   size: 20,
                 ),
-                const SizedBox(width: 8),
-                const Text('Manage Employees'),
+                SizedBox(width: 8),
+                Text('Manage Employees'),
               ],
             ),
           ),
@@ -612,7 +767,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               Navigator.pop(context);
               _showServiceBrowser();
             },
-            child: Row(
+            child: const Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(
@@ -620,8 +775,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   color: AppTheme.successGreen,
                   size: 20,
                 ),
-                const SizedBox(width: 8),
-                const Text('Browse Services'),
+                SizedBox(width: 8),
+                Text('Browse Services'),
               ],
             ),
           ),
@@ -630,7 +785,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               Navigator.pop(context);
               _showMaterialBrowser();
             },
-            child: Row(
+            child: const Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(
@@ -638,8 +793,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   color: AppTheme.warningOrange,
                   size: 20,
                 ),
-                const SizedBox(width: 8),
-                const Text('Browse Materials'),
+                SizedBox(width: 8),
+                Text('Browse Materials'),
               ],
             ),
           ),

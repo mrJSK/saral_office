@@ -14,6 +14,7 @@ import 'package:saral_office/core/database/models/recent_material.dart';
 import 'package:saral_office/core/database/models/saved_authority.dart';
 import 'package:saral_office/features/employee/models/employee.dart';
 import 'package:saral_office/features/ti_document/models/ti_document.dart';
+import 'package:saral_office/features/procurement/models/purchase_requisition.dart';
 import '../models/vendor.dart';
 import '../models/gl_account.dart';
 import '../models/division.dart';
@@ -25,6 +26,9 @@ class IsarService {
   bool _isInitialized = false;
 
   bool get isInitialized => _isInitialized;
+
+  // Getter for db to maintain compatibility with existing code
+  Future<Isar> get db async => isar;
 
   // Initialize Isar database
   Future<void> initialize() async {
@@ -47,6 +51,9 @@ class IsarService {
           SavedAuthoritySchema,
           TIDocumentSchema,
           EmployeeSchema,
+          // Procurement schemas
+          PurchaseRequisitionSchema,
+          PRLineItemSchema,
         ],
         directory: dir.path,
         inspector: kDebugMode,
@@ -173,6 +180,7 @@ class IsarService {
               .findFirst();
           if (service != null) services.add(service);
         }
+
         return services;
       }
 
@@ -257,6 +265,7 @@ class IsarService {
               .findFirst();
           if (material != null) materials.add(material);
         }
+
         return materials;
       }
 
@@ -340,6 +349,7 @@ class IsarService {
               .findFirst();
           if (division != null) divisions.add(division);
         }
+
         return divisions;
       }
 
@@ -415,6 +425,7 @@ class IsarService {
               .findFirst();
           if (vendor != null) vendors.add(vendor);
         }
+
         return vendors;
       }
 
@@ -522,6 +533,7 @@ class IsarService {
               .findFirst();
           if (gl != null) glAccounts.add(gl);
         }
+
         return glAccounts;
       }
 
@@ -603,8 +615,8 @@ class IsarService {
       );
 
       debugPrint('📄 Processing ${rows.length} rows');
-      final vendors = <Vendor>[];
 
+      final vendors = <Vendor>[];
       for (var i = 1; i < rows.length; i++) {
         try {
           final row = rows[i];
@@ -674,7 +686,6 @@ class IsarService {
   Future<void> _importGLAccounts() async {
     try {
       debugPrint('📂 Loading account_code_gl_mapping.csv...');
-
       final csvString = await rootBundle.loadString(
         'assets/data/account_code_gl_mapping.csv',
       );
@@ -686,11 +697,9 @@ class IsarService {
       debugPrint('📄 Processing ${rows.length} rows');
 
       final glAccounts = <GLAccount>[];
-
       for (var i = 1; i < rows.length; i++) {
         try {
           final row = rows[i];
-
           if (row.length < 8) {
             debugPrint('⚠️ Skipping row $i: insufficient columns');
             continue;
@@ -737,7 +746,6 @@ class IsarService {
   Future<void> _importDivisions() async {
     try {
       debugPrint('📂 Loading fm_area_1000.csv...');
-
       final csvString = await rootBundle.loadString(
         'assets/data/fm_area_1000.csv',
       );
@@ -749,11 +757,9 @@ class IsarService {
       debugPrint('📄 Processing ${rows.length} rows');
 
       final divisions = <Division>[];
-
       for (var i = 1; i < rows.length; i++) {
         try {
           final row = rows[i];
-
           if (row.length < 2) {
             debugPrint('⚠️ Skipping row $i: insufficient columns');
             continue;
@@ -811,7 +817,6 @@ class IsarService {
       debugPrint('📄 Processing ${rows.length} rows');
 
       final services = <ServiceMaster>[];
-
       for (var i = 1; i < rows.length; i++) {
         try {
           final row = rows[i];
@@ -889,7 +894,6 @@ class IsarService {
       debugPrint('📄 Processing ${rows.length} rows');
 
       final materials = <MaterialMaster>[];
-
       for (var i = 1; i < rows.length; i++) {
         try {
           final row = rows[i];
@@ -958,7 +962,6 @@ class IsarService {
   Future<void> clearAndReimport() async {
     try {
       debugPrint('🗑️ Clearing all data...');
-
       await isar.writeTxn(() async {
         await isar.vendors.clear();
         await isar.gLAccounts.clear();
@@ -978,13 +981,14 @@ class IsarService {
       final materialCount = await isar.materialMasters.count();
 
       debugPrint('✅ Reimport complete:');
-      debugPrint('  Vendors: $vendorCount');
-      debugPrint('  GL Accounts: $glCount');
-      debugPrint('  Divisions: $divisionCount');
-      debugPrint('  Services: $serviceCount');
-      debugPrint('  Materials: $materialCount');
+      debugPrint('   Vendors: $vendorCount');
+      debugPrint('   GL Accounts: $glCount');
+      debugPrint('   Divisions: $divisionCount');
+      debugPrint('   Services: $serviceCount');
+      debugPrint('   Materials: $materialCount');
     } catch (e) {
       debugPrint('❌ Error during reimport: $e');
+      rethrow;
     }
   }
 }

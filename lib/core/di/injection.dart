@@ -10,6 +10,8 @@ import 'package:saral_office/core/database/models/gl_account.dart';
 import 'package:saral_office/core/database/models/division.dart';
 import 'package:saral_office/core/database/models/service_master.dart';
 import 'package:saral_office/core/database/models/material_master.dart';
+import 'package:saral_office/features/procurement/models/purchase_requisition.dart';
+import 'package:saral_office/features/procurement/services/pr_service.dart';
 
 // ============================================================================
 // GLOBAL SINGLETON INSTANCES
@@ -48,6 +50,7 @@ IsarService getIsarService() {
       'IsarService not initialized. Call initializeApp() in main() before runApp().',
     );
   }
+
   return _isarServiceInstance!;
 }
 
@@ -73,6 +76,54 @@ final isarProvider = Provider<Isar>((ref) {
 final firebaseServiceProvider = Provider<FirebaseService>((ref) {
   return getFirebaseService();
 });
+
+// ============================================================================
+// PROCUREMENT SERVICE PROVIDERS
+// ============================================================================
+
+/// Provider for PRService
+final prServiceProvider = Provider<PRService>((ref) {
+  final isarService = ref.watch(isarServiceProvider);
+  return PRService(isarService);
+});
+
+/// Provider for all Purchase Requisitions
+final allPRsProvider = FutureProvider<List<PurchaseRequisition>>((ref) async {
+  final prService = ref.watch(prServiceProvider);
+  return prService.getAllPRs();
+});
+
+/// Provider for PR statistics
+final prStatisticsProvider = FutureProvider<Map<String, int>>((ref) async {
+  final prService = ref.watch(prServiceProvider);
+  return prService.getPRStatistics();
+});
+
+/// Provider for recent PRs
+final recentPRsProvider = FutureProvider<List<PurchaseRequisition>>((
+  ref,
+) async {
+  final prService = ref.watch(prServiceProvider);
+  return prService.getRecentPRs(limit: 10);
+});
+
+/// Provider for PR search
+final prSearchProvider =
+    FutureProvider.family<List<PurchaseRequisition>, String>((
+      ref,
+      query,
+    ) async {
+      final prService = ref.watch(prServiceProvider);
+      return prService.searchPRs(query);
+    });
+
+/// Provider for PR with items
+final prWithItemsProvider = FutureProvider.family<Map<String, dynamic>, String>(
+  (ref, prNumber) async {
+    final prService = ref.watch(prServiceProvider);
+    return prService.getPRWithItems(prNumber);
+  },
+);
 
 // ============================================================================
 // VENDOR PROVIDERS
@@ -182,6 +233,7 @@ final databaseStatsProvider = FutureProvider<DatabaseStats>((ref) async {
   final divisionCount = await isar.divisions.count();
   final serviceCount = await isar.serviceMasters.count();
   final materialCount = await isar.materialMasters.count();
+  final prCount = await isar.purchaseRequisitions.count();
 
   return DatabaseStats(
     vendorCount: vendorCount,
@@ -189,6 +241,7 @@ final databaseStatsProvider = FutureProvider<DatabaseStats>((ref) async {
     divisionCount: divisionCount,
     serviceCount: serviceCount,
     materialCount: materialCount,
+    prCount: prCount,
   );
 });
 
@@ -203,6 +256,7 @@ class DatabaseStats {
   final int divisionCount;
   final int serviceCount;
   final int materialCount;
+  final int prCount;
 
   DatabaseStats({
     required this.vendorCount,
@@ -210,6 +264,7 @@ class DatabaseStats {
     required this.divisionCount,
     required this.serviceCount,
     required this.materialCount,
+    required this.prCount,
   });
 
   int get totalRecords =>
@@ -217,12 +272,14 @@ class DatabaseStats {
       glAccountCount +
       divisionCount +
       serviceCount +
-      materialCount;
+      materialCount +
+      prCount;
 
   @override
   String toString() {
     return 'DatabaseStats(vendors: $vendorCount, glAccounts: $glAccountCount, '
-        'divisions: $divisionCount, services: $serviceCount, materials: $materialCount)';
+        'divisions: $divisionCount, services: $serviceCount, materials: $materialCount, '
+        'prs: $prCount)';
   }
 }
 
