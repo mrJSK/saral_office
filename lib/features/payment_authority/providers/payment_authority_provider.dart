@@ -323,6 +323,13 @@ class PaymentAuthorityNotifier extends StateNotifier<PaymentAuthority> {
     }
   }
 
+  void insertEntryAt(int index, AccountEntry entry) {
+    final entries = List<AccountEntry>.from(state.entries);
+    final clampedIndex = index.clamp(0, entries.length);
+    entries.insert(clampedIndex, entry);
+    state = state.copyWith(entries: entries);
+  }
+
   // Load a saved authority into the state (restore for editing)
   void load(PaymentAuthority authority) {
     state = authority;

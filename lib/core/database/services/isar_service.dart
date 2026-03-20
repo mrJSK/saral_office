@@ -24,7 +24,7 @@ class IsarService {
   Future<void> initialize() async {
     try {
       debugPrint('🔧 Initializing Isar...');
-      final dir = await getApplicationDocumentsDirectory();
+      final dir = await getApplicationSupportDirectory();
 
       isar = await Isar.open(
         [
