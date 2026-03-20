@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(flutter doctor:*)",
+      "Bash(flutter build:*)",
+      "Bash(flutter pub:*)",
+      "Bash(start d:/saral_office/saral_office/build/windows/x64/runner/Release/saral_office.exe)",
+      "Bash(dart analyze:*)",
+      "Bash(python3 -:*)",
+      "Bash(node -e:*)"
+    ]
+  }
+}
