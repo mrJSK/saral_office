@@ -7,6 +7,11 @@ import 'package:saral_office/core/database/models/saved_authority.dart';
 import '../../core/theme/app_theme.dart';
 import '../payment_authority/screens/create_authority_screen.dart';
 import '../payment_authority/providers/payment_authority_provider.dart';
+import '../ti_document/screens/create_ti_document_screen.dart';
+import '../ti_document/providers/ti_document_provider.dart';
+import '../ti_document/models/ti_document.dart';
+import '../employee/screens/employee_management_screen.dart';
+import '../procurement/screens/workflow_dashboard_screen.dart';
 import 'widgets/stats_card.dart';
 import 'widgets/recent_authorities_list.dart';
 import 'widgets/quick_action_button.dart';
@@ -95,14 +100,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   }
 
   Widget _buildDesktopTopBar() {
+    final now = DateTime.now();
+    final dateStr = DateFormat('EEEE, dd MMMM yyyy').format(now);
     return Container(
       height: 52,
       color: AppTheme.surfaceWhite,
       padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacingL),
       child: Row(
         children: [
-          const Icon(CupertinoIcons.doc_text_fill,
-              color: AppTheme.primaryBlue, size: 20),
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: AppTheme.primaryBlue,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(CupertinoIcons.doc_text_fill,
+                color: Colors.white, size: 16),
+          ),
           const SizedBox(width: AppTheme.spacingS),
           const Text(
             'SaralOffice',
@@ -113,23 +127,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               color: AppTheme.textPrimary,
             ),
           ),
+          const SizedBox(width: AppTheme.spacingL),
+          Text(dateStr,
+              style: AppTheme.caption.copyWith(color: AppTheme.textSecondary)),
           const Spacer(),
           CupertinoButton(
             padding: EdgeInsets.zero,
             onPressed: () => _showSettingsSheet(context),
-            child: const Row(
-              children: [
-                Icon(CupertinoIcons.settings, size: 18,
-                    color: AppTheme.textSecondary),
-                SizedBox(width: 6),
-                Text('Settings',
-                    style: TextStyle(
+            child: const Row(children: [
+              Icon(CupertinoIcons.settings,
+                  size: 16, color: AppTheme.textSecondary),
+              SizedBox(width: 5),
+              Text('Settings',
+                  style: TextStyle(
                       fontFamily: 'SF Pro Display',
-                      fontSize: 14,
-                      color: AppTheme.textSecondary,
-                    )),
-              ],
-            ),
+                      fontSize: 13,
+                      color: AppTheme.textSecondary)),
+            ]),
           ),
         ],
       ),
@@ -145,101 +159,154 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             : 'Good Evening';
 
     return Container(
-      width: 240,
+      width: 220,
       color: AppTheme.surfaceWhite,
-      padding: const EdgeInsets.all(AppTheme.spacingL),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(greeting,
-              style:
-                  AppTheme.caption.copyWith(color: AppTheme.textSecondary)),
-          const SizedBox(height: 2),
-          const Text('Payment Authorities',
-              style: TextStyle(
-                fontFamily: 'SF Pro Display',
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: AppTheme.textPrimary,
-              )),
-
-          const SizedBox(height: AppTheme.spacingL),
+          // Greeting header
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+                AppTheme.spacingL, AppTheme.spacingL, AppTheme.spacingL, AppTheme.spacingM),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(greeting,
+                    style: AppTheme.caption
+                        .copyWith(color: AppTheme.textSecondary)),
+                const SizedBox(height: 2),
+                const Text('Welcome back',
+                    style: TextStyle(
+                      fontFamily: 'SF Pro Display',
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.textPrimary,
+                    )),
+              ],
+            ),
+          ),
           const Divider(height: 1, color: AppTheme.dividerColor),
-          const SizedBox(height: AppTheme.spacingM),
 
-          // Navigation items
-          _buildSidebarItem(
-            icon: CupertinoIcons.add_circled_solid,
-            label: 'New Authority',
-            color: AppTheme.primaryBlue,
-            isPrimary: true,
-            onTap: _navigateToCreateAuthority,
-          ),
-          const SizedBox(height: AppTheme.spacingS),
-          _buildSidebarItem(
-            icon: CupertinoIcons.search,
-            label: 'Search Vendors',
-            color: AppTheme.secondaryBlue,
-            onTap: () => _showComingSoon('Vendor Search'),
-          ),
-          const SizedBox(height: AppTheme.spacingS),
-          _buildSidebarItem(
-            icon: CupertinoIcons.doc_text_search,
-            label: 'Browse GL Accounts',
-            color: AppTheme.warningOrange,
-            onTap: () => _showComingSoon('GL Browser'),
-          ),
-          const SizedBox(height: AppTheme.spacingS),
-          _buildSidebarItem(
-            icon: CupertinoIcons.chart_bar_square,
-            label: 'View History',
-            color: AppTheme.successGreen,
-            onTap: () => _showComingSoon('History'),
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: AppTheme.spacingM, vertical: AppTheme.spacingM),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ── Create Documents ──────────────────────
+                  _sidebarLabel('CREATE'),
+                  const SizedBox(height: AppTheme.spacingS),
+                  _sidebarAction(
+                    icon: CupertinoIcons.add_circled_solid,
+                    label: 'New Payment Authority',
+                    color: AppTheme.primaryBlue,
+                    isPrimary: true,
+                    onTap: _navigateToCreateAuthority,
+                  ),
+                  const SizedBox(height: AppTheme.spacingS),
+                  _sidebarAction(
+                    icon: CupertinoIcons.doc_text_fill,
+                    label: 'New TI Document',
+                    color: AppTheme.warningOrange,
+                    onTap: _navigateToCreateTI,
+                  ),
+
+                  const SizedBox(height: AppTheme.spacingL),
+
+                  // ── Manage ────────────────────────────────
+                  _sidebarLabel('MANAGE'),
+                  const SizedBox(height: AppTheme.spacingS),
+                  _sidebarAction(
+                    icon: CupertinoIcons.person_2_fill,
+                    label: 'Employees',
+                    color: AppTheme.secondaryBlue,
+                    onTap: _navigateToEmployees,
+                  ),
+                  const SizedBox(height: AppTheme.spacingS),
+                  _sidebarAction(
+                    icon: CupertinoIcons.cart_fill,
+                    label: 'Procurement',
+                    color: AppTheme.successGreen,
+                    onTap: _navigateToProcurement,
+                  ),
+
+                  const SizedBox(height: AppTheme.spacingL),
+
+                  // ── Browse ────────────────────────────────
+                  _sidebarLabel('BROWSE'),
+                  const SizedBox(height: AppTheme.spacingS),
+                  _sidebarAction(
+                    icon: CupertinoIcons.search,
+                    label: 'Vendors',
+                    color: AppTheme.textSecondary,
+                    onTap: () => _showComingSoon('Vendor Search'),
+                  ),
+                  const SizedBox(height: AppTheme.spacingS),
+                  _sidebarAction(
+                    icon: CupertinoIcons.doc_text_search,
+                    label: 'GL Accounts',
+                    color: AppTheme.textSecondary,
+                    onTap: () => _showComingSoon('GL Browser'),
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildSidebarItem({
+  Widget _sidebarLabel(String label) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4, bottom: 2),
+      child: Text(label,
+          style: const TextStyle(
+            fontFamily: 'SF Pro Display',
+            fontSize: 10,
+            fontWeight: FontWeight.w700,
+            color: AppTheme.textSecondary,
+            letterSpacing: 0.8,
+          )),
+    );
+  }
+
+  Widget _sidebarAction({
     required IconData icon,
     required String label,
     required Color color,
     required VoidCallback onTap,
     bool isPrimary = false,
   }) {
-    return CupertinoButton(
-      padding: EdgeInsets.zero,
-      onPressed: onTap,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(
-            horizontal: AppTheme.spacingM, vertical: 10),
-        decoration: BoxDecoration(
-          color: isPrimary ? AppTheme.primaryBlue : Colors.transparent,
-          borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+    return _SidebarHoverItem(
+      isPrimary: isPrimary,
+      onTap: onTap,
+      child: Row(children: [
+        Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: isPrimary
+                ? Colors.white.withValues(alpha: 0.2)
+                : color.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Icon(icon,
+              size: 14,
+              color: isPrimary ? Colors.white : color),
         ),
-        child: Row(
-          children: [
-            Icon(icon,
-                size: 18,
-                color: isPrimary ? AppTheme.surfaceWhite : color),
-            const SizedBox(width: AppTheme.spacingS),
-            Text(
-              label,
+        const SizedBox(width: AppTheme.spacingS),
+        Expanded(
+          child: Text(label,
               style: TextStyle(
                 fontFamily: 'SF Pro Display',
-                fontSize: 14,
-                fontWeight:
-                    isPrimary ? FontWeight.w600 : FontWeight.w500,
-                color: isPrimary
-                    ? AppTheme.surfaceWhite
-                    : AppTheme.textPrimary,
+                fontSize: 13,
+                fontWeight: isPrimary ? FontWeight.w600 : FontWeight.w500,
+                color: isPrimary ? Colors.white : AppTheme.textPrimary,
               ),
-            ),
-          ],
+              overflow: TextOverflow.ellipsis),
         ),
-      ),
+      ]),
     );
   }
 
@@ -247,226 +314,489 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Stats bar
+        // Stats row
         Container(
-          color: AppTheme.backgroundLight,
-          padding: const EdgeInsets.fromLTRB(
-              AppTheme.spacingL, AppTheme.spacingM, AppTheme.spacingL, 0),
-          child: _buildStatsSection(),
+          color: AppTheme.surfaceWhite,
+          padding: const EdgeInsets.all(AppTheme.spacingL),
+          child: _buildDesktopStats(),
         ),
-        const SizedBox(height: AppTheme.spacingM),
+        const Divider(height: 1, color: AppTheme.dividerColor),
 
-        // Recent Authorities header
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-              AppTheme.spacingL, 0, AppTheme.spacingL, AppTheme.spacingS),
+        // Two-column recent lists
+        Expanded(
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Recent Authorities',
-                  style: TextStyle(
-                    fontFamily: 'SF Pro Display',
-                    fontSize: 17,
-                    fontWeight: FontWeight.w600,
-                    color: AppTheme.textPrimary,
-                  )),
-              CupertinoButton(
-                padding: EdgeInsets.zero,
-                onPressed: () => _showComingSoon('History'),
-                child: const Text('View All',
-                    style: TextStyle(
-                      fontFamily: 'SF Pro Display',
-                      fontSize: 14,
-                      color: AppTheme.primaryBlue,
-                    )),
-              ),
+              // Left: Recent Payment Authorities
+              Expanded(child: _buildRecentPAPanel()),
+              Container(width: 1, color: AppTheme.dividerColor),
+              // Right: Recent TI Documents
+              Expanded(child: _buildRecentTIPanel()),
             ],
           ),
         ),
-
-        // Table header
-        _buildTableHeader(),
-
-        // Authorities list
-        Expanded(child: _buildDesktopAuthoritiesList()),
       ],
     );
   }
 
-  Widget _buildTableHeader() {
-    return Container(
-      color: AppTheme.dividerColor.withValues(alpha: 0.5),
-      padding: const EdgeInsets.symmetric(
-          horizontal: AppTheme.spacingL, vertical: 8),
-      child: const Row(
-        children: [
-          SizedBox(
-            width: 180,
-            child: Text('Authority No.',
-                style: TextStyle(
-                  fontFamily: 'SF Pro Display',
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.textSecondary,
-                )),
-          ),
-          Expanded(
-            child: Text('Vendor',
-                style: TextStyle(
-                  fontFamily: 'SF Pro Display',
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.textSecondary,
-                )),
-          ),
-          SizedBox(
-            width: 120,
-            child: Text('Date',
-                style: TextStyle(
-                  fontFamily: 'SF Pro Display',
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.textSecondary,
-                )),
-          ),
-          SizedBox(
-            width: 120,
-            child: Text('Amount',
-                textAlign: TextAlign.right,
-                style: TextStyle(
-                  fontFamily: 'SF Pro Display',
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.textSecondary,
-                )),
-          ),
-          SizedBox(width: AppTheme.spacingM),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDesktopAuthoritiesList() {
+  Widget _buildDesktopStats() {
     return Consumer(
       builder: (context, ref, _) {
         final authoritiesAsync = ref.watch(recentAuthoritiesProvider);
-        return authoritiesAsync.when(
-          data: (authorities) {
-            if (authorities.isEmpty) {
-              return Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: AppTheme.primaryBlue.withValues(alpha: 0.08),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(CupertinoIcons.doc_text,
-                          color: AppTheme.primaryBlue, size: 36),
-                    ),
-                    const SizedBox(height: AppTheme.spacingM),
-                    const Text('No authorities yet',
-                        style: TextStyle(
-                          fontFamily: 'SF Pro Display',
-                          fontSize: 17,
-                          fontWeight: FontWeight.w600,
-                          color: AppTheme.textPrimary,
-                        )),
-                    const SizedBox(height: AppTheme.spacingS),
-                    Text('Click "New Authority" to get started',
-                        style: AppTheme.body2),
-                  ],
-                ),
-              );
-            }
-            return ListView.separated(
-              itemCount: authorities.length,
-              separatorBuilder: (_, _) =>
-                  const Divider(height: 1, color: AppTheme.dividerColor),
-              itemBuilder: (context, index) {
-                return _buildDesktopAuthorityRow(authorities[index], ref);
-              },
-            );
-          },
-          loading: () => const Center(child: CupertinoActivityIndicator()),
-          error: (e, _) => Center(child: Text('Error: $e', style: AppTheme.body2)),
-        );
+        final tiDocsAsync = ref.watch(recentTIDocumentsProvider);
+
+        final now = DateTime.now();
+
+        int paTotal = 0, paMonth = 0;
+        double paMonthAmt = 0;
+        authoritiesAsync.whenData((list) {
+          paTotal = list.length;
+          final m = list.where((a) =>
+              a.createdAt.year == now.year && a.createdAt.month == now.month);
+          paMonth = m.length;
+          paMonthAmt = m.fold(0.0, (s, a) => s + a.amount);
+        });
+
+        int tiTotal = 0, tiMonth = 0;
+        tiDocsAsync.whenData((list) {
+          tiTotal = list.length;
+          tiMonth = list
+              .where((d) =>
+                  d.createdAt.year == now.year && d.createdAt.month == now.month)
+              .length;
+        });
+
+        String fmtAmt(double v) {
+          if (v >= 100000) return '₹${(v / 100000).toStringAsFixed(1)}L';
+          if (v >= 1000) return '₹${(v / 1000).toStringAsFixed(1)}K';
+          return '₹${v.toStringAsFixed(0)}';
+        }
+
+        return Row(children: [
+          Expanded(
+              child: _desktopStatTile(
+                  icon: CupertinoIcons.doc_text_fill,
+                  label: 'Payment Authorities',
+                  value: paTotal.toString(),
+                  sub: '$paMonth this month',
+                  color: AppTheme.primaryBlue)),
+          const SizedBox(width: AppTheme.spacingM),
+          Expanded(
+              child: _desktopStatTile(
+                  icon: CupertinoIcons.money_dollar_circle_fill,
+                  label: 'PA Amount (Month)',
+                  value: fmtAmt(paMonthAmt),
+                  sub: 'Total authorized',
+                  color: AppTheme.successGreen)),
+          const SizedBox(width: AppTheme.spacingM),
+          Expanded(
+              child: _desktopStatTile(
+                  icon: CupertinoIcons.doc_richtext,
+                  label: 'TI Documents',
+                  value: tiTotal.toString(),
+                  sub: '$tiMonth this month',
+                  color: AppTheme.warningOrange)),
+          const SizedBox(width: AppTheme.spacingM),
+          // Quick action button
+          _buildQuickCreateTile(),
+        ]);
       },
     );
   }
 
-  Widget _buildDesktopAuthorityRow(SavedAuthority authority, WidgetRef ref) {
-    final dateFormat = DateFormat('dd MMM yyyy');
+  Widget _desktopStatTile({
+    required IconData icon,
+    required String label,
+    required String value,
+    required String sub,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(AppTheme.spacingM),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
+        border: Border.all(color: color.withValues(alpha: 0.15)),
+      ),
+      child: Row(children: [
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+          ),
+          child: Icon(icon, size: 22, color: color),
+        ),
+        const SizedBox(width: AppTheme.spacingM),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(value,
+                style: TextStyle(
+                    fontFamily: 'SF Pro Display',
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    color: color)),
+            Text(label,
+                style: const TextStyle(
+                    fontFamily: 'SF Pro Display',
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.textPrimary)),
+            Text(sub, style: AppTheme.caption),
+          ]),
+        ),
+      ]),
+    );
+  }
+
+  Widget _buildQuickCreateTile() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _quickCreateBtn(
+          icon: CupertinoIcons.add_circled_solid,
+          label: 'New PA',
+          color: AppTheme.primaryBlue,
+          onTap: _navigateToCreateAuthority,
+        ),
+        const SizedBox(height: AppTheme.spacingS),
+        _quickCreateBtn(
+          icon: CupertinoIcons.doc_text_fill,
+          label: 'New TI',
+          color: AppTheme.warningOrange,
+          onTap: _navigateToCreateTI,
+        ),
+      ],
+    );
+  }
+
+  Widget _quickCreateBtn({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return CupertinoButton(
+      padding: EdgeInsets.zero,
+      onPressed: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(icon, size: 14, color: Colors.white),
+          const SizedBox(width: 6),
+          Text(label,
+              style: const TextStyle(
+                  fontFamily: 'SF Pro Display',
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white)),
+        ]),
+      ),
+    );
+  }
+
+  // ── Recent Payment Authorities panel ─────────────────────────
+
+  Widget _buildRecentPAPanel() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _panelHeader(
+          title: 'Recent Payment Authorities',
+          icon: CupertinoIcons.doc_text_fill,
+          color: AppTheme.primaryBlue,
+          onNew: _navigateToCreateAuthority,
+        ),
+        // Table column headers
+        Container(
+          color: AppTheme.dividerColor.withValues(alpha: 0.4),
+          padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacingM, vertical: 6),
+          child: const Row(children: [
+            Expanded(flex: 2, child: _ColHeader('Authority No.')),
+            Expanded(flex: 3, child: _ColHeader('Vendor')),
+            _ColHeader('Date', width: 90),
+            _ColHeader('Amount', width: 90, right: true),
+          ]),
+        ),
+        Expanded(
+          child: Consumer(
+            builder: (context, ref, _) {
+              final async = ref.watch(recentAuthoritiesProvider);
+              return async.when(
+                data: (list) => list.isEmpty
+                    ? _emptyState('No payment authorities yet',
+                        'Tap "New PA" to create one',
+                        CupertinoIcons.doc_text)
+                    : ListView.separated(
+                        itemCount: list.length,
+                        separatorBuilder: (_, _) =>
+                            const Divider(height: 1, color: AppTheme.dividerColor),
+                        itemBuilder: (ctx, i) =>
+                            _buildPARow(list[i], ref),
+                      ),
+                loading: () =>
+                    const Center(child: CupertinoActivityIndicator()),
+                error: (e, _) =>
+                    Center(child: Text('Error: $e', style: AppTheme.caption)),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPARow(SavedAuthority authority, WidgetRef ref) {
+    final df = DateFormat('dd MMM yy');
     return _HoverableRow(
       onTap: () => _handleAuthorityTap(authority, ref),
       child: Padding(
         padding: const EdgeInsets.symmetric(
-            horizontal: AppTheme.spacingL, vertical: 12),
-        child: Row(
-          children: [
-            SizedBox(
-              width: 180,
-              child: Row(
-                children: [
-                  Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: AppTheme.primaryBlue.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(CupertinoIcons.doc_text_fill,
-                        color: AppTheme.primaryBlue, size: 16),
-                  ),
-                  const SizedBox(width: AppTheme.spacingS),
-                  Expanded(
-                    child: Text(
-                      authority.authorityOrderNo,
-                      style: const TextStyle(
-                        fontFamily: 'SF Pro Display',
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: AppTheme.textPrimary,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: Text(
-                authority.vendorName,
-                style: AppTheme.body2.copyWith(color: AppTheme.textPrimary),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            SizedBox(
-              width: 120,
-              child: Text(
-                dateFormat.format(authority.createdAt),
-                style: AppTheme.caption,
-              ),
-            ),
-            SizedBox(
-              width: 120,
-              child: Text(
-                '₹${NumberFormat.compact().format(authority.amount)}',
-                textAlign: TextAlign.right,
-                style: const TextStyle(
-                  fontFamily: 'SF Pro Display',
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: AppTheme.successGreen,
+            horizontal: AppTheme.spacingM, vertical: 11),
+        child: Row(children: [
+          Expanded(
+            flex: 2,
+            child: Row(children: [
+              Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryBlue.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(6),
                 ),
+                child: const Icon(CupertinoIcons.doc_text_fill,
+                    color: AppTheme.primaryBlue, size: 13),
               ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(authority.authorityOrderNo,
+                    style: const TextStyle(
+                        fontFamily: 'SF Pro Display',
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.textPrimary),
+                    overflow: TextOverflow.ellipsis),
+              ),
+            ]),
+          ),
+          Expanded(
+            flex: 3,
+            child: Text(authority.vendorName,
+                style: AppTheme.caption
+                    .copyWith(color: AppTheme.textPrimary, fontSize: 13),
+                overflow: TextOverflow.ellipsis),
+          ),
+          SizedBox(
+            width: 90,
+            child: Text(df.format(authority.createdAt),
+                style: AppTheme.caption),
+          ),
+          SizedBox(
+            width: 90,
+            child: Text(
+              '₹${NumberFormat.compact().format(authority.amount)}',
+              textAlign: TextAlign.right,
+              style: const TextStyle(
+                  fontFamily: 'SF Pro Display',
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.successGreen),
             ),
-            const SizedBox(width: AppTheme.spacingM),
-          ],
-        ),
+          ),
+        ]),
       ),
+    );
+  }
+
+  // ── Recent TI Documents panel ─────────────────────────────────
+
+  Widget _buildRecentTIPanel() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _panelHeader(
+          title: 'Recent TI Documents',
+          icon: CupertinoIcons.doc_richtext,
+          color: AppTheme.warningOrange,
+          onNew: _navigateToCreateTI,
+        ),
+        // Table column headers
+        Container(
+          color: AppTheme.dividerColor.withValues(alpha: 0.4),
+          padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacingM, vertical: 6),
+          child: const Row(children: [
+            Expanded(flex: 2, child: _ColHeader('OM Number')),
+            Expanded(flex: 2, child: _ColHeader('Employee')),
+            Expanded(flex: 2, child: _ColHeader('Division')),
+            _ColHeader('Amount', width: 90, right: true),
+          ]),
+        ),
+        Expanded(
+          child: Consumer(
+            builder: (context, ref, _) {
+              final async = ref.watch(recentTIDocumentsProvider);
+              return async.when(
+                data: (list) => list.isEmpty
+                    ? _emptyState('No TI documents yet',
+                        'Tap "New TI" to create one',
+                        CupertinoIcons.doc_richtext)
+                    : ListView.separated(
+                        itemCount: list.length,
+                        separatorBuilder: (_, _) =>
+                            const Divider(height: 1, color: AppTheme.dividerColor),
+                        itemBuilder: (ctx, i) =>
+                            _buildTIRow(list[i]),
+                      ),
+                loading: () =>
+                    const Center(child: CupertinoActivityIndicator()),
+                error: (e, _) =>
+                    Center(child: Text('Error: $e', style: AppTheme.caption)),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTIRow(TIDocument doc) {
+    return _HoverableRow(
+      onTap: () => _navigateToCreateTI(),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+            horizontal: AppTheme.spacingM, vertical: 11),
+        child: Row(children: [
+          Expanded(
+            flex: 2,
+            child: Row(children: [
+              Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  color: AppTheme.warningOrange.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Icon(CupertinoIcons.doc_richtext,
+                    color: AppTheme.warningOrange, size: 13),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(doc.omNumber,
+                    style: const TextStyle(
+                        fontFamily: 'SF Pro Display',
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.textPrimary),
+                    overflow: TextOverflow.ellipsis),
+              ),
+            ]),
+          ),
+          Expanded(
+            flex: 2,
+            child: Text(doc.employeeName,
+                style: AppTheme.caption
+                    .copyWith(color: AppTheme.textPrimary, fontSize: 13),
+                overflow: TextOverflow.ellipsis),
+          ),
+          Expanded(
+            flex: 2,
+            child: Text(doc.divisionName,
+                style: AppTheme.caption,
+                overflow: TextOverflow.ellipsis),
+          ),
+          SizedBox(
+            width: 90,
+            child: Text(
+              '₹${NumberFormat.compact().format(doc.amount)}',
+              textAlign: TextAlign.right,
+              style: const TextStyle(
+                  fontFamily: 'SF Pro Display',
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.warningOrange),
+            ),
+          ),
+        ]),
+      ),
+    );
+  }
+
+  Widget _panelHeader({
+    required String title,
+    required IconData icon,
+    required Color color,
+    required VoidCallback onNew,
+  }) {
+    return Container(
+      color: AppTheme.surfaceWhite,
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppTheme.spacingM, vertical: AppTheme.spacingM),
+      child: Row(children: [
+        Container(
+          padding: const EdgeInsets.all(5),
+          decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(6)),
+          child: Icon(icon, size: 14, color: color),
+        ),
+        const SizedBox(width: AppTheme.spacingS),
+        Text(title,
+            style: const TextStyle(
+                fontFamily: 'SF Pro Display',
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.textPrimary)),
+        const Spacer(),
+        CupertinoButton(
+          padding: EdgeInsets.zero,
+          onPressed: onNew,
+          child: Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(6)),
+            child: Row(children: [
+              Icon(CupertinoIcons.add, size: 12, color: color),
+              const SizedBox(width: 4),
+              Text('New',
+                  style: TextStyle(
+                      fontFamily: 'SF Pro Display',
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: color)),
+            ]),
+          ),
+        ),
+      ]),
+    );
+  }
+
+  Widget _emptyState(String title, String sub, IconData icon) {
+    return Center(
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+              color: AppTheme.primaryBlue.withValues(alpha: 0.07),
+              shape: BoxShape.circle),
+          child:
+              Icon(icon, color: AppTheme.primaryBlue, size: 28),
+        ),
+        const SizedBox(height: AppTheme.spacingM),
+        Text(title,
+            style: const TextStyle(
+                fontFamily: 'SF Pro Display',
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.textPrimary)),
+        const SizedBox(height: 4),
+        Text(sub, style: AppTheme.caption),
+      ]),
     );
   }
 
@@ -775,6 +1105,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         CupertinoPageRoute(builder: (_) => const CreateAuthorityScreen()));
   }
 
+  void _navigateToCreateTI() {
+    ref.read(tiDocumentProvider.notifier).reset();
+    Navigator.of(context).push(
+        CupertinoPageRoute(builder: (_) => const CreateTIDocumentScreen()));
+  }
+
+  void _navigateToEmployees() {
+    Navigator.of(context).push(
+        CupertinoPageRoute(builder: (_) => const EmployeeManagementScreen()));
+  }
+
+  void _navigateToProcurement() {
+    Navigator.of(context).push(
+        CupertinoPageRoute(builder: (_) => const WorkflowDashboardScreen()));
+  }
+
   void _showSettingsSheet(BuildContext context) {
     showCupertinoModalPopup(
       context: context,
@@ -870,5 +1216,77 @@ class _HoverableRowState extends State<_HoverableRow> {
         ),
       ),
     );
+  }
+}
+
+// Sidebar item with hover highlight
+class _SidebarHoverItem extends StatefulWidget {
+  final Widget child;
+  final VoidCallback onTap;
+  final bool isPrimary;
+
+  const _SidebarHoverItem({
+    required this.child,
+    required this.onTap,
+    this.isPrimary = false,
+  });
+
+  @override
+  State<_SidebarHoverItem> createState() => _SidebarHoverItemState();
+}
+
+class _SidebarHoverItemState extends State<_SidebarHoverItem> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 120),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+          decoration: BoxDecoration(
+            color: widget.isPrimary
+                ? (_hovered
+                    ? AppTheme.primaryBlue.withValues(alpha: 0.85)
+                    : AppTheme.primaryBlue)
+                : (_hovered
+                    ? AppTheme.primaryBlue.withValues(alpha: 0.07)
+                    : Colors.transparent),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: widget.child,
+        ),
+      ),
+    );
+  }
+}
+
+// Column header for desktop table views
+class _ColHeader extends StatelessWidget {
+  final String text;
+  final double? width;
+  final bool right;
+
+  const _ColHeader(this.text, {this.width, this.right = false});
+
+  @override
+  Widget build(BuildContext context) {
+    final child = Text(
+      text,
+      textAlign: right ? TextAlign.right : TextAlign.left,
+      style: const TextStyle(
+        fontFamily: 'SF Pro Display',
+        fontSize: 11,
+        fontWeight: FontWeight.w600,
+        color: AppTheme.textSecondary,
+        letterSpacing: 0.3,
+      ),
+    );
+    if (width != null) return SizedBox(width: width, child: child);
+    return child;
   }
 }

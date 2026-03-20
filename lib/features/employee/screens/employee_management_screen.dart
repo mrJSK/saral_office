@@ -151,9 +151,7 @@ class _EmployeeManagementScreenState
         : ref.watch(employeeSearchProvider(_searchQuery));
 
     return CupertinoPageScaffold(
-      backgroundColor: AppTheme.backgroundLight,
       navigationBar: CupertinoNavigationBar(
-        backgroundColor: AppTheme.surfaceWhite.withOpacity(0.9),
         border: null,
         leading: CupertinoButton(
           padding: EdgeInsets.zero,
@@ -174,8 +172,12 @@ class _EmployeeManagementScreenState
         ),
       ),
       child: SafeArea(
-        child: Column(
-          children: [
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 720),
+            child: Column(
+              children: [
             // Search Bar
             Padding(
               padding: const EdgeInsets.all(AppTheme.spacingM),
@@ -257,6 +259,8 @@ class _EmployeeManagementScreenState
               ),
             ),
           ],
+            ),
+          ),
         ),
       ),
     );
@@ -282,13 +286,15 @@ class _EmployeeManagementScreenState
               ),
             ),
             const SizedBox(height: 24),
-            const Text(
+            Text(
               'No Employees Found',
               style: TextStyle(
                 fontFamily: 'SF Pro Display',
                 fontSize: 20,
                 fontWeight: FontWeight.w600,
-                color: AppTheme.textPrimary,
+                color: CupertinoTheme.of(context).brightness == Brightness.dark
+                    ? AppTheme.darkTextPrimary
+                    : AppTheme.textPrimary,
               ),
             ),
             const SizedBox(height: 8),
@@ -332,13 +338,16 @@ class _EmployeeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: AppTheme.surfaceWhite,
+          color: isDark ? AppTheme.darkSurface : AppTheme.surfaceWhite,
           borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
-          border: Border.all(color: AppTheme.dividerColor, width: 1),
+          border: Border.all(
+              color: isDark ? AppTheme.darkDivider : AppTheme.dividerColor,
+              width: 1),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.05),
@@ -383,11 +392,13 @@ class _EmployeeCard extends StatelessWidget {
                   children: [
                     Text(
                       employee.employeeName,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: 'SF Pro Display',
                         fontSize: 17,
                         fontWeight: FontWeight.w600,
-                        color: AppTheme.textPrimary,
+                        color: isDark
+                            ? AppTheme.darkTextPrimary
+                            : AppTheme.textPrimary,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,

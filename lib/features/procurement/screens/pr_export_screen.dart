@@ -61,23 +61,29 @@ class _PRExportScreenState extends ConsumerState<PRExportScreen> {
       child: _isLoading
           ? const Center(child: CupertinoActivityIndicator())
           : SafeArea(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(AppTheme.spacingL),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildInfoCard(),
-                    const SizedBox(height: AppTheme.spacingXL),
-                    _buildSummarySection(),
-                    const SizedBox(height: AppTheme.spacingXL),
-                    _buildWorkflowPreview(),
-                    const SizedBox(height: AppTheme.spacingXL),
-                    _buildExportButtons(),
-                    if (_jsonFile != null || _csvFile != null) ...[
-                      const SizedBox(height: AppTheme.spacingXL),
-                      _buildExportedFiles(),
-                    ],
-                  ],
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 720),
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(AppTheme.spacingL),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildInfoCard(),
+                        const SizedBox(height: AppTheme.spacingXL),
+                        _buildSummarySection(),
+                        const SizedBox(height: AppTheme.spacingXL),
+                        _buildWorkflowPreview(),
+                        const SizedBox(height: AppTheme.spacingXL),
+                        _buildExportButtons(),
+                        if (_jsonFile != null || _csvFile != null) ...[
+                          const SizedBox(height: AppTheme.spacingXL),
+                          _buildExportedFiles(),
+                        ],
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ),

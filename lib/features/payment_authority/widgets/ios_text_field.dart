@@ -15,7 +15,7 @@ class IOSTextField extends StatelessWidget {
   final TextCapitalization textCapitalization;
   final void Function(String)? onChanged;
   final bool enabled;
-  final bool readOnly; // <--- ADDED THIS
+  final bool readOnly;
 
   /// helps keep the focused field visible inside scroll views / bottom sheets
   final EdgeInsets scrollPadding;
@@ -36,13 +36,24 @@ class IOSTextField extends StatelessWidget {
     this.textCapitalization = TextCapitalization.none,
     this.onChanged,
     this.enabled = true,
-    this.readOnly = false, // <--- ADDED THIS
+    this.readOnly = false,
     this.scrollPadding = const EdgeInsets.all(20),
     this.focusNode,
   });
 
   @override
   Widget build(BuildContext context) {
+    final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
+    final bgBase = isDark ? AppTheme.darkSurface : AppTheme.backgroundLight;
+    final fieldBg = (enabled && !readOnly)
+        ? (fillColor ?? bgBase)
+        : bgBase.withValues(alpha: 0.5);
+    final borderCol = isDark
+        ? (enabled ? AppTheme.darkDivider : AppTheme.darkDivider.withValues(alpha: 0.5))
+        : (enabled ? AppTheme.dividerColor : AppTheme.dividerColor.withValues(alpha: 0.5));
+    final textColor =
+        enabled ? (isDark ? AppTheme.darkTextPrimary : AppTheme.textPrimary) : AppTheme.textSecondary;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -64,7 +75,7 @@ class IOSTextField extends StatelessWidget {
           textCapitalization: textCapitalization,
           onChanged: onChanged,
           enabled: enabled,
-          readOnly: readOnly, // <--- PASS IT HERE
+          readOnly: readOnly,
           prefix: prefix != null
               ? Padding(padding: const EdgeInsets.only(left: 12), child: prefix)
               : null,
@@ -76,23 +87,11 @@ class IOSTextField extends StatelessWidget {
               : null,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           decoration: BoxDecoration(
-            color: (enabled && !readOnly)
-                ? (fillColor ?? AppTheme.backgroundLight)
-                : AppTheme.backgroundLight.withOpacity(
-                    0.5,
-                  ), // dim if disabled/readonly
+            color: fieldBg,
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: enabled
-                  ? AppTheme.dividerColor
-                  : AppTheme.dividerColor.withOpacity(0.5),
-              width: 1,
-            ),
+            border: Border.all(color: borderCol, width: 1),
           ),
-          style: AppTheme.body1.copyWith(
-            fontSize: 15,
-            color: enabled ? AppTheme.textPrimary : AppTheme.textSecondary,
-          ),
+          style: AppTheme.body1.copyWith(fontSize: 15, color: textColor),
           placeholderStyle: AppTheme.body2,
         ),
       ],

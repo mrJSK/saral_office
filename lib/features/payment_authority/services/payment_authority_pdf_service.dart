@@ -3,6 +3,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:open_filex/open_filex.dart';
+import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -908,7 +909,12 @@ class PaymentAuthorityPdfService {
     Uint8List bytes,
     pa_model.PaymentAuthorityPdfModel pa,
   ) async {
-    final output = await getApplicationDocumentsDirectory();
+    // Prefer Downloads (always a real directory); fall back to Documents
+    final outputDir =
+        (await getDownloadsDirectory()) ?? await getApplicationDocumentsDirectory();
+
+    // Ensure the directory physically exists (Documents may be virtual/OneDrive)
+    await Directory(outputDir.path).create(recursive: true);
 
     // Sanitize vendor name and bill number for filename
     final sanitizedVendor = _sanitizeFilename(pa.payeeName);
@@ -916,7 +922,7 @@ class PaymentAuthorityPdfService {
 
     final filename = '${sanitizedVendor}_$sanitizedBill.pdf';
 
-    final file = File('${output.path}/$filename');
+    final file = File(p.join(outputDir.path, filename));
     await file.writeAsBytes(bytes);
     return file;
   }

@@ -3,43 +3,57 @@
 import 'package:flutter/cupertino.dart';
 
 class AppTheme {
-  // Minimal Professional Color Palette
-  static const primaryBlue = Color(0xFF007AFF); // iOS Blue
-  static const secondaryBlue = Color(0xFF5AC8FA); // Light Blue
-  static const backgroundLight = Color(0xFFF9F9F9); // Off-white
+  // ── Light palette ──────────────────────────────────────────────
+  static const primaryBlue = Color(0xFF007AFF);
+  static const secondaryBlue = Color(0xFF5AC8FA);
+  static const backgroundLight = Color(0xFFF9F9F9);
   static const surfaceWhite = Color(0xFFFFFFFF);
-  static const textPrimary = Color(0xFF1C1C1E); // Near black
-  static const textSecondary = Color(0xFF8E8E93); // Gray
+  static const textPrimary = Color(0xFF1C1C1E);
+  static const textSecondary = Color(0xFF8E8E93);
   static const dividerColor = Color(0xFFE5E5EA);
   static const successGreen = Color(0xFF34C759);
   static const warningOrange = Color(0xFFFF9500);
   static const errorRed = Color(0xFFFF3B30);
 
-  static CupertinoThemeData get cupertinoTheme {
+  // ── Dark palette ───────────────────────────────────────────────
+  static const darkBackground = Color(0xFF000000);
+  static const darkSurface = Color(0xFF1C1C1E);
+  static const darkCard = Color(0xFF2C2C2E);
+  static const darkDivider = Color(0xFF38383A);
+  static const darkTextPrimary = Color(0xFFFFFFFF);
+  static const darkTextSecondary = Color(0xFF8E8E93);
+
+  // ── Theme builders ─────────────────────────────────────────────
+
+  static CupertinoThemeData get cupertinoTheme => _buildTheme(Brightness.light);
+  static CupertinoThemeData get cupertinoThemeDark => _buildTheme(Brightness.dark);
+
+  static CupertinoThemeData _buildTheme(Brightness brightness) {
+    final isDark = brightness == Brightness.dark;
     return CupertinoThemeData(
       primaryColor: primaryBlue,
-      scaffoldBackgroundColor: backgroundLight,
-      barBackgroundColor: surfaceWhite,
-      brightness: Brightness.light,
+      scaffoldBackgroundColor: isDark ? darkBackground : backgroundLight,
+      barBackgroundColor: isDark ? darkSurface : surfaceWhite,
+      brightness: brightness,
       textTheme: CupertinoTextThemeData(
         textStyle: TextStyle(
           fontFamily: 'SF Pro Display',
           fontSize: 17,
-          color: textPrimary,
+          color: isDark ? darkTextPrimary : textPrimary,
           letterSpacing: -0.41,
         ),
         navTitleTextStyle: TextStyle(
           fontFamily: 'SF Pro Display',
           fontSize: 17,
           fontWeight: FontWeight.w600,
-          color: textPrimary,
+          color: isDark ? darkTextPrimary : textPrimary,
           letterSpacing: -0.41,
         ),
         navLargeTitleTextStyle: TextStyle(
           fontFamily: 'SF Pro Display',
           fontSize: 34,
           fontWeight: FontWeight.w700,
-          color: textPrimary,
+          color: isDark ? darkTextPrimary : textPrimary,
           letterSpacing: 0.37,
         ),
       ),

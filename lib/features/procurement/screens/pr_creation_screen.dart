@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:saral_office/core/di/injection.dart';
 import 'package:saral_office/features/procurement/screens/pr_line_items_screen.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/custom_date_picker.dart';
 import '../models/purchase_requisition.dart';
 import '../services/pr_service.dart';
 
@@ -76,11 +77,15 @@ class _PRCreationScreenState extends ConsumerState<PRCreationScreen> {
         middle: const Text('Create Purchase Requisition'),
       ),
       child: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppTheme.spacingL),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 720),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(AppTheme.spacingL),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
               _buildInfoCard(),
               const SizedBox(height: AppTheme.spacingL),
               _buildDocumentTypeSection(),
@@ -89,6 +94,8 @@ class _PRCreationScreenState extends ConsumerState<PRCreationScreen> {
               const SizedBox(height: AppTheme.spacingXL),
               _buildCreateButton(),
             ],
+          ),
+        ),
           ),
         ),
       ),
@@ -478,63 +485,12 @@ class _PRCreationScreenState extends ConsumerState<PRCreationScreen> {
     );
   }
 
-  void _showDatePicker() {
-    showCupertinoModalPopup(
+  Future<void> _showDatePicker() async {
+    final picked = await showCustomDatePicker(
       context: context,
-      builder: (context) => Container(
-        height: 300,
-        decoration: const BoxDecoration(
-          color: AppTheme.surfaceWhite,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(AppTheme.spacingM),
-              decoration: const BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(color: AppTheme.dividerColor),
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  CupertinoButton(
-                    padding: EdgeInsets.zero,
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('Cancel'),
-                  ),
-                  const Text(
-                    'Select Date',
-                    style: TextStyle(
-                      fontFamily: 'SF Pro Display',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  CupertinoButton(
-                    padding: EdgeInsets.zero,
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('Done'),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: CupertinoDatePicker(
-                mode: CupertinoDatePickerMode.date,
-                initialDateTime: _documentDate,
-                onDateTimeChanged: (date) {
-                  setState(() {
-                    _documentDate = date;
-                  });
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
+      initialDate: _documentDate,
     );
+    if (picked != null) setState(() => _documentDate = picked);
   }
 
   Future<void> _createPR() async {

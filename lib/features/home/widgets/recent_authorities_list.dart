@@ -1,11 +1,15 @@
 // lib/features/home/widgets/recent_authorities_list.dart
 
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:open_filex/open_filex.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 import 'package:saral_office/core/database/models/saved_authority.dart';
 import 'package:saral_office/core/theme/app_theme.dart';
 import 'package:saral_office/features/payment_authority/providers/payment_authority_provider.dart';
@@ -528,10 +532,26 @@ class _AuthorityCardState extends State<AuthorityCard> {
                   ),
                   if (!widget.isSelectionMode) ...[
                     const SizedBox(height: 8),
-                    const Icon(
-                      CupertinoIcons.chevron_right,
-                      color: AppTheme.textSecondary,
-                      size: 16,
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (widget.authority.billNo.isNotEmpty)
+                          GestureDetector(
+                            onTap: () => _openPdf(context),
+                            child: const Icon(
+                              CupertinoIcons.doc_richtext,
+                              color: AppTheme.primaryBlue,
+                              size: 18,
+                            ),
+                          ),
+                        if (widget.authority.billNo.isNotEmpty)
+                          const SizedBox(width: 10),
+                        const Icon(
+                          CupertinoIcons.chevron_right,
+                          color: AppTheme.textSecondary,
+                          size: 16,
+                        ),
+                      ],
                     ),
                   ],
                 ],
@@ -541,6 +561,45 @@ class _AuthorityCardState extends State<AuthorityCard> {
         ),
       ),
     );
+  }
+
+  Future<void> _openPdf(BuildContext context) async {
+    final a = widget.authority;
+    final filename =
+        '${_sanitizeForFilename(a.vendorName)}_${_sanitizeForFilename(a.billNo)}.pdf';
+    final dir = (await getDownloadsDirectory()) ??
+        await getApplicationDocumentsDirectory();
+    final file = File(p.join(dir.path, filename));
+
+    if (await file.exists()) {
+      await OpenFilex.open(file.path);
+    } else {
+      if (context.mounted) {
+        showCupertinoDialog(
+          context: context,
+          builder: (_) => CupertinoAlertDialog(
+            title: const Text('PDF Not Found'),
+            content: const Text(
+              'The PDF file was not found in Downloads. Open the authority and generate it again.',
+            ),
+            actions: [
+              CupertinoDialogAction(
+                child: const Text('OK'),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ],
+          ),
+        );
+      }
+    }
+  }
+
+  String _sanitizeForFilename(String input) {
+    return input
+        .replaceAll(RegExp(r'[^\w\s-]'), '')
+        .replaceAll(RegExp(r'\s+'), '_')
+        .replaceAll(RegExp(r'_+'), '_')
+        .trim();
   }
 
   String _formatAmount(double amount) {

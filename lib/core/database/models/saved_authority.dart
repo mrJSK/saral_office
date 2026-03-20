@@ -13,6 +13,7 @@ class SavedAuthority {
 
   late String authorityOrderNo;
   late String vendorName;
+  late String billNo;
   late double amount;
   late String divisionCode;
   late String divisionName;

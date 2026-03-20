@@ -119,9 +119,7 @@ class _EditEmployeeScreenState extends ConsumerState<EditEmployeeScreen> {
   @override
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
-      backgroundColor: AppTheme.backgroundLight,
       navigationBar: CupertinoNavigationBar(
-        backgroundColor: AppTheme.surfaceWhite.withOpacity(0.9),
         border: null,
         leading: CupertinoButton(
           padding: EdgeInsets.zero,
@@ -144,10 +142,14 @@ class _EditEmployeeScreenState extends ConsumerState<EditEmployeeScreen> {
         ),
       ),
       child: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppTheme.spacingM),
-          child: Column(
-            children: [
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 720),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(AppTheme.spacingM),
+              child: Column(
+                children: [
               Container(
                 decoration: BoxDecoration(
                   color: AppTheme.surfaceWhite,
@@ -238,6 +240,8 @@ class _EditEmployeeScreenState extends ConsumerState<EditEmployeeScreen> {
                 ),
               ),
             ],
+          ),
+        ),
           ),
         ),
       ),

@@ -1,7 +1,11 @@
 // lib/features/payment_authority/providers/payment_authority_provider.dart
 
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:open_filex/open_filex.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 import 'package:saral_office/core/di/injection.dart';
 import 'package:saral_office/core/database/services/isar_service.dart';
 import 'package:saral_office/core/database/models/vendor.dart';
@@ -386,39 +390,77 @@ final markDivisionAsUsedProvider = FutureProvider.family<void, Division>((
   await isar.markDivisionAsUsed(division);
 });
 
-/// Generate PDF and save authority to database
-final generatePaymentAuthorityPdfProvider =
+/// Sanitize a string for use in a filename (mirrors PaymentAuthorityPdfService logic)
+String _sanitizeForFilename(String input) {
+  return input
+      .replaceAll(RegExp(r'[^\w\s-]'), '')
+      .replaceAll(RegExp(r'\s+'), '_')
+      .replaceAll(RegExp(r'_+'), '_')
+      .trim();
+}
+
+/// Save authority to database (upsert by authorityOrderNo)
+final saveAuthorityProvider =
     Provider.autoDispose<Future<void> Function()>((ref) {
       return () async {
         final state = ref.read(paymentAuthorityProvider);
-        final pdfService = ref.read(pdfServiceProvider);
         final isar = ref.read(isarServiceProvider);
 
-        // Save to database before generating PDF
-        final savedAuthority = SavedAuthority()
-          ..createdAt = DateTime.now()
+        final vendorName = state.vendor?.name1 ?? 'N/A';
+
+        // Upsert: update existing record if same order number, otherwise insert
+        final existing =
+            await isar.findAuthorityByOrderNo(state.authorityOrderNo);
+
+        final authority = existing ?? SavedAuthority();
+        authority
+          ..createdAt = existing?.createdAt ?? DateTime.now()
           ..authorityOrderNo = state.authorityOrderNo
-          ..vendorName = state.vendor?.name1 ?? 'N/A'
+          ..vendorName = vendorName
+          ..billNo = state.billNumber
           ..amount = state.totalDebit
           ..divisionCode = state.division?.fundsCenter ?? ''
           ..divisionName = state.division?.name ?? ''
           ..fullJsonData = jsonEncode(state.toMap());
 
-        await isar.saveAuthority(savedAuthority);
+        await isar.saveAuthority(authority);
+      };
+    });
 
-        // Generate PDF
+/// Generate PDF only — does NOT save to database
+final generatePaymentAuthorityPdfProvider =
+    Provider.autoDispose<Future<void> Function()>((ref) {
+      return () async {
+        final state = ref.read(paymentAuthorityProvider);
+        final pdfService = ref.read(pdfServiceProvider);
+
+        final vendorName = state.vendor?.name1 ?? 'N/A';
+        final billNo = state.billNumber;
+
+        // If a PDF with this filename already exists on disk, just open it
+        final filename =
+            '${_sanitizeForFilename(vendorName)}_${_sanitizeForFilename(billNo)}.pdf';
+        final downloadsDir = (await getDownloadsDirectory()) ??
+            await getApplicationDocumentsDirectory();
+        final expectedFile = File(p.join(downloadsDir.path, filename));
+
+        if (await expectedFile.exists()) {
+          await OpenFilex.open(expectedFile.path);
+          return;
+        }
+
+        // Generate and open new PDF
         final pdfModel = PaymentAuthorityPdfModel(
           divisionName: state.division?.name ?? '',
           divisionCode: state.division?.fundsCenter ?? '',
           date: state.date,
           payeeName: state.vendor?.name1 ?? '',
           payeeAddress: state.vendor?.fullAddress ?? '',
-          // Pass new fields from the selected vendor
           payeePan: state.vendor?.pan,
           payeeGst: state.vendor?.gst,
-          payeeIfsc: state.vendor?.ifsc, // <--- NEW
-          payeeBankAccount: state.vendor?.bankAccount, // <--- NEW
-          payeeEmail: state.vendor?.email, // <--- NEW
+          payeeIfsc: state.vendor?.ifsc,
+          payeeBankAccount: state.vendor?.bankAccount,
+          payeeEmail: state.vendor?.email,
           paymentParticulars: state.particulars,
           payeeCode: state.vendor?.vendorCode,
           authorityOrderNo: state.authorityOrderNo,

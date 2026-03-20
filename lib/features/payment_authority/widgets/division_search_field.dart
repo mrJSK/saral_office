@@ -34,6 +34,17 @@ class _DivisionSearchFieldState extends ConsumerState<DivisionSearchField> {
       defaultTargetPlatform == TargetPlatform.macOS ||
       defaultTargetPlatform == TargetPlatform.linux;
 
+  bool get _isDark =>
+      CupertinoTheme.of(context).brightness == Brightness.dark;
+  Color get _fieldBg =>
+      _isDark ? AppTheme.darkSurface : AppTheme.backgroundLight;
+  Color get _dropdownBg =>
+      _isDark ? AppTheme.darkCard : AppTheme.surfaceWhite;
+  Color get _divCol =>
+      _isDark ? AppTheme.darkDivider : AppTheme.dividerColor;
+  Color get _textCol =>
+      _isDark ? AppTheme.darkTextPrimary : AppTheme.textPrimary;
+
   @override
   void initState() {
     super.initState();
@@ -80,10 +91,10 @@ class _DivisionSearchFieldState extends ConsumerState<DivisionSearchField> {
         const SizedBox(height: 6),
         Container(
           decoration: BoxDecoration(
-            color: AppTheme.backgroundLight,
+            color: _fieldBg,
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: _showDropdown ? AppTheme.primaryBlue : AppTheme.dividerColor,
+              color: _showDropdown ? AppTheme.primaryBlue : _divCol,
               width: _showDropdown ? 1.5 : 1,
             ),
           ),
@@ -98,10 +109,10 @@ class _DivisionSearchFieldState extends ConsumerState<DivisionSearchField> {
                   controller: _controller,
                   placeholder: 'Search division name or code',
                   decoration: const BoxDecoration(),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: 'SF Pro Display',
                     fontSize: 15,
-                    color: AppTheme.textPrimary,
+                    color: _textCol,
                   ),
                   placeholderStyle: AppTheme.body2,
                   onTap: () => setState(() => _showDropdown = true),
@@ -133,9 +144,9 @@ class _DivisionSearchFieldState extends ConsumerState<DivisionSearchField> {
             constraints: const BoxConstraints(maxHeight: 220),
             margin: const EdgeInsets.only(top: 2),
             decoration: BoxDecoration(
-              color: AppTheme.surfaceWhite,
+              color: _dropdownBg,
               borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
-              border: Border.all(color: AppTheme.dividerColor),
+              border: Border.all(color: _divCol),
               boxShadow: [
                 BoxShadow(
                   color: CupertinoColors.systemGrey.withValues(alpha: 0.15),
@@ -156,7 +167,7 @@ class _DivisionSearchFieldState extends ConsumerState<DivisionSearchField> {
                   shrinkWrap: true,
                   itemCount: divisions.length,
                   separatorBuilder: (_, _) =>
-                      const Divider(height: 1, color: AppTheme.dividerColor),
+                      Divider(height: 1, color: _divCol),
                   itemBuilder: (ctx, i) {
                     final division = divisions[i];
                     return _HoverableRow(
@@ -189,11 +200,11 @@ class _DivisionSearchFieldState extends ConsumerState<DivisionSearchField> {
                                 children: [
                                   Text(
                                     division.name,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontFamily: 'SF Pro Display',
                                       fontSize: 14,
                                       fontWeight: FontWeight.w600,
-                                      color: AppTheme.textPrimary,
+                                      color: _textCol,
                                     ),
                                     overflow: TextOverflow.ellipsis,
                                   ),
@@ -241,9 +252,9 @@ class _DivisionSearchFieldState extends ConsumerState<DivisionSearchField> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             decoration: BoxDecoration(
-              color: AppTheme.backgroundLight,
+              color: _fieldBg,
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AppTheme.dividerColor, width: 1),
+              border: Border.all(color: _divCol, width: 1),
             ),
             child: Row(
               children: [
@@ -312,16 +323,9 @@ class _DivisionPickerScreenState extends ConsumerState<DivisionPickerScreen> {
     final divisionsAsync = ref.watch(divisionSearchProvider(_searchQuery));
 
     return CupertinoPageScaffold(
-      backgroundColor: AppTheme.backgroundLight,
-      navigationBar: CupertinoNavigationBar(
-        backgroundColor: AppTheme.surfaceWhite.withValues(alpha: 0.9),
+      navigationBar: const CupertinoNavigationBar(
         border: null,
-        leading: CupertinoButton(
-          padding: EdgeInsets.zero,
-          onPressed: () => Navigator.pop(context),
-          child: const Icon(CupertinoIcons.back),
-        ),
-        middle: const Text('Select Division'),
+        middle: Text('Select Division'),
       ),
       child: SafeArea(
         child: Column(

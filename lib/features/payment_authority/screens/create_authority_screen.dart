@@ -17,6 +17,7 @@ import '../widgets/vendor_search_field.dart';
 import '../widgets/account_entry_card.dart';
 import '../widgets/totals_summary_card.dart';
 import '../widgets/ios_text_field.dart';
+import '../../../core/widgets/custom_date_picker.dart';
 
 class CreateAuthorityScreen extends ConsumerStatefulWidget {
   const CreateAuthorityScreen({super.key});
@@ -40,6 +41,7 @@ class _CreateAuthorityScreenState extends ConsumerState<CreateAuthorityScreen>
   DateTime _selectedBillDate = DateTime.now();
 
   bool _isGeneratingPdf = false;
+  bool _isSaving = false;
 
   bool get _isDesktop =>
       defaultTargetPlatform == TargetPlatform.windows ||
@@ -82,6 +84,18 @@ class _CreateAuthorityScreenState extends ConsumerState<CreateAuthorityScreen>
     super.dispose();
   }
 
+  // ── Dark mode helpers ─────────────────────────────────────────
+  bool get _isDark =>
+      CupertinoTheme.of(context).brightness == Brightness.dark;
+  Color get _bgCol =>
+      _isDark ? AppTheme.darkBackground : AppTheme.backgroundLight;
+  Color get _cardBg =>
+      _isDark ? AppTheme.darkSurface : AppTheme.surfaceWhite;
+  Color get _textCol =>
+      _isDark ? AppTheme.darkTextPrimary : AppTheme.textPrimary;
+  Color get _divCol =>
+      _isDark ? AppTheme.darkDivider : AppTheme.dividerColor;
+
   void _syncTextControllersToState() {
     final notifier = ref.read(paymentAuthorityProvider.notifier);
     notifier.updateAuthorityOrderNo(_authorityOrderController.text);
@@ -100,11 +114,14 @@ class _CreateAuthorityScreenState extends ConsumerState<CreateAuthorityScreen>
 
   Widget _buildDesktopLayout() {
     final authority = ref.watch(paymentAuthorityProvider);
+    final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
+    final bg = isDark ? AppTheme.darkBackground : AppTheme.backgroundLight;
+    final divCol = isDark ? AppTheme.darkDivider : AppTheme.dividerColor;
 
     return Stack(
       children: [
         CupertinoPageScaffold(
-          backgroundColor: AppTheme.backgroundLight,
+          backgroundColor: bg,
           child: Column(
             children: [
               _buildDesktopTopBar(authority),
@@ -119,7 +136,7 @@ class _CreateAuthorityScreenState extends ConsumerState<CreateAuthorityScreen>
                         width: 420,
                         child: _buildDesktopLeftPanel(),
                       ),
-                      Container(width: 1, color: AppTheme.dividerColor),
+                      Container(width: 1, color: divCol),
                       // Right panel: entries + inline add entry
                       Expanded(
                         child: _buildDesktopRightPanel(authority),
@@ -137,21 +154,29 @@ class _CreateAuthorityScreenState extends ConsumerState<CreateAuthorityScreen>
   }
 
   Widget _buildDesktopTopBar(PaymentAuthority authority) {
+    final isBusy = _isGeneratingPdf || _isSaving;
     final isEnabled = authority.isBalanced &&
         authority.entries.isNotEmpty &&
         authority.vendor != null &&
         authority.division != null &&
-        !_isGeneratingPdf;
+        !isBusy;
+    final canSave = authority.entries.isNotEmpty &&
+        authority.vendor != null &&
+        authority.division != null &&
+        authority.authorityOrderNo.trim().isNotEmpty &&
+        !isBusy;
+    final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
+    final surface = isDark ? AppTheme.darkSurface : AppTheme.surfaceWhite;
 
     return Container(
       height: 52,
-      color: AppTheme.surfaceWhite,
+      color: surface,
       padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacingM),
       child: Row(
         children: [
           CupertinoButton(
             padding: EdgeInsets.zero,
-            onPressed: _isGeneratingPdf ? null : _handleBack,
+            onPressed: isBusy ? null : _handleBack,
             child: const Row(
               children: [
                 Icon(CupertinoIcons.back,
@@ -166,7 +191,7 @@ class _CreateAuthorityScreenState extends ConsumerState<CreateAuthorityScreen>
               ],
             ),
           ),
-          const Expanded(
+          Expanded(
             child: Text(
               'New Payment Authority',
               textAlign: TextAlign.center,
@@ -174,10 +199,49 @@ class _CreateAuthorityScreenState extends ConsumerState<CreateAuthorityScreen>
                 fontFamily: 'SF Pro Display',
                 fontSize: 17,
                 fontWeight: FontWeight.w600,
-                color: AppTheme.textPrimary,
+                color: CupertinoTheme.of(context).brightness == Brightness.dark
+                    ? AppTheme.darkTextPrimary
+                    : AppTheme.textPrimary,
               ),
             ),
           ),
+          // Save button
+          CupertinoButton(
+            padding: EdgeInsets.zero,
+            onPressed: canSave ? _save : null,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: canSave
+                    ? AppTheme.successGreen
+                    : AppTheme.dividerColor,
+                borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+              ),
+              child: Row(
+                children: [
+                  Icon(CupertinoIcons.floppy_disk,
+                      size: 15,
+                      color: canSave
+                          ? AppTheme.surfaceWhite
+                          : AppTheme.textSecondary),
+                  const SizedBox(width: 6),
+                  Text(
+                    _isSaving ? 'Saving…' : 'Save',
+                    style: TextStyle(
+                      fontFamily: 'SF Pro Display',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: canSave
+                          ? AppTheme.surfaceWhite
+                          : AppTheme.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          // Generate PDF button
           CupertinoButton(
             padding: EdgeInsets.zero,
             onPressed: isEnabled ? _generatePDF : null,
@@ -201,7 +265,7 @@ class _CreateAuthorityScreenState extends ConsumerState<CreateAuthorityScreen>
                   ),
                   const SizedBox(width: 6),
                   Text(
-                    'Generate PDF',
+                    _isGeneratingPdf ? 'Generating…' : 'Generate PDF',
                     style: TextStyle(
                       fontFamily: 'SF Pro Display',
                       fontSize: 14,
@@ -221,8 +285,9 @@ class _CreateAuthorityScreenState extends ConsumerState<CreateAuthorityScreen>
   }
 
   Widget _buildDesktopLeftPanel() {
+    final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
     return Container(
-      color: AppTheme.backgroundLight,
+      color: isDark ? AppTheme.darkBackground : AppTheme.backgroundLight,
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(AppTheme.spacingL),
         child: Column(
@@ -247,13 +312,19 @@ class _CreateAuthorityScreenState extends ConsumerState<CreateAuthorityScreen>
   }
 
   Widget _buildDesktopRightPanel(PaymentAuthority authority) {
+    final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
+    final bg = isDark ? AppTheme.darkBackground : AppTheme.backgroundLight;
+    final cardBg = isDark ? AppTheme.darkSurface : AppTheme.surfaceWhite;
+    final divCol = isDark ? AppTheme.darkDivider : AppTheme.dividerColor;
     return Container(
-      color: AppTheme.backgroundLight,
+      color: bg,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Ledger table (takes all available space)
-          Expanded(
+          // Ledger table — 60% of panel height
+          Flexible(
+            flex: 6,
+            fit: FlexFit.tight,
             child: _DesktopLedgerTable(
               authority: authority,
               onDelete: (index) =>
@@ -263,17 +334,20 @@ class _CreateAuthorityScreenState extends ConsumerState<CreateAuthorityScreen>
             ),
           ),
 
-          // Inline Add Entry form
-          Container(
-            decoration: const BoxDecoration(
-              color: AppTheme.surfaceWhite,
-              border: Border(
-                  top: BorderSide(color: AppTheme.dividerColor, width: 1)),
-            ),
-            padding: const EdgeInsets.all(AppTheme.spacingM),
-            child: _InlineAddEntryForm(
-              onAdd: (entry) =>
-                  ref.read(paymentAuthorityProvider.notifier).addEntry(entry),
+          // Inline Add Entry form — 40% of panel height
+          Flexible(
+            flex: 4,
+            fit: FlexFit.tight,
+            child: Container(
+              decoration: BoxDecoration(
+                color: cardBg,
+                border: Border(top: BorderSide(color: divCol, width: 1)),
+              ),
+              padding: const EdgeInsets.all(AppTheme.spacingM),
+              child: _InlineAddEntryForm(
+                onAdd: (entry) =>
+                    ref.read(paymentAuthorityProvider.notifier).addEntry(entry),
+              ),
             ),
           ),
         ],
@@ -291,9 +365,7 @@ class _CreateAuthorityScreenState extends ConsumerState<CreateAuthorityScreen>
     return Stack(
       children: [
         CupertinoPageScaffold(
-          backgroundColor: AppTheme.backgroundLight,
           navigationBar: CupertinoNavigationBar(
-            backgroundColor: AppTheme.surfaceWhite.withValues(alpha: 0.9),
             border: null,
             leading: CupertinoButton(
               padding: EdgeInsets.zero,
@@ -385,21 +457,21 @@ class _CreateAuthorityScreenState extends ConsumerState<CreateAuthorityScreen>
         child: Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: AppTheme.surfaceWhite.withValues(alpha: 0.9),
+            color: _cardBg,
             borderRadius: BorderRadius.circular(14),
           ),
-          child: const Column(
+          child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              CupertinoActivityIndicator(radius: 14),
-              SizedBox(height: 12),
+              const CupertinoActivityIndicator(radius: 14),
+              const SizedBox(height: 12),
               Text(
                 'Generating PDF...',
                 style: TextStyle(
                   fontFamily: 'SF Pro Display',
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
-                  color: AppTheme.textPrimary,
+                  color: _textCol,
                   decoration: TextDecoration.none,
                 ),
               ),
@@ -422,7 +494,7 @@ class _CreateAuthorityScreenState extends ConsumerState<CreateAuthorityScreen>
           child: Icon(icon, size: 16, color: AppTheme.primaryBlue),
         ),
         const SizedBox(width: AppTheme.spacingS),
-        Text(title, style: AppTheme.headline3.copyWith(fontSize: 17)),
+        Text(title, style: AppTheme.headline3.copyWith(fontSize: 17, color: _textCol)),
       ],
     );
   }
@@ -430,7 +502,7 @@ class _CreateAuthorityScreenState extends ConsumerState<CreateAuthorityScreen>
   Widget _buildBasicDetailsCard() {
     return Container(
       decoration: BoxDecoration(
-        color: AppTheme.surfaceWhite,
+        color: _cardBg,
         borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
         boxShadow: [
           BoxShadow(
@@ -533,9 +605,14 @@ class _CreateAuthorityScreenState extends ConsumerState<CreateAuthorityScreen>
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             decoration: BoxDecoration(
-              color: AppTheme.backgroundLight,
+              color: _isDark ? AppTheme.darkSurface : AppTheme.backgroundLight,
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AppTheme.dividerColor, width: 1),
+              border: Border.all(
+                color: _isDark
+                    ? AppTheme.primaryBlue.withValues(alpha: 0.35)
+                    : _divCol,
+                width: 1,
+              ),
             ),
             child: Row(
               children: [
@@ -545,7 +622,11 @@ class _CreateAuthorityScreenState extends ConsumerState<CreateAuthorityScreen>
                 Expanded(
                   child: Text(
                     dateFormat.format(date),
-                    style: AppTheme.body1.copyWith(fontSize: 15),
+                    style: TextStyle(
+                      fontFamily: 'SF Pro Display',
+                      fontSize: 15,
+                      color: _textCol,
+                    ),
                   ),
                 ),
               ],
@@ -556,86 +637,21 @@ class _CreateAuthorityScreenState extends ConsumerState<CreateAuthorityScreen>
     );
   }
 
-  void _showDatePicker(DateTime initialDate, Function(DateTime) onChanged) {
-    if (_isDesktop) {
-      // On desktop, show a dialog with a date picker
-      showCupertinoDialog(
-        context: context,
-        builder: (context) {
-          DateTime tempDate = initialDate;
-          return CupertinoAlertDialog(
-            content: SizedBox(
-              height: 200,
-              child: CupertinoDatePicker(
-                mode: CupertinoDatePickerMode.date,
-                initialDateTime: initialDate,
-                maximumDate: DateTime.now().add(const Duration(days: 365)),
-                onDateTimeChanged: (d) => tempDate = d,
-              ),
-            ),
-            actions: [
-              CupertinoDialogAction(
-                child: const Text('Cancel'),
-                onPressed: () => Navigator.pop(context),
-              ),
-              CupertinoDialogAction(
-                isDefaultAction: true,
-                child: const Text('Done'),
-                onPressed: () {
-                  onChanged(tempDate);
-                  Navigator.pop(context);
-                },
-              ),
-            ],
-          );
-        },
-      );
-    } else {
-      showCupertinoModalPopup(
-        context: context,
-        builder: (context) => Container(
-          height: 300,
-          color: AppTheme.surfaceWhite,
-          child: Column(
-            children: [
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    CupertinoButton(
-                      child: const Text('Cancel'),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                    CupertinoButton(
-                      child: const Text('Done'),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: CupertinoDatePicker(
-                  mode: CupertinoDatePickerMode.date,
-                  initialDateTime: initialDate,
-                  maximumDate:
-                      DateTime.now().add(const Duration(days: 365)),
-                  onDateTimeChanged: onChanged,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
+  Future<void> _showDatePicker(DateTime initialDate, Function(DateTime) onChanged) async {
+    final picked = await showCustomDatePicker(
+      context: context,
+      initialDate: initialDate,
+      lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
+    );
+    if (picked != null) onChanged(picked);
   }
+
 
   Widget _buildVendorCard() {
     final vendor = ref.watch(paymentAuthorityProvider).vendor;
     return Container(
       decoration: BoxDecoration(
-        color: AppTheme.surfaceWhite,
+        color: _cardBg,
         borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
         boxShadow: [
           BoxShadow(
@@ -682,7 +698,7 @@ class _CreateAuthorityScreenState extends ConsumerState<CreateAuthorityScreen>
     return Container(
       padding: const EdgeInsets.all(AppTheme.spacingM),
       decoration: BoxDecoration(
-        color: AppTheme.backgroundLight,
+        color: _bgCol,
         borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
       ),
       child: Column(
@@ -734,7 +750,8 @@ class _CreateAuthorityScreenState extends ConsumerState<CreateAuthorityScreen>
         ),
         Expanded(
           child: Text(value,
-              style: AppTheme.body2.copyWith(color: AppTheme.textPrimary)),
+              style: AppTheme.body2.copyWith(
+                  color: _isDark ? AppTheme.darkTextPrimary : AppTheme.textPrimary)),
         ),
       ],
     );
@@ -766,9 +783,9 @@ class _CreateAuthorityScreenState extends ConsumerState<CreateAuthorityScreen>
     return Container(
       padding: const EdgeInsets.all(AppTheme.spacingXL),
       decoration: BoxDecoration(
-        color: AppTheme.surfaceWhite,
+        color: _cardBg,
         borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
-        border: Border.all(color: AppTheme.dividerColor, width: 1),
+        border: Border.all(color: _divCol, width: 1),
       ),
       child: Column(
         children: [
@@ -782,13 +799,13 @@ class _CreateAuthorityScreenState extends ConsumerState<CreateAuthorityScreen>
                 color: AppTheme.primaryBlue, size: 32),
           ),
           const SizedBox(height: AppTheme.spacingM),
-          const Text(
+          Text(
             'No Entries Added',
             style: TextStyle(
               fontFamily: 'SF Pro Display',
               fontSize: 17,
               fontWeight: FontWeight.w600,
-              color: AppTheme.textPrimary,
+              color: _textCol,
             ),
           ),
           const SizedBox(height: AppTheme.spacingS),
@@ -903,10 +920,46 @@ class _CreateAuthorityScreenState extends ConsumerState<CreateAuthorityScreen>
     );
   }
 
+  Future<void> _save() async {
+    _syncTextControllersToState();
+    final authority = ref.read(paymentAuthorityProvider);
+    if (authority.authorityOrderNo.trim().isEmpty) {
+      _showErrorDialog('Authority Order No. is required before saving.');
+      return;
+    }
+    setState(() => _isSaving = true);
+    try {
+      await ref.read(saveAuthorityProvider)();
+      if (mounted) {
+        showCupertinoDialog(
+          context: context,
+          builder: (ctx) => CupertinoAlertDialog(
+            title: const Text('Saved'),
+            content: const Text('Authority saved successfully.'),
+            actions: [
+              CupertinoDialogAction(
+                child: const Text('OK'),
+                onPressed: () => Navigator.pop(ctx),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      _showErrorDialog(e.toString());
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
   Future<void> _generatePDF() async {
+    _syncTextControllersToState();
+    if (_particularsController.text.trim().isEmpty) {
+      _showErrorDialog('Particulars of Payment is required.');
+      return;
+    }
     setState(() => _isGeneratingPdf = true);
     try {
-      _syncTextControllersToState();
       final generatePdfAction = ref.read(generatePaymentAuthorityPdfProvider);
       await generatePdfAction();
     } catch (e) {
@@ -1039,15 +1092,18 @@ class _DesktopLedgerTableState extends State<_DesktopLedgerTable> {
         ? debits.length
         : credits.length;
 
+    final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
+    final bg = isDark ? AppTheme.darkBackground : AppTheme.backgroundLight;
+    final divCol = isDark ? AppTheme.darkDivider : AppTheme.dividerColor;
     return Container(
-      color: AppTheme.backgroundLight,
+      color: bg,
       child: Column(
         children: [
           // Column headers
           Container(
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               border: Border(
-                bottom: BorderSide(color: AppTheme.dividerColor),
+                bottom: BorderSide(color: divCol),
               ),
             ),
             child: Row(
@@ -1077,7 +1133,7 @@ class _DesktopLedgerTableState extends State<_DesktopLedgerTable> {
                     ),
                   ),
                 ),
-                Container(width: 1, color: AppTheme.dividerColor),
+                Container(width: 1, color: divCol),
                 // Credit header
                 Expanded(
                   child: Container(
@@ -1109,14 +1165,14 @@ class _DesktopLedgerTableState extends State<_DesktopLedgerTable> {
 
           // Sub-header: column labels
           Container(
-            color: AppTheme.dividerColor.withValues(alpha: 0.4),
+            color: divCol.withValues(alpha: 0.4),
             child: Row(
               children: [
                 _buildSubHeader('Description', flex: 3),
                 _buildSubHeader('GL Code', flex: 2),
                 _buildSubHeader('Amount', flex: 2, alignRight: true),
                 const SizedBox(width: 32), // delete btn space
-                Container(width: 1, color: AppTheme.dividerColor),
+                Container(width: 1, color: divCol),
                 _buildSubHeader('Description', flex: 3),
                 _buildSubHeader('GL Code', flex: 2),
                 _buildSubHeader('Amount', flex: 2, alignRight: true),
@@ -1142,12 +1198,12 @@ class _DesktopLedgerTableState extends State<_DesktopLedgerTable> {
                               color: AppTheme.primaryBlue, size: 28),
                         ),
                         const SizedBox(height: AppTheme.spacingM),
-                        const Text('No entries yet',
+                        Text('No entries yet',
                             style: TextStyle(
                               fontFamily: 'SF Pro Display',
                               fontSize: 15,
                               fontWeight: FontWeight.w600,
-                              color: AppTheme.textPrimary,
+                              color: isDark ? AppTheme.darkTextPrimary : AppTheme.textPrimary,
                             )),
                         const SizedBox(height: 4),
                         Text('Add debit & credit entries below',
@@ -1158,7 +1214,7 @@ class _DesktopLedgerTableState extends State<_DesktopLedgerTable> {
                 : ListView.separated(
                     itemCount: rowCount,
                     separatorBuilder: (_, _) =>
-                        const Divider(height: 1, color: AppTheme.dividerColor),
+                        Divider(height: 1, color: divCol),
                     itemBuilder: (context, i) {
                       final debitEntry =
                           i < debits.length ? debits[i] : null;
@@ -1238,9 +1294,9 @@ class _DesktopLedgerTableState extends State<_DesktopLedgerTable> {
 
           // Totals row
           Container(
-            decoration: const BoxDecoration(
-              border: Border(top: BorderSide(color: AppTheme.dividerColor)),
-              color: AppTheme.surfaceWhite,
+            decoration: BoxDecoration(
+              border: Border(top: BorderSide(color: divCol)),
+              color: isDark ? AppTheme.darkSurface : AppTheme.surfaceWhite,
             ),
             child: Row(
               children: [
@@ -1272,7 +1328,7 @@ class _DesktopLedgerTableState extends State<_DesktopLedgerTable> {
                     ),
                   ),
                 ),
-                Container(width: 1, color: AppTheme.dividerColor),
+                Container(width: 1, color: divCol),
                 // Credit total + balance badge
                 Expanded(
                   child: Padding(
@@ -1402,9 +1458,11 @@ class _LedgerRowState extends State<_LedgerRow> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
     final rowBg = widget.isEven
-        ? AppTheme.surfaceWhite
-        : AppTheme.backgroundLight;
+        ? (isDark ? AppTheme.darkSurface : AppTheme.surfaceWhite)
+        : (isDark ? AppTheme.darkBackground : AppTheme.backgroundLight);
+    final divCol = isDark ? AppTheme.darkDivider : AppTheme.dividerColor;
 
     return IntrinsicHeight(
       child: Row(
@@ -1418,17 +1476,18 @@ class _LedgerRowState extends State<_LedgerRow> {
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 100),
                 color: _debitHovered && widget.debitEntry != null
-                    ? AppTheme.primaryBlue.withValues(alpha: 0.04)
+                    ? AppTheme.primaryBlue.withValues(alpha: 0.08)
                     : rowBg,
                 child: _buildCell(
                   entry: widget.debitEntry,
                   onDelete: widget.onDeleteDebit,
                   accentColor: AppTheme.primaryBlue,
+                  isDark: isDark,
                 ),
               ),
             ),
           ),
-          Container(width: 1, color: AppTheme.dividerColor),
+          Container(width: 1, color: divCol),
           // Credit cell
           Expanded(
             child: MouseRegion(
@@ -1443,6 +1502,7 @@ class _LedgerRowState extends State<_LedgerRow> {
                   entry: widget.creditEntry,
                   onDelete: widget.onDeleteCredit,
                   accentColor: AppTheme.successGreen,
+                  isDark: isDark,
                 ),
               ),
             ),
@@ -1456,6 +1516,7 @@ class _LedgerRowState extends State<_LedgerRow> {
     required AccountEntry? entry,
     required VoidCallback? onDelete,
     required Color accentColor,
+    required bool isDark,
   }) {
     if (entry == null) {
       return const SizedBox(height: 40);
@@ -1472,10 +1533,10 @@ class _LedgerRowState extends State<_LedgerRow> {
             flex: 3,
             child: Text(
               entry.description,
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'SF Pro Display',
                 fontSize: 13,
-                color: AppTheme.textPrimary,
+                color: isDark ? AppTheme.darkTextPrimary : AppTheme.textPrimary,
               ),
               overflow: TextOverflow.ellipsis,
             ),
@@ -1503,11 +1564,11 @@ class _LedgerRowState extends State<_LedgerRow> {
             child: Text(
               '₹${entry.amount.toStringAsFixed(2)}',
               textAlign: TextAlign.right,
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'SF Pro Display',
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: AppTheme.textPrimary,
+                color: isDark ? AppTheme.darkTextPrimary : AppTheme.textPrimary,
               ),
             ),
           ),
@@ -1540,6 +1601,7 @@ class _InlineAddEntryForm extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1550,7 +1612,7 @@ class _InlineAddEntryForm extends StatelessWidget {
             onAdd: onAdd,
           ),
         ),
-        Container(width: 1, color: AppTheme.dividerColor),
+        Container(width: 1, color: isDark ? AppTheme.darkDivider : AppTheme.dividerColor),
         Expanded(
           child: _SideEntryInput(
             isDebit: false,
@@ -1619,8 +1681,12 @@ class _SideEntryInputState extends ConsumerState<_SideEntryInput> {
     });
   }
 
+  bool get _isDark =>
+      CupertinoTheme.of(context).brightness == Brightness.dark;
+
   @override
   Widget build(BuildContext context) {
+    final isDark = _isDark;
     final glAccountsAsync = ref.watch(glAccountSearchProvider(_glQuery));
 
     return Column(
@@ -1636,7 +1702,7 @@ class _SideEntryInputState extends ConsumerState<_SideEntryInput> {
             children: [
               // Description
               Expanded(
-                flex: 3,
+                flex: 4,
                 child: _buildField(
                   controller: _descController,
                   placeholder: 'Description',
@@ -1647,8 +1713,10 @@ class _SideEntryInputState extends ConsumerState<_SideEntryInput> {
 
               // GL search field
               Expanded(
-                flex: 3,
-                child: Column(
+                flex: 5,
+                child: TapRegion(
+                  onTapOutside: (_) => setState(() => _showGLDropdown = false),
+                  child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildField(
@@ -1665,83 +1733,128 @@ class _SideEntryInputState extends ConsumerState<_SideEntryInput> {
                       }),
                     ),
                     if (_showGLDropdown)
-                      Container(
-                        constraints: const BoxConstraints(maxHeight: 160),
-                        decoration: BoxDecoration(
-                          color: AppTheme.surfaceWhite,
-                          borderRadius:
-                              BorderRadius.circular(AppTheme.radiusMedium),
-                          border: Border.all(color: AppTheme.dividerColor),
-                          boxShadow: [
-                            BoxShadow(
-                              color: CupertinoColors.systemGrey
-                                  .withValues(alpha: 0.15),
-                              blurRadius: 10,
-                              offset: const Offset(0, -4),
-                            ),
-                          ],
-                        ),
-                        child: glAccountsAsync.when(
-                          data: (accounts) {
-                            if (accounts.isEmpty) {
-                              return const Padding(
-                                padding: EdgeInsets.all(AppTheme.spacingS),
-                                child: Text('No results',
-                                    style: AppTheme.caption),
-                              );
-                            }
-                            return ListView.separated(
-                              shrinkWrap: true,
-                              reverse: true,
-                              itemCount: accounts.length,
-                              separatorBuilder: (_, _) => const Divider(
-                                  height: 1, color: AppTheme.dividerColor),
-                              itemBuilder: (ctx, i) {
-                                final gl = accounts[i];
-                                return _HoverableGLRow(
-                                  onTap: () {
-                                    ref.read(markGlAsUsedProvider(gl));
-                                    setState(() {
-                                      _selectedGL = gl;
-                                      _glSearchController.text =
-                                          '${gl.glCode} — ${gl.glDescription}';
-                                      _showGLDropdown = false;
-                                      _glQuery = '';
-                                    });
-                                  },
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 10, vertical: 7),
-                                    child: Row(
-                                      children: [
-                                        Text(gl.glCode,
-                                            style: TextStyle(
-                                              fontFamily: 'SF Pro Display',
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w600,
-                                              color: widget.accentColor,
-                                            )),
-                                        const SizedBox(width: 6),
-                                        Expanded(
-                                          child: Text(gl.glDescription,
-                                              style: AppTheme.caption,
-                                              overflow: TextOverflow.ellipsis),
-                                        ),
-                                      ],
+                      SizedBox(
+                        height: 0,
+                        child: OverflowBox(
+                        alignment: Alignment.topLeft,
+                        maxWidth: 480,
+                        minWidth: 0,
+                        maxHeight: 240,
+                        minHeight: 0,
+                        child: Container(
+                          width: 480,
+                          constraints: const BoxConstraints(maxHeight: 240),
+                          decoration: BoxDecoration(
+                            color: isDark ? AppTheme.darkCard : AppTheme.surfaceWhite,
+                            borderRadius:
+                                BorderRadius.circular(AppTheme.radiusMedium),
+                            border: Border.all(
+                                color: isDark ? AppTheme.darkDivider : AppTheme.dividerColor),
+                            boxShadow: [
+                              BoxShadow(
+                                color: CupertinoColors.systemGrey
+                                    .withValues(alpha: 0.2),
+                                blurRadius: 14,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: glAccountsAsync.when(
+                            data: (accounts) {
+                              if (accounts.isEmpty) {
+                                return const Padding(
+                                  padding: EdgeInsets.all(AppTheme.spacingS),
+                                  child: Text('No results',
+                                      style: AppTheme.caption),
+                                );
+                              }
+                              final isRecent = _glQuery.isEmpty;
+                              return Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Header label
+                                  Padding(
+                                    padding: const EdgeInsets.fromLTRB(10, 8, 10, 4),
+                                    child: Text(
+                                      isRecent ? 'Recently Used' : 'Results',
+                                      style: TextStyle(
+                                        fontFamily: 'SF Pro Display',
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                        color: isDark
+                                            ? AppTheme.darkTextPrimary.withValues(alpha: 0.45)
+                                            : AppTheme.textSecondary,
+                                        letterSpacing: 0.4,
+                                      ),
                                     ),
                                   ),
-                                );
-                              },
-                            );
-                          },
-                          loading: () => const Padding(
-                            padding: EdgeInsets.all(AppTheme.spacingS),
-                            child: CupertinoActivityIndicator(),
+                                  Container(height: 1, color: isDark ? AppTheme.darkDivider : AppTheme.dividerColor),
+                                  Flexible(
+                                    child: ListView.separated(
+                                      shrinkWrap: true,
+                                      reverse: isRecent,
+                                      itemCount: accounts.length,
+                                      separatorBuilder: (_, _) => Container(
+                                          height: 1,
+                                          color: isDark ? AppTheme.darkDivider : AppTheme.dividerColor),
+                                      itemBuilder: (ctx, i) {
+                                        final gl = accounts[i];
+                                        return _HoverableGLRow(
+                                          onTap: () {
+                                            ref.read(markGlAsUsedProvider(gl));
+                                            setState(() {
+                                              _selectedGL = gl;
+                                              _glSearchController.text =
+                                                  '${gl.glCode} — ${gl.glDescription}';
+                                              _showGLDropdown = false;
+                                              _glQuery = '';
+                                            });
+                                          },
+                                          child: Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 10, vertical: 8),
+                                            child: Row(
+                                              children: [
+                                                Text(gl.glCode,
+                                                    style: TextStyle(
+                                                      fontFamily: 'SF Pro Display',
+                                                      fontSize: 12,
+                                                      fontWeight: FontWeight.w600,
+                                                      color: widget.accentColor,
+                                                    )),
+                                                const SizedBox(width: 8),
+                                                Expanded(
+                                                  child: Text(gl.glDescription,
+                                                      style: TextStyle(
+                                                        fontFamily: 'SF Pro Display',
+                                                        fontSize: 12,
+                                                        color: isDark
+                                                            ? AppTheme.darkTextPrimary
+                                                            : AppTheme.textPrimary,
+                                                      )),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
+                            loading: () => const Padding(
+                              padding: EdgeInsets.all(AppTheme.spacingS),
+                              child: CupertinoActivityIndicator(),
+                            ),
+                            error: (_, _) => const SizedBox.shrink(),
                           ),
-                          error: (_, _) => const SizedBox.shrink(),
                         ),
                       ),
+                      ),
                   ],
+                  ),
                 ),
               ),
               const SizedBox(width: 6),
@@ -1806,18 +1919,22 @@ class _SideEntryInputState extends ConsumerState<_SideEntryInput> {
     ValueChanged<String>? onChanged,
     ValueChanged<String>? onSubmitted,
   }) {
+    final isDark = _isDark;
+    final fieldBg = isDark ? AppTheme.darkSurface : AppTheme.backgroundLight;
+    final divCol = isDark ? AppTheme.darkDivider : AppTheme.dividerColor;
+    final textCol = isDark ? AppTheme.darkTextPrimary : AppTheme.textPrimary;
     return Container(
       decoration: BoxDecoration(
-        color: AppTheme.backgroundLight,
+        color: fieldBg,
         borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
-        border: Border.all(color: AppTheme.dividerColor),
+        border: Border.all(color: divCol),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       child: Row(
         children: [
           if (prefix != null) ...[
             Text(prefix,
-                style: AppTheme.caption.copyWith(color: AppTheme.textPrimary)),
+                style: AppTheme.caption.copyWith(color: textCol)),
             const SizedBox(width: 4),
           ],
           Expanded(
@@ -1826,10 +1943,10 @@ class _SideEntryInputState extends ConsumerState<_SideEntryInput> {
               placeholder: placeholder,
               keyboardType: keyboardType,
               decoration: const BoxDecoration(),
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'SF Pro Display',
                 fontSize: 13,
-                color: AppTheme.textPrimary,
+                color: textCol,
               ),
               placeholderStyle: AppTheme.caption,
               onTap: onTap,
@@ -1903,15 +2020,15 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
+    final textCol = isDark ? AppTheme.darkTextPrimary : AppTheme.textPrimary;
     final activeColor = _isDebit
         ? AppTheme.warningOrange
         : AppTheme.successGreen;
 
     return CupertinoPageScaffold(
-      backgroundColor: AppTheme.backgroundLight,
       resizeToAvoidBottomInset: false, // IMPORTANT: avoid double inset
       navigationBar: CupertinoNavigationBar(
-        backgroundColor: AppTheme.surfaceWhite.withOpacity(0.9),
         border: null,
         leading: CupertinoButton(
           padding: EdgeInsets.zero,
@@ -1966,8 +2083,8 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
                       groupValue: _isDebit,
                       selectedColor: activeColor,
                       unselectedColor: AppTheme.surfaceWhite,
-                      borderColor: activeColor.withOpacity(0.55),
-                      pressedColor: activeColor.withOpacity(0.18),
+                      borderColor: activeColor.withValues(alpha: 0.55),
+                      pressedColor: activeColor.withValues(alpha: 0.18),
                       children: {
                         true: Padding(
                           padding: const EdgeInsets.symmetric(
@@ -2049,11 +2166,11 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
                                       children: [
                                         Text(
                                           _selectedGL!.glCode,
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontFamily: 'SF Pro Display',
                                             fontSize: 14,
                                             fontWeight: FontWeight.w600,
-                                            color: AppTheme.textPrimary,
+                                            color: textCol,
                                           ),
                                         ),
                                         const SizedBox(height: 2),
@@ -2089,13 +2206,13 @@ class _AddEntryScreenState extends ConsumerState<AddEntryScreen> {
                       keyboardType: const TextInputType.numberWithOptions(
                         decimal: true,
                       ),
-                      prefix: const Padding(
-                        padding: EdgeInsets.only(right: 8),
+                      prefix: Padding(
+                        padding: const EdgeInsets.only(right: 8),
                         child: Text(
                           '₹',
                           style: TextStyle(
                             fontSize: 17,
-                            color: AppTheme.textPrimary,
+                            color: textCol,
                           ),
                         ),
                       ),
@@ -2178,11 +2295,11 @@ class _GLAccountPickerScreenState
   @override
   Widget build(BuildContext context) {
     final glAccountsAsync = ref.watch(glAccountSearchProvider(_searchQuery));
+    final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
+    final textCol = isDark ? AppTheme.darkTextPrimary : AppTheme.textPrimary;
 
     return CupertinoPageScaffold(
-      backgroundColor: AppTheme.backgroundLight,
       navigationBar: CupertinoNavigationBar(
-        backgroundColor: AppTheme.surfaceWhite.withValues(alpha: 0.9),
         border: null,
         leading: CupertinoButton(
           padding: EdgeInsets.zero,
@@ -2259,11 +2376,11 @@ class _GLAccountPickerScreenState
                                 children: [
                                   Text(
                                     gl.glCode,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontFamily: 'SF Pro Display',
                                       fontSize: 14,
                                       fontWeight: FontWeight.w600,
-                                      color: AppTheme.textPrimary,
+                                      color: textCol,
                                     ),
                                   ),
                                   const SizedBox(height: 2),

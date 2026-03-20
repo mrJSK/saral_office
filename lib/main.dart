@@ -3,8 +3,10 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'core/di/injection.dart';
 import 'core/theme/app_theme.dart';
+import 'core/theme/theme_provider.dart';
 import 'features/splash/splash_screen.dart';
 
 void main() async {
@@ -37,8 +39,17 @@ void main() async {
     // Continue anyway - error will be shown in the app
   }
 
+  // Load saved theme preference
+  final prefs = await SharedPreferences.getInstance();
+  final savedIsDark = prefs.getBool('is_dark_mode') ?? false;
+
   // Run the app with Riverpod state management
-  runApp(const ProviderScope(child: SaralOfficeApp()));
+  runApp(ProviderScope(
+    overrides: [
+      isDarkProvider.overrideWith(() => ThemeNotifier(savedIsDark)),
+    ],
+    child: const SaralOfficeApp(),
+  ));
 }
 
 class SaralOfficeApp extends ConsumerWidget {
@@ -46,12 +57,12 @@ class SaralOfficeApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Optional: Monitor database initialization status
     final isDbInitialized = ref.watch(isDatabaseInitializedProvider);
+    final isDark = ref.watch(isDarkProvider);
 
     return CupertinoApp(
       title: 'SaralOffice',
-      theme: AppTheme.cupertinoTheme,
+      theme: isDark ? AppTheme.cupertinoThemeDark : AppTheme.cupertinoTheme,
       debugShowCheckedModeBanner: false,
       home: isDbInitialized
           ? const SplashScreen()

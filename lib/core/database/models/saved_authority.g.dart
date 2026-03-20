@@ -27,33 +27,38 @@ const SavedAuthoritySchema = CollectionSchema(
       name: r'authorityOrderNo',
       type: IsarType.string,
     ),
-    r'createdAt': PropertySchema(
+    r'billNo': PropertySchema(
       id: 2,
+      name: r'billNo',
+      type: IsarType.string,
+    ),
+    r'createdAt': PropertySchema(
+      id: 3,
       name: r'createdAt',
       type: IsarType.dateTime,
     ),
     r'divisionCode': PropertySchema(
-      id: 3,
+      id: 4,
       name: r'divisionCode',
       type: IsarType.string,
     ),
     r'divisionName': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'divisionName',
       type: IsarType.string,
     ),
     r'formattedDate': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'formattedDate',
       type: IsarType.string,
     ),
     r'fullJsonData': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'fullJsonData',
       type: IsarType.string,
     ),
     r'vendorName': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'vendorName',
       type: IsarType.string,
     )
@@ -93,6 +98,7 @@ int _savedAuthorityEstimateSize(
 ) {
   var bytesCount = offsets.last;
   bytesCount += 3 + object.authorityOrderNo.length * 3;
+  bytesCount += 3 + object.billNo.length * 3;
   bytesCount += 3 + object.divisionCode.length * 3;
   bytesCount += 3 + object.divisionName.length * 3;
   bytesCount += 3 + object.formattedDate.length * 3;
@@ -109,12 +115,13 @@ void _savedAuthoritySerialize(
 ) {
   writer.writeDouble(offsets[0], object.amount);
   writer.writeString(offsets[1], object.authorityOrderNo);
-  writer.writeDateTime(offsets[2], object.createdAt);
-  writer.writeString(offsets[3], object.divisionCode);
-  writer.writeString(offsets[4], object.divisionName);
-  writer.writeString(offsets[5], object.formattedDate);
-  writer.writeString(offsets[6], object.fullJsonData);
-  writer.writeString(offsets[7], object.vendorName);
+  writer.writeString(offsets[2], object.billNo);
+  writer.writeDateTime(offsets[3], object.createdAt);
+  writer.writeString(offsets[4], object.divisionCode);
+  writer.writeString(offsets[5], object.divisionName);
+  writer.writeString(offsets[6], object.formattedDate);
+  writer.writeString(offsets[7], object.fullJsonData);
+  writer.writeString(offsets[8], object.vendorName);
 }
 
 SavedAuthority _savedAuthorityDeserialize(
@@ -126,12 +133,13 @@ SavedAuthority _savedAuthorityDeserialize(
   final object = SavedAuthority();
   object.amount = reader.readDouble(offsets[0]);
   object.authorityOrderNo = reader.readString(offsets[1]);
-  object.createdAt = reader.readDateTime(offsets[2]);
-  object.divisionCode = reader.readString(offsets[3]);
-  object.divisionName = reader.readString(offsets[4]);
-  object.fullJsonData = reader.readString(offsets[6]);
+  object.billNo = reader.readString(offsets[2]);
+  object.createdAt = reader.readDateTime(offsets[3]);
+  object.divisionCode = reader.readString(offsets[4]);
+  object.divisionName = reader.readString(offsets[5]);
+  object.fullJsonData = reader.readString(offsets[7]);
   object.id = id;
-  object.vendorName = reader.readString(offsets[7]);
+  object.vendorName = reader.readString(offsets[8]);
   return object;
 }
 
@@ -147,9 +155,9 @@ P _savedAuthorityDeserializeProp<P>(
     case 1:
       return (reader.readString(offset)) as P;
     case 2:
-      return (reader.readDateTime(offset)) as P;
-    case 3:
       return (reader.readString(offset)) as P;
+    case 3:
+      return (reader.readDateTime(offset)) as P;
     case 4:
       return (reader.readString(offset)) as P;
     case 5:
@@ -157,6 +165,8 @@ P _savedAuthorityDeserializeProp<P>(
     case 6:
       return (reader.readString(offset)) as P;
     case 7:
+      return (reader.readString(offset)) as P;
+    case 8:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -557,6 +567,142 @@ extension SavedAuthorityQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.greaterThan(
         property: r'authorityOrderNo',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<SavedAuthority, SavedAuthority, QAfterFilterCondition>
+      billNoEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'billNo',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<SavedAuthority, SavedAuthority, QAfterFilterCondition>
+      billNoGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'billNo',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<SavedAuthority, SavedAuthority, QAfterFilterCondition>
+      billNoLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'billNo',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<SavedAuthority, SavedAuthority, QAfterFilterCondition>
+      billNoBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'billNo',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<SavedAuthority, SavedAuthority, QAfterFilterCondition>
+      billNoStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'billNo',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<SavedAuthority, SavedAuthority, QAfterFilterCondition>
+      billNoEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'billNo',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<SavedAuthority, SavedAuthority, QAfterFilterCondition>
+      billNoContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'billNo',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<SavedAuthority, SavedAuthority, QAfterFilterCondition>
+      billNoMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'billNo',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<SavedAuthority, SavedAuthority, QAfterFilterCondition>
+      billNoIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'billNo',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<SavedAuthority, SavedAuthority, QAfterFilterCondition>
+      billNoIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'billNo',
         value: '',
       ));
     });
@@ -1389,6 +1535,19 @@ extension SavedAuthorityQuerySortBy
     });
   }
 
+  QueryBuilder<SavedAuthority, SavedAuthority, QAfterSortBy> sortByBillNo() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'billNo', Sort.asc);
+    });
+  }
+
+  QueryBuilder<SavedAuthority, SavedAuthority, QAfterSortBy>
+      sortByBillNoDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'billNo', Sort.desc);
+    });
+  }
+
   QueryBuilder<SavedAuthority, SavedAuthority, QAfterSortBy> sortByCreatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'createdAt', Sort.asc);
@@ -1499,6 +1658,19 @@ extension SavedAuthorityQuerySortThenBy
       thenByAuthorityOrderNoDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'authorityOrderNo', Sort.desc);
+    });
+  }
+
+  QueryBuilder<SavedAuthority, SavedAuthority, QAfterSortBy> thenByBillNo() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'billNo', Sort.asc);
+    });
+  }
+
+  QueryBuilder<SavedAuthority, SavedAuthority, QAfterSortBy>
+      thenByBillNoDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'billNo', Sort.desc);
     });
   }
 
@@ -1614,6 +1786,13 @@ extension SavedAuthorityQueryWhereDistinct
     });
   }
 
+  QueryBuilder<SavedAuthority, SavedAuthority, QDistinct> distinctByBillNo(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'billNo', caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<SavedAuthority, SavedAuthority, QDistinct>
       distinctByCreatedAt() {
     return QueryBuilder.apply(this, (query) {
@@ -1676,6 +1855,12 @@ extension SavedAuthorityQueryProperty
       authorityOrderNoProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'authorityOrderNo');
+    });
+  }
+
+  QueryBuilder<SavedAuthority, String, QQueryOperations> billNoProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'billNo');
     });
   }
 

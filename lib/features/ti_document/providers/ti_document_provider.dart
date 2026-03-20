@@ -147,6 +147,12 @@ class TIDocumentNotifier extends StateNotifier<TIDocumentModel> {
     state = state.copyWith(imprestEntries: _withRunningTotals(next));
   }
 
+  void insertImprestEntryAt(int index, ImprestLedgerEntry entry) {
+    final next = <ImprestLedgerEntry>[...state.imprestEntries]
+      ..insert(index, entry);
+    state = state.copyWith(imprestEntries: _withRunningTotals(next));
+  }
+
   void updateImprestEntry(int index, ImprestLedgerEntry updated) {
     final next = <ImprestLedgerEntry>[...state.imprestEntries];
     next[index] = updated;

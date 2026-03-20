@@ -21,15 +21,19 @@ class AccountEntryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
     final typeColor = entry.isDebit
         ? AppTheme.warningOrange
         : AppTheme.successGreen;
-    final typeBg = typeColor.withOpacity(0.10);
-    final borderColor = typeColor.withOpacity(0.30);
+    final typeBg = typeColor.withValues(alpha: 0.10);
+    final borderColor = typeColor.withValues(alpha: 0.30);
+    final cardBg = isDark ? AppTheme.darkSurface : AppTheme.surfaceWhite;
+    final divCol = isDark ? AppTheme.darkDivider : AppTheme.dividerColor;
+    final textCol = isDark ? AppTheme.darkTextPrimary : AppTheme.textPrimary;
 
     return Container(
       decoration: BoxDecoration(
-        color: AppTheme.surfaceWhite,
+        color: cardBg,
         borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
         border: Border.all(color: borderColor, width: 1.5),
       ),
@@ -116,18 +120,18 @@ class AccountEntryCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Description
-                _buildRow('Description', entry.description),
+                _buildRow('Description', entry.description, textCol),
                 const SizedBox(height: 10),
-                const Divider(height: 1, color: AppTheme.dividerColor),
+                Divider(height: 1, color: divCol),
                 const SizedBox(height: 10),
 
                 // GL Account Details (if available)
                 if (entry.glAccount != null) ...[
-                  _buildRow('GL Code', entry.glAccount!.glCode),
+                  _buildRow('GL Code', entry.glAccount!.glCode, textCol),
                   const SizedBox(height: 8),
-                  _buildRow('GL Description', entry.glAccount!.glDescription),
+                  _buildRow('GL Description', entry.glAccount!.glDescription, textCol),
                   const SizedBox(height: 10),
-                  const Divider(height: 1, color: AppTheme.dividerColor),
+                  Divider(height: 1, color: divCol),
                   const SizedBox(height: 10),
                 ],
 
@@ -170,7 +174,7 @@ class AccountEntryCard extends StatelessWidget {
   }
 
   /// Helper method to build label-value rows
-  Widget _buildRow(String label, String value) {
+  Widget _buildRow(String label, String value, Color textCol) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -184,11 +188,11 @@ class AccountEntryCard extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           value,
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'SF Pro Display',
             fontSize: 14,
             fontWeight: FontWeight.w500,
-            color: AppTheme.textPrimary,
+            color: textCol,
           ),
         ),
       ],

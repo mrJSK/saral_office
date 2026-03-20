@@ -254,9 +254,7 @@ class _AddEmployeeScreenState extends ConsumerState<AddEmployeeScreen>
         _officeHeadDesignationController.text.trim().isNotEmpty;
 
     return CupertinoPageScaffold(
-      backgroundColor: AppTheme.backgroundLight,
       navigationBar: CupertinoNavigationBar(
-        backgroundColor: AppTheme.surfaceWhite.withOpacity(0.9),
         border: null,
         leading: CupertinoButton(
           padding: EdgeInsets.zero,
@@ -287,11 +285,15 @@ class _AddEmployeeScreenState extends ConsumerState<AddEmployeeScreen>
         ),
       ),
       child: SafeArea(
-        child: FadeTransition(
-          opacity: _fadeAnimation,
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(AppTheme.spacingM),
-            physics: const BouncingScrollPhysics(),
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 720),
+            child: FadeTransition(
+              opacity: _fadeAnimation,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(AppTheme.spacingM),
+                physics: const BouncingScrollPhysics(),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -307,7 +309,7 @@ class _AddEmployeeScreenState extends ConsumerState<AddEmployeeScreen>
                     borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
                     boxShadow: [
                       BoxShadow(
-                        color: AppTheme.primaryBlue.withOpacity(0.3),
+                        color: AppTheme.primaryBlue.withValues(alpha: 0.3),
                         blurRadius: 12,
                         offset: const Offset(0, 4),
                       ),
@@ -318,7 +320,7 @@ class _AddEmployeeScreenState extends ConsumerState<AddEmployeeScreen>
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
+                          color: Colors.white.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: const Icon(
@@ -363,11 +365,13 @@ class _AddEmployeeScreenState extends ConsumerState<AddEmployeeScreen>
                 // Form Section
                 Container(
                   decoration: BoxDecoration(
-                    color: AppTheme.surfaceWhite,
+                    color: CupertinoTheme.of(context).brightness == Brightness.dark
+                        ? AppTheme.darkSurface
+                        : AppTheme.surfaceWhite,
                     borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
+                        color: Colors.black.withValues(alpha: 0.05),
                         blurRadius: 10,
                         offset: const Offset(0, 2),
                       ),
@@ -480,10 +484,10 @@ class _AddEmployeeScreenState extends ConsumerState<AddEmployeeScreen>
                 Container(
                   padding: const EdgeInsets.all(AppTheme.spacingM),
                   decoration: BoxDecoration(
-                    color: AppTheme.primaryBlue.withOpacity(0.05),
+                    color: AppTheme.primaryBlue.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: AppTheme.primaryBlue.withOpacity(0.2),
+                      color: AppTheme.primaryBlue.withValues(alpha: 0.2),
                     ),
                   ),
                   child: Row(
@@ -492,7 +496,7 @@ class _AddEmployeeScreenState extends ConsumerState<AddEmployeeScreen>
                       Icon(
                         CupertinoIcons.info_circle,
                         size: 20,
-                        color: AppTheme.primaryBlue.withOpacity(0.8),
+                        color: AppTheme.primaryBlue.withValues(alpha: 0.8),
                       ),
                       const SizedBox(width: 12),
                       const Expanded(
@@ -550,7 +554,7 @@ class _AddEmployeeScreenState extends ConsumerState<AddEmployeeScreen>
                       boxShadow: (canSave && !_isSaving)
                           ? [
                               BoxShadow(
-                                color: AppTheme.primaryBlue.withOpacity(0.3),
+                                color: AppTheme.primaryBlue.withValues(alpha: 0.3),
                                 blurRadius: 12,
                                 offset: const Offset(0, 4),
                               ),
@@ -592,10 +596,10 @@ class _AddEmployeeScreenState extends ConsumerState<AddEmployeeScreen>
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: AppTheme.warningOrange.withOpacity(0.1),
+                      color: AppTheme.warningOrange.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                        color: AppTheme.warningOrange.withOpacity(0.3),
+                        color: AppTheme.warningOrange.withValues(alpha: 0.3),
                       ),
                     ),
                     child: Row(
@@ -611,7 +615,7 @@ class _AddEmployeeScreenState extends ConsumerState<AddEmployeeScreen>
                             'Please fill all required fields',
                             style: TextStyle(
                               fontSize: 12,
-                              color: AppTheme.warningOrange.withOpacity(0.9),
+                              color: AppTheme.warningOrange.withValues(alpha: 0.9),
                             ),
                           ),
                         ),
@@ -622,6 +626,8 @@ class _AddEmployeeScreenState extends ConsumerState<AddEmployeeScreen>
                 const SizedBox(height: AppTheme.spacingXL),
               ],
             ),
+          ),
+        ),
           ),
         ),
       ),

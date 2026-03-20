@@ -100,6 +100,13 @@ class IsarService {
     }
   }
 
+  Future<SavedAuthority?> findAuthorityByOrderNo(String orderNo) async {
+    return await isar.savedAuthoritys
+        .filter()
+        .authorityOrderNoEqualTo(orderNo)
+        .findFirst();
+  }
+
   Stream<List<SavedAuthority>> watchRecentAuthorities() {
     return isar.savedAuthoritys
         .where()

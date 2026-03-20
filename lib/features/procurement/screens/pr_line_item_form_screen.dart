@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:saral_office/features/procurement/screens/pr_creation_screen.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/custom_date_picker.dart';
 import '../../../core/widgets/material_search_field.dart';
 import '../../../core/widgets/service_search_field.dart';
 import '../../../core/database/models/material_master.dart';
@@ -119,34 +120,40 @@ class _PRLineItemFormScreenState extends ConsumerState<PRLineItemFormScreen> {
         ),
       ),
       child: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(AppTheme.spacingM),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildItemTypeSelector(),
-                      const SizedBox(height: AppTheme.spacingL),
-                      _buildMaterialServiceSection(),
-                      const SizedBox(height: AppTheme.spacingL),
-                      _buildQuantityPriceSection(),
-                      const SizedBox(height: AppTheme.spacingL),
-                      _buildPlantStorageSection(),
-                      const SizedBox(height: AppTheme.spacingL),
-                      _buildAccountAssignmentSection(),
-                      const SizedBox(height: AppTheme.spacingL),
-                      _buildDeliveryDateSection(),
-                    ],
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 720),
+            child: Column(
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(AppTheme.spacingM),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildItemTypeSelector(),
+                          const SizedBox(height: AppTheme.spacingL),
+                          _buildMaterialServiceSection(),
+                          const SizedBox(height: AppTheme.spacingL),
+                          _buildQuantityPriceSection(),
+                          const SizedBox(height: AppTheme.spacingL),
+                          _buildPlantStorageSection(),
+                          const SizedBox(height: AppTheme.spacingL),
+                          _buildAccountAssignmentSection(),
+                          const SizedBox(height: AppTheme.spacingL),
+                          _buildDeliveryDateSection(),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
-              ),
+                _buildBottomActions(),
+              ],
             ),
-            _buildBottomActions(),
-          ],
+          ),
         ),
       ),
     );
@@ -977,64 +984,13 @@ class _PRLineItemFormScreenState extends ConsumerState<PRLineItemFormScreen> {
     );
   }
 
-  void _showDatePicker() {
-    showCupertinoModalPopup(
+  Future<void> _showDatePicker() async {
+    final picked = await showCustomDatePicker(
       context: context,
-      builder: (context) => Container(
-        height: 300,
-        decoration: const BoxDecoration(
-          color: AppTheme.surfaceWhite,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(AppTheme.spacingM),
-              decoration: const BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(color: AppTheme.dividerColor),
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  CupertinoButton(
-                    padding: EdgeInsets.zero,
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('Cancel'),
-                  ),
-                  const Text(
-                    'Delivery Date',
-                    style: TextStyle(
-                      fontFamily: 'SF Pro Display',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  CupertinoButton(
-                    padding: EdgeInsets.zero,
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('Done'),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: CupertinoDatePicker(
-                mode: CupertinoDatePickerMode.date,
-                initialDateTime: _deliveryDate,
-                minimumDate: DateTime.now(),
-                onDateTimeChanged: (date) {
-                  setState(() {
-                    _deliveryDate = date;
-                  });
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
+      initialDate: _deliveryDate,
+      firstDate: DateTime.now(),
     );
+    if (picked != null) setState(() => _deliveryDate = picked);
   }
 
   double _calculateTotal() {

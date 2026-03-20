@@ -17,23 +17,24 @@ class TotalsSummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = CupertinoTheme.of(context).brightness == Brightness.dark;
     final difference = (totalDebit - totalCredit).abs();
 
     return Container(
       decoration: BoxDecoration(
-        color: AppTheme.surfaceWhite,
+        color: isDark ? AppTheme.darkSurface : AppTheme.surfaceWhite,
         borderRadius: BorderRadius.circular(AppTheme.radiusLarge),
         border: Border.all(
           color: isBalanced
-              ? AppTheme.successGreen.withOpacity(0.3)
-              : AppTheme.errorRed.withOpacity(0.3),
+              ? AppTheme.successGreen.withValues(alpha: 0.3)
+              : AppTheme.errorRed.withValues(alpha: 0.3),
           width: 2,
         ),
         boxShadow: [
           BoxShadow(
             color: isBalanced
-                ? AppTheme.successGreen.withOpacity(0.1)
-                : AppTheme.errorRed.withOpacity(0.1),
+                ? AppTheme.successGreen.withValues(alpha: 0.1)
+                : AppTheme.errorRed.withValues(alpha: 0.1),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -93,7 +94,7 @@ class TotalsSummaryCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(AppTheme.spacingM),
               decoration: BoxDecoration(
-                color: AppTheme.errorRed.withOpacity(0.1),
+                color: AppTheme.errorRed.withValues(alpha:0.1),
                 borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
               ),
               child: Row(
@@ -128,7 +129,7 @@ class TotalsSummaryCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppTheme.spacingM),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha:0.1),
         borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
       ),
       child: Column(

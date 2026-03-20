@@ -37,6 +37,17 @@ class _WorkflowDashboardScreenState
     super.dispose();
   }
 
+  bool get _isDark =>
+      CupertinoTheme.of(context).brightness == Brightness.dark;
+  Color get _cardBg =>
+      _isDark ? AppTheme.darkSurface : AppTheme.surfaceWhite;
+  Color get _bgCol =>
+      _isDark ? AppTheme.darkBackground : AppTheme.backgroundLight;
+  Color get _divCol =>
+      _isDark ? AppTheme.darkDivider : AppTheme.dividerColor;
+  Color get _textCol =>
+      _isDark ? AppTheme.darkTextPrimary : AppTheme.textPrimary;
+
   Future<void> _loadPRs() async {
     final prService = ref.read(prServiceProvider);
     final prs = await prService.getAllPRs();
@@ -71,9 +82,7 @@ class _WorkflowDashboardScreenState
   @override
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
-      backgroundColor: AppTheme.backgroundLight,
       navigationBar: CupertinoNavigationBar(
-        backgroundColor: AppTheme.surfaceWhite.withOpacity(0.9),
         border: null,
         middle: const Text('Procurement Workflow'),
         trailing: CupertinoButton(
@@ -110,7 +119,7 @@ class _WorkflowDashboardScreenState
   Widget _buildSearchAndFilter() {
     return Container(
       padding: const EdgeInsets.all(AppTheme.spacingM),
-      color: AppTheme.surfaceWhite,
+      color: _cardBg,
       child: CupertinoSearchTextField(
         controller: _searchController,
         placeholder: 'Search PR number or type...',
@@ -123,7 +132,7 @@ class _WorkflowDashboardScreenState
   Widget _buildStageFilter() {
     return Container(
       height: 50,
-      color: AppTheme.surfaceWhite,
+      color: _cardBg,
       child: ListView(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: AppTheme.spacingM),
@@ -155,10 +164,10 @@ class _WorkflowDashboardScreenState
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? AppTheme.primaryBlue : AppTheme.backgroundLight,
+          color: isSelected ? AppTheme.primaryBlue : _bgCol,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? AppTheme.primaryBlue : AppTheme.dividerColor,
+            color: isSelected ? AppTheme.primaryBlue : _divCol,
           ),
         ),
         child: Text(
@@ -227,7 +236,7 @@ class _WorkflowDashboardScreenState
       },
       child: Container(
         decoration: BoxDecoration(
-          color: AppTheme.surfaceWhite,
+          color: _cardBg,
           borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
           border: Border.all(
             color: _getStageColor(pr.currentStage).withOpacity(0.3),
@@ -261,11 +270,11 @@ class _WorkflowDashboardScreenState
                       children: [
                         Text(
                           pr.displayNumber,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontFamily: 'SF Pro Display',
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
-                            color: AppTheme.textPrimary,
+                            color: _textCol,
                           ),
                         ),
                         const SizedBox(height: 4),

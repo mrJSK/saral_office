@@ -7,7 +7,16 @@
       "Bash(start d:/saral_office/saral_office/build/windows/x64/runner/Release/saral_office.exe)",
       "Bash(dart analyze:*)",
       "Bash(python3 -:*)",
-      "Bash(node -e:*)"
+      "Bash(node -e:*)",
+      "Bash(flutter analyze:*)",
+      "Bash(grep -rn \"color:.*\\\\n.*decoration:\\\\|Container\\(\" d:/saral_office/lib/ --include=*.dart -l)",
+      "Bash(xargs grep:*)",
+      "Bash(tail -3 grep -n \"^    \\);\" d:/saral_office/lib/features/procurement/screens/pr_creation_screen.dart)",
+      "Bash(tail -3 grep -n \"^    \\);\" d:/saral_office/lib/features/procurement/screens/pr_export_screen.dart)",
+      "Bash(tail -3 grep -n \"^    \\);\" d:/saral_office/lib/features/procurement/screens/pr_line_item_form_screen.dart)",
+      "Bash(grep -n \"^      \\),$\\\\|^      \\);$\\\\|^    \\);$\" d:/saral_office/lib/features/procurement/screens/pr_creation_screen.dart)",
+      "Bash(grep -n \"^          \\),$\\\\|^        \\),$\\\\|^      \\),$\\\\|^    \\);$\" d:/saral_office/lib/features/procurement/screens/pr_export_screen.dart)",
+      "Bash(grep -rn \"CupertinoDatePicker\\\\|_pickDate\\\\|showDatePicker\" d:saral_officelib --include=*.dart)"
     ]
   }
 }
