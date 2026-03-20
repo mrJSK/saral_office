@@ -9,16 +9,26 @@ import 'package:excel/excel.dart' as excel_pkg;
 import 'package:saral_office/core/database/models/recent_division.dart';
 import 'package:saral_office/core/database/models/recent_gl.dart';
 import 'package:saral_office/core/database/models/recent_vendor.dart';
-import 'package:saral_office/core/database/models/saved_authority.dart'; // Added import
+import 'package:saral_office/core/database/models/recent_service.dart';
+import 'package:saral_office/core/database/models/recent_material.dart';
+import 'package:saral_office/core/database/models/saved_authority.dart';
+import 'package:saral_office/features/employee/models/employee.dart';
+import 'package:saral_office/features/ti_document/models/ti_document.dart';
+import 'package:saral_office/features/procurement/models/purchase_requisition.dart';
 import '../models/vendor.dart';
 import '../models/gl_account.dart';
 import '../models/division.dart';
+import '../models/service_master.dart';
+import '../models/material_master.dart';
 
 class IsarService {
   late Isar isar;
   bool _isInitialized = false;
 
   bool get isInitialized => _isInitialized;
+
+  // Getter for db to maintain compatibility with existing code
+  Future<Isar> get db async => isar;
 
   // Initialize Isar database
   Future<void> initialize() async {
@@ -31,10 +41,19 @@ class IsarService {
           VendorSchema,
           GLAccountSchema,
           DivisionSchema,
+          ServiceMasterSchema,
+          MaterialMasterSchema,
           RecentGLSchema,
           RecentVendorSchema,
           RecentDivisionSchema,
-          SavedAuthoritySchema, // Added Schema
+          RecentServiceSchema,
+          RecentMaterialSchema,
+          SavedAuthoritySchema,
+          TIDocumentSchema,
+          EmployeeSchema,
+          // Procurement schemas
+          PurchaseRequisitionSchema,
+          PRLineItemSchema,
         ],
         directory: dir.path,
         inspector: kDebugMode,
@@ -54,10 +73,21 @@ class IsarService {
   }
 
   // ---------------------------------------------------------------------------
-  // NEW METHODS FOR SAVED AUTHORITIES
+  // AUTHORITY METHODS
   // ---------------------------------------------------------------------------
 
-  // Save payment authority to database
+  Future<void> deleteAuthorities(List<int> ids) async {
+    try {
+      await isar.writeTxn(() async {
+        await isar.savedAuthoritys.deleteAll(ids);
+      });
+      debugPrint('✅ Deleted ${ids.length} authorities');
+    } catch (e) {
+      debugPrint('❌ Error deleting authorities: $e');
+      rethrow;
+    }
+  }
+
   Future<void> saveAuthority(SavedAuthority authority) async {
     try {
       await isar.writeTxn(() async {
@@ -70,7 +100,6 @@ class IsarService {
     }
   }
 
-  // Watch recent authorities (latest first, limit 10)
   Stream<List<SavedAuthority>> watchRecentAuthorities() {
     return isar.savedAuthoritys
         .where()
@@ -79,7 +108,6 @@ class IsarService {
         .watch(fireImmediately: true);
   }
 
-  // Get recent authorities once
   Future<List<SavedAuthority>> getRecentAuthorities() async {
     try {
       return await isar.savedAuthoritys
@@ -94,7 +122,177 @@ class IsarService {
   }
 
   // ---------------------------------------------------------------------------
-  // EXISTING METHODS
+  // SERVICE MASTER METHODS
+  // ---------------------------------------------------------------------------
+
+  Future<void> markServiceAsUsed(ServiceMaster service) async {
+    await isar.writeTxn(() async {
+      final existing = await isar.recentServices
+          .filter()
+          .activityNumberEqualTo(service.activityNumber)
+          .findFirst();
+
+      if (existing != null) {
+        existing.serviceShortText = service.serviceShortText;
+        existing.lastUsedAt = DateTime.now();
+        await isar.recentServices.put(existing);
+      } else {
+        await isar.recentServices.put(
+          RecentService()
+            ..activityNumber = service.activityNumber
+            ..serviceShortText = service.serviceShortText
+            ..lastUsedAt = DateTime.now(),
+        );
+      }
+
+      // Keep only latest 20
+      final extra = await isar.recentServices
+          .where()
+          .sortByLastUsedAtDesc()
+          .offset(20)
+          .findAll();
+      if (extra.isNotEmpty) {
+        await isar.recentServices.deleteAll(extra.map((e) => e.id).toList());
+      }
+    });
+  }
+
+  Future<List<ServiceMaster>> searchServices(String query) async {
+    try {
+      if (!_isInitialized) return [];
+
+      if (query.isEmpty) {
+        final recentServiceNumbers = await isar.recentServices
+            .where()
+            .sortByLastUsedAtDesc()
+            .limit(20)
+            .findAll();
+
+        if (recentServiceNumbers.isEmpty) {
+          return await isar.serviceMasters.where().limit(50).findAll();
+        }
+
+        final services = <ServiceMaster>[];
+        for (var recent in recentServiceNumbers) {
+          final service = await isar.serviceMasters
+              .filter()
+              .activityNumberEqualTo(recent.activityNumber)
+              .findFirst();
+          if (service != null) services.add(service);
+        }
+
+        return services;
+      }
+
+      final results = await isar.serviceMasters
+          .filter()
+          .activityNumberContains(query, caseSensitive: false)
+          .or()
+          .serviceShortTextContains(query, caseSensitive: false)
+          .or()
+          .serviceLongTextContains(query, caseSensitive: false)
+          .limit(50)
+          .findAll();
+
+      debugPrint('🔍 Found ${results.length} services for query: "$query"');
+      return results;
+    } catch (e) {
+      debugPrint('❌ Error searching services: $e');
+      return [];
+    }
+  }
+
+  Stream<List<ServiceMaster>> watchServices() {
+    return isar.serviceMasters.where().watch(fireImmediately: true);
+  }
+
+  // ---------------------------------------------------------------------------
+  // MATERIAL MASTER METHODS
+  // ---------------------------------------------------------------------------
+
+  Future<void> markMaterialAsUsed(MaterialMaster material) async {
+    await isar.writeTxn(() async {
+      final existing = await isar.recentMaterials
+          .filter()
+          .materialEqualTo(material.material)
+          .findFirst();
+
+      if (existing != null) {
+        existing.materialDesc = material.materialDesc;
+        existing.lastUsedAt = DateTime.now();
+        await isar.recentMaterials.put(existing);
+      } else {
+        await isar.recentMaterials.put(
+          RecentMaterial()
+            ..material = material.material
+            ..materialDesc = material.materialDesc
+            ..lastUsedAt = DateTime.now(),
+        );
+      }
+
+      // Keep only latest 20
+      final extra = await isar.recentMaterials
+          .where()
+          .sortByLastUsedAtDesc()
+          .offset(20)
+          .findAll();
+      if (extra.isNotEmpty) {
+        await isar.recentMaterials.deleteAll(extra.map((e) => e.id).toList());
+      }
+    });
+  }
+
+  Future<List<MaterialMaster>> searchMaterials(String query) async {
+    try {
+      if (!_isInitialized) return [];
+
+      if (query.isEmpty) {
+        final recentMaterialCodes = await isar.recentMaterials
+            .where()
+            .sortByLastUsedAtDesc()
+            .limit(20)
+            .findAll();
+
+        if (recentMaterialCodes.isEmpty) {
+          return await isar.materialMasters.where().limit(50).findAll();
+        }
+
+        final materials = <MaterialMaster>[];
+        for (var recent in recentMaterialCodes) {
+          final material = await isar.materialMasters
+              .filter()
+              .materialEqualTo(recent.material)
+              .findFirst();
+          if (material != null) materials.add(material);
+        }
+
+        return materials;
+      }
+
+      final results = await isar.materialMasters
+          .filter()
+          .materialContains(query, caseSensitive: false)
+          .or()
+          .materialDescContains(query, caseSensitive: false)
+          .or()
+          .materialGroupDescContains(query, caseSensitive: false)
+          .limit(50)
+          .findAll();
+
+      debugPrint('🔍 Found ${results.length} materials for query: "$query"');
+      return results;
+    } catch (e) {
+      debugPrint('❌ Error searching materials: $e');
+      return [];
+    }
+  }
+
+  Stream<List<MaterialMaster>> watchMaterials() {
+    return isar.materialMasters.where().watch(fireImmediately: true);
+  }
+
+  // ---------------------------------------------------------------------------
+  // DIVISION METHODS
   // ---------------------------------------------------------------------------
 
   Future<void> markDivisionAsUsed(Division division) async {
@@ -117,7 +315,6 @@ class IsarService {
         );
       }
 
-      // keep only latest 20
       final extra = await isar.recentDivisions
           .where()
           .sortByLastUsedAtDesc()
@@ -129,7 +326,51 @@ class IsarService {
     });
   }
 
-  // Mark a vendor as recently used
+  Future<List<Division>> searchDivisions(String query) async {
+    try {
+      if (!_isInitialized) return [];
+
+      if (query.isEmpty) {
+        final recentDivisionCodes = await isar.recentDivisions
+            .where()
+            .sortByLastUsedAtDesc()
+            .limit(20)
+            .findAll();
+
+        if (recentDivisionCodes.isEmpty) {
+          return await isar.divisions.where().limit(50).findAll();
+        }
+
+        final divisions = <Division>[];
+        for (var recent in recentDivisionCodes) {
+          final division = await isar.divisions
+              .filter()
+              .fundsCenterEqualTo(recent.fundsCenter)
+              .findFirst();
+          if (division != null) divisions.add(division);
+        }
+
+        return divisions;
+      }
+
+      final results = await isar.divisions
+          .filter()
+          .fundsCenterContains(query, caseSensitive: false)
+          .or()
+          .nameContains(query, caseSensitive: false)
+          .findAll();
+
+      return results;
+    } catch (e) {
+      debugPrint('❌ Error searching divisions: $e');
+      return [];
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // VENDOR METHODS
+  // ---------------------------------------------------------------------------
+
   Future<void> markVendorAsUsed(Vendor vendor) async {
     await isar.writeTxn(() async {
       final existing = await isar.recentVendors
@@ -150,7 +391,6 @@ class IsarService {
         );
       }
 
-      // keep only latest 20
       final extra = await isar.recentVendors
           .where()
           .sortByLastUsedAtDesc()
@@ -162,7 +402,80 @@ class IsarService {
     });
   }
 
-  // Mark a GL account as recently used
+  Future<List<Vendor>> searchVendors(String query) async {
+    try {
+      if (!_isInitialized) return [];
+
+      if (query.isEmpty) {
+        final recentVendorCodes = await isar.recentVendors
+            .where()
+            .sortByLastUsedAtDesc()
+            .limit(20)
+            .findAll();
+
+        if (recentVendorCodes.isEmpty) {
+          return await isar.vendors.where().limit(50).findAll();
+        }
+
+        final vendors = <Vendor>[];
+        for (var recent in recentVendorCodes) {
+          final vendor = await isar.vendors
+              .filter()
+              .vendorCodeEqualTo(recent.vendorCode)
+              .findFirst();
+          if (vendor != null) vendors.add(vendor);
+        }
+
+        return vendors;
+      }
+
+      final byCode = await isar.vendors
+          .filter()
+          .vendorCodeContains(query, caseSensitive: false)
+          .findAll();
+
+      final byName = await isar.vendors
+          .filter()
+          .name1Contains(query, caseSensitive: false)
+          .findAll();
+
+      final results = {...byCode, ...byName}.toList();
+      return results.take(50).toList();
+    } catch (e) {
+      debugPrint('❌ Error searching vendors: $e');
+      return [];
+    }
+  }
+
+  Stream<List<Vendor>> watchVendors() {
+    return isar.vendors.where().watch(fireImmediately: true);
+  }
+
+  // ---------------------------------------------------------------------------
+  // GL ACCOUNT METHODS
+  // ---------------------------------------------------------------------------
+
+  Future<Map<String, String>> getGlDescriptionMapForCodes(
+    Iterable<String> glCodes,
+  ) async {
+    if (!_isInitialized) return {};
+
+    final codes = glCodes
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .toSet()
+        .toList();
+
+    if (codes.isEmpty) return {};
+
+    final rows = await isar.gLAccounts
+        .filter()
+        .anyOf(codes, (q, code) => q.glCodeEqualTo(code))
+        .findAll();
+
+    return {for (final r in rows) r.glCode.trim(): r.glDescription.trim()};
+  }
+
   Future<void> markGlAsUsed(GLAccount gl) async {
     await isar.writeTxn(() async {
       final existing = await isar.recentGLs
@@ -183,7 +496,6 @@ class IsarService {
         );
       }
 
-      // keep only latest 20
       final extra = await isar.recentGLs
           .where()
           .sortByLastUsedAtDesc()
@@ -195,17 +507,77 @@ class IsarService {
     });
   }
 
-  // Check if data already exists, if not import
+  Future<List<GLAccount>> searchGLAccounts(String query) async {
+    try {
+      if (!_isInitialized) {
+        debugPrint('⚠️ Isar not initialized');
+        return [];
+      }
+
+      if (query.isEmpty) {
+        final recentGLCodes = await isar.recentGLs
+            .where()
+            .sortByLastUsedAtDesc()
+            .limit(20)
+            .findAll();
+
+        if (recentGLCodes.isEmpty) {
+          return await isar.gLAccounts.where().limit(50).findAll();
+        }
+
+        final glAccounts = <GLAccount>[];
+        for (var recent in recentGLCodes) {
+          final gl = await isar.gLAccounts
+              .filter()
+              .glCodeEqualTo(recent.glCode)
+              .findFirst();
+          if (gl != null) glAccounts.add(gl);
+        }
+
+        return glAccounts;
+      }
+
+      final results = await isar.gLAccounts
+          .filter()
+          .glCodeContains(query, caseSensitive: false)
+          .or()
+          .glDescriptionContains(query, caseSensitive: false)
+          .limit(50)
+          .findAll();
+
+      debugPrint('🔍 Found ${results.length} GL accounts for query: "$query"');
+      return results;
+    } catch (e) {
+      debugPrint('❌ Error searching GL accounts: $e');
+      return [];
+    }
+  }
+
+  Stream<List<GLAccount>> watchGLAccounts() {
+    return isar.gLAccounts.where().watch(fireImmediately: true);
+  }
+
+  // ---------------------------------------------------------------------------
+  // DATA IMPORT METHODS
+  // ---------------------------------------------------------------------------
+
   Future<void> _checkAndImportData() async {
     final vendorCount = await isar.vendors.count();
     final glCount = await isar.gLAccounts.count();
     final divisionCount = await isar.divisions.count();
+    final serviceCount = await isar.serviceMasters.count();
+    final materialCount = await isar.materialMasters.count();
 
     debugPrint(
-      '📊 Database counts - Vendors: $vendorCount, GL: $glCount, Divisions: $divisionCount',
+      '📊 Database counts - Vendors: $vendorCount, GL: $glCount, '
+      'Divisions: $divisionCount, Services: $serviceCount, Materials: $materialCount',
     );
 
-    if (vendorCount == 0 || glCount == 0 || divisionCount == 0) {
+    if (vendorCount == 0 ||
+        glCount == 0 ||
+        divisionCount == 0 ||
+        serviceCount == 0 ||
+        materialCount == 0) {
       debugPrint('📦 Importing data for the first time...');
       await importAllData();
       debugPrint('✅ Data import complete!');
@@ -214,77 +586,40 @@ class IsarService {
     }
   }
 
-  // Import all data from CSV/Excel files
   Future<void> importAllData() async {
     await Future.wait([
       _importVendors(),
       _importGLAccounts(),
       _importDivisions(),
+      _importServices(),
+      _importMaterials(),
     ]);
   }
 
-  // Helper method to safely get cell value with improved null safety
-  String? _getCellValue(excel_pkg.Data? cell) {
-    if (cell == null || cell.value == null) return null;
-
-    final value = cell.value;
-
-    // Helper to process strings safely
-    String? processString(dynamic val) {
-      if (val == null) return null;
-      final str = val.toString();
-      return str.trim().isEmpty ? null : str.trim();
-    }
-
-    // Handle different data types
-    if (value is String) {
-      return processString(value);
-    } else if (value is excel_pkg.TextCellValue) {
-      return processString(value.value);
-    } else if (value is num || value is bool) {
-      return value.toString();
-    } else if (value is excel_pkg.IntCellValue) {
-      return value.value.toString();
-    } else if (value is excel_pkg.DoubleCellValue) {
-      return value.value.toString();
-    } else if (value is excel_pkg.BoolCellValue) {
-      return value.value.toString();
-    } else if (value is excel_pkg.FormulaCellValue) {
-      return processString(value.toString());
-    }
-
-    return processString(value);
-  }
-
-  // Safe string extraction helper for CSV data
   String? _safeCsvString(dynamic value) {
     if (value == null) return null;
     final str = value.toString().trim();
     return str.isEmpty ? null : str;
   }
 
-  // Import Vendors from CSV
   Future<void> _importVendors() async {
     try {
-      debugPrint('📂 Loading Vendor_Master.csv...');
-
+      debugPrint('📂 Loading Vendor_Master_Combined.csv...');
       final csvString = await rootBundle.loadString(
-        'assets/data/Vendor_Master.csv',
+        'assets/data/Vendor_Master_Combined.csv',
       );
 
       final List<List<dynamic>> rows = const CsvToListConverter().convert(
         csvString,
+        eol: '\n',
       );
 
       debugPrint('📄 Processing ${rows.length} rows');
 
       final vendors = <Vendor>[];
-
-      // Skip header row (index 0)
       for (var i = 1; i < rows.length; i++) {
         try {
           final row = rows[i];
-
           if (row.isEmpty) continue;
 
           String? safe(int index) {
@@ -318,7 +653,10 @@ class IsarService {
             ..postalCode = safe(9) ?? ''
             ..region = safe(10) ?? ''
             ..pan = safe(11) ?? ''
-            ..gst = safe(12) ?? '';
+            ..gst = safe(12) ?? ''
+            ..ifsc = safe(13)
+            ..bankAccount = safe(14)
+            ..email = safe(15);
 
           vendors.add(vendor);
         } catch (e) {
@@ -328,13 +666,13 @@ class IsarService {
       }
 
       if (vendors.isEmpty) {
-        debugPrint('⚠️ No vendors parsed from Vendor_Master.csv');
+        debugPrint('⚠️ No vendors parsed from Vendor_Master_Combined.csv');
         return;
       }
 
       debugPrint('💾 Saving ${vendors.length} vendors to database...');
-
       await isar.writeTxn(() async {
+        await isar.vendors.clear();
         await isar.vendors.putAll(vendors);
       });
 
@@ -345,11 +683,9 @@ class IsarService {
     }
   }
 
-  // Import GL Accounts from CSV with complete null safety
   Future<void> _importGLAccounts() async {
     try {
       debugPrint('📂 Loading account_code_gl_mapping.csv...');
-
       final csvString = await rootBundle.loadString(
         'assets/data/account_code_gl_mapping.csv',
       );
@@ -361,12 +697,9 @@ class IsarService {
       debugPrint('📄 Processing ${rows.length} rows');
 
       final glAccounts = <GLAccount>[];
-
-      // Skip header row
       for (var i = 1; i < rows.length; i++) {
         try {
           final row = rows[i];
-
           if (row.length < 8) {
             debugPrint('⚠️ Skipping row $i: insufficient columns');
             continue;
@@ -410,11 +743,9 @@ class IsarService {
     }
   }
 
-  // Import Divisions from CSV with complete null safety
   Future<void> _importDivisions() async {
     try {
       debugPrint('📂 Loading fm_area_1000.csv...');
-
       final csvString = await rootBundle.loadString(
         'assets/data/fm_area_1000.csv',
       );
@@ -426,12 +757,9 @@ class IsarService {
       debugPrint('📄 Processing ${rows.length} rows');
 
       final divisions = <Division>[];
-
-      // Skip header row
       for (var i = 1; i < rows.length; i++) {
         try {
           final row = rows[i];
-
           if (row.length < 2) {
             debugPrint('⚠️ Skipping row $i: insufficient columns');
             continue;
@@ -474,102 +802,173 @@ class IsarService {
     }
   }
 
-  // Search methods
-  Future<List<Vendor>> searchVendors(String query) async {
+  Future<void> _importServices() async {
     try {
-      if (!_isInitialized) return [];
+      debugPrint('📂 Loading service_master.csv...');
+      final csvString = await rootBundle.loadString(
+        'assets/data/service_master.csv',
+      );
 
-      if (query.isEmpty) {
-        // Return simple list of first 50 vendors instead of recent ones
-        return await isar.vendors.where().limit(50).findAll();
+      final List<List<dynamic>> rows = const CsvToListConverter().convert(
+        csvString,
+        eol: '\n',
+      );
+
+      debugPrint('📄 Processing ${rows.length} rows');
+
+      final services = <ServiceMaster>[];
+      for (var i = 1; i < rows.length; i++) {
+        try {
+          final row = rows[i];
+          if (row.isEmpty) continue;
+
+          String? safe(int index) {
+            if (index >= row.length) return null;
+            final v = row[index];
+            if (v == null) return null;
+            final s = v.toString().trim();
+            return s.isEmpty ? null : s;
+          }
+
+          final activityNumber = safe(0);
+          final serviceShortText = safe(9);
+
+          if (activityNumber == null ||
+              activityNumber.isEmpty ||
+              serviceShortText == null ||
+              serviceShortText.isEmpty) {
+            continue;
+          }
+
+          final service = ServiceMaster()
+            ..activityNumber = activityNumber
+            ..materialGroup = safe(1) ?? ''
+            ..materialGroupDesc = safe(2) ?? ''
+            ..baseUnit = safe(3) ?? ''
+            ..serviceCategory = safe(4) ?? ''
+            ..serviceCategoryDesc = safe(5) ?? ''
+            ..valuationClass = safe(6)
+            ..valuationClassDesc = safe(7)
+            ..glAccount = safe(8)
+            ..serviceShortText = serviceShortText
+            ..serviceLongText = safe(10) ?? serviceShortText
+            ..deletionIndicator = safe(11);
+
+          services.add(service);
+        } catch (e) {
+          debugPrint('⚠️ Error parsing service row $i: $e');
+          continue;
+        }
       }
 
-      final byCode = await isar.vendors
-          .filter()
-          .vendorCodeContains(query, caseSensitive: false)
-          .findAll();
-      final byName = await isar.vendors
-          .filter()
-          .name1Contains(query, caseSensitive: false)
-          .findAll();
+      if (services.isEmpty) {
+        debugPrint('⚠️ No services parsed from CSV file');
+        return;
+      }
 
-      final results = {...byCode, ...byName}.toList();
-      return results.take(50).toList();
-    } catch (e) {
-      debugPrint('❌ Error searching vendors: $e');
-      return [];
+      debugPrint('💾 Saving ${services.length} services to database...');
+      await isar.writeTxn(() async {
+        await isar.serviceMasters.clear();
+        await isar.serviceMasters.putAll(services);
+      });
+
+      debugPrint('✅ Imported ${services.length} services');
+    } catch (e, stackTrace) {
+      debugPrint('❌ Error importing services: $e');
+      debugPrint('Stack trace: $stackTrace');
     }
   }
 
-  Future<List<GLAccount>> searchGLAccounts(String query) async {
+  Future<void> _importMaterials() async {
     try {
-      if (!_isInitialized) {
-        debugPrint('⚠️ Isar not initialized');
-        return [];
+      debugPrint('📂 Loading material_master.csv...');
+      final csvString = await rootBundle.loadString(
+        'assets/data/material_master.csv',
+      );
+
+      final List<List<dynamic>> rows = const CsvToListConverter().convert(
+        csvString,
+        eol: '\n',
+      );
+
+      debugPrint('📄 Processing ${rows.length} rows');
+
+      final materials = <MaterialMaster>[];
+      for (var i = 1; i < rows.length; i++) {
+        try {
+          final row = rows[i];
+          if (row.isEmpty) continue;
+
+          String? safe(int index) {
+            if (index >= row.length) return null;
+            final v = row[index];
+            if (v == null) return null;
+            final s = v.toString().trim();
+            return s.isEmpty ? null : s;
+          }
+
+          final material = safe(1);
+          final materialDesc = safe(3);
+
+          if (material == null ||
+              material.isEmpty ||
+              materialDesc == null ||
+              materialDesc.isEmpty) {
+            continue;
+          }
+
+          final materialEntry = MaterialMaster()
+            ..materialType = safe(0) ?? ''
+            ..material = material
+            ..baseUnitOfMeasure = safe(2) ?? ''
+            ..materialDesc = materialDesc
+            ..plant = safe(4) ?? ''
+            ..materialGroup = safe(5) ?? ''
+            ..materialGroupDesc = safe(6) ?? ''
+            ..subGroup = safe(7) ?? ''
+            ..subGroupDesc = safe(8) ?? ''
+            ..splitValuationStatus = safe(9) ?? ''
+            ..serialNumberStatus = safe(10) ?? '';
+
+          materials.add(materialEntry);
+        } catch (e) {
+          debugPrint('⚠️ Error parsing material row $i: $e');
+          continue;
+        }
       }
 
-      if (query.isEmpty) {
-        return await isar.gLAccounts.where().limit(50).findAll();
+      if (materials.isEmpty) {
+        debugPrint('⚠️ No materials parsed from CSV file');
+        return;
       }
 
-      final results = await isar.gLAccounts
-          .filter()
-          .glCodeContains(query, caseSensitive: false)
-          .or()
-          .glDescriptionContains(query, caseSensitive: false)
-          .limit(50)
-          .findAll();
+      debugPrint('💾 Saving ${materials.length} materials to database...');
+      await isar.writeTxn(() async {
+        await isar.materialMasters.clear();
+        await isar.materialMasters.putAll(materials);
+      });
 
-      debugPrint('🔍 Found ${results.length} GL accounts for query: "$query"');
-      return results;
-    } catch (e) {
-      debugPrint('❌ Error searching GL accounts: $e');
-      return [];
+      debugPrint('✅ Imported ${materials.length} materials');
+    } catch (e, stackTrace) {
+      debugPrint('❌ Error importing materials: $e');
+      debugPrint('Stack trace: $stackTrace');
     }
   }
 
-  Future<List<Division>> searchDivisions(String query) async {
-    try {
-      if (!_isInitialized) return [];
+  // ---------------------------------------------------------------------------
+  // UTILITY METHODS
+  // ---------------------------------------------------------------------------
 
-      if (query.isEmpty) {
-        // Return simple list of first 50 divisions instead of recent ones
-        return await isar.divisions.where().limit(50).findAll();
-      }
-
-      final results = await isar.divisions
-          .filter()
-          .fundsCenterContains(query, caseSensitive: false)
-          .or()
-          .nameContains(query, caseSensitive: false)
-          .findAll();
-
-      return results;
-    } catch (e) {
-      debugPrint('❌ Error searching divisions: $e');
-      return [];
-    }
-  }
-
-  // Watch methods for real-time updates
-  Stream<List<Vendor>> watchVendors() {
-    return isar.vendors.where().watch(fireImmediately: true);
-  }
-
-  Stream<List<GLAccount>> watchGLAccounts() {
-    return isar.gLAccounts.where().watch(fireImmediately: true);
-  }
-
-  // Clear and reimport (for debugging)
   Future<void> clearAndReimport() async {
     try {
       debugPrint('🗑️ Clearing all data...');
-
       await isar.writeTxn(() async {
         await isar.vendors.clear();
         await isar.gLAccounts.clear();
         await isar.divisions.clear();
-        await isar.savedAuthoritys.clear(); // Clear authorities too
+        await isar.serviceMasters.clear();
+        await isar.materialMasters.clear();
+        await isar.savedAuthoritys.clear();
       });
 
       debugPrint('📦 Reimporting data...');
@@ -578,13 +977,18 @@ class IsarService {
       final vendorCount = await isar.vendors.count();
       final glCount = await isar.gLAccounts.count();
       final divisionCount = await isar.divisions.count();
+      final serviceCount = await isar.serviceMasters.count();
+      final materialCount = await isar.materialMasters.count();
 
       debugPrint('✅ Reimport complete:');
-      debugPrint('  Vendors: $vendorCount');
-      debugPrint('  GL Accounts: $glCount');
-      debugPrint('  Divisions: $divisionCount');
+      debugPrint('   Vendors: $vendorCount');
+      debugPrint('   GL Accounts: $glCount');
+      debugPrint('   Divisions: $divisionCount');
+      debugPrint('   Services: $serviceCount');
+      debugPrint('   Materials: $materialCount');
     } catch (e) {
       debugPrint('❌ Error during reimport: $e');
+      rethrow;
     }
   }
 }

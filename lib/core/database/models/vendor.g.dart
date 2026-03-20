@@ -17,78 +17,93 @@ const VendorSchema = CollectionSchema(
   name: r'Vendor',
   id: -5715217668496658661,
   properties: {
-    r'city': PropertySchema(
+    r'bankAccount': PropertySchema(
       id: 0,
+      name: r'bankAccount',
+      type: IsarType.string,
+    ),
+    r'city': PropertySchema(
+      id: 1,
       name: r'city',
       type: IsarType.string,
     ),
     r'district': PropertySchema(
-      id: 1,
+      id: 2,
       name: r'district',
       type: IsarType.string,
     ),
+    r'email': PropertySchema(
+      id: 3,
+      name: r'email',
+      type: IsarType.string,
+    ),
     r'fullAddress': PropertySchema(
-      id: 2,
+      id: 4,
       name: r'fullAddress',
       type: IsarType.string,
     ),
     r'fullName': PropertySchema(
-      id: 3,
+      id: 5,
       name: r'fullName',
       type: IsarType.string,
     ),
     r'gst': PropertySchema(
-      id: 4,
+      id: 6,
       name: r'gst',
       type: IsarType.string,
     ),
+    r'ifsc': PropertySchema(
+      id: 7,
+      name: r'ifsc',
+      type: IsarType.string,
+    ),
     r'name1': PropertySchema(
-      id: 5,
+      id: 8,
       name: r'name1',
       type: IsarType.string,
     ),
     r'name2': PropertySchema(
-      id: 6,
+      id: 9,
       name: r'name2',
       type: IsarType.string,
     ),
     r'pan': PropertySchema(
-      id: 7,
+      id: 10,
       name: r'pan',
       type: IsarType.string,
     ),
     r'postalCode': PropertySchema(
-      id: 8,
+      id: 11,
       name: r'postalCode',
       type: IsarType.string,
     ),
     r'region': PropertySchema(
-      id: 9,
+      id: 12,
       name: r'region',
       type: IsarType.string,
     ),
     r'street1': PropertySchema(
-      id: 10,
+      id: 13,
       name: r'street1',
       type: IsarType.string,
     ),
     r'street2': PropertySchema(
-      id: 11,
+      id: 14,
       name: r'street2',
       type: IsarType.string,
     ),
     r'street3': PropertySchema(
-      id: 12,
+      id: 15,
       name: r'street3',
       type: IsarType.string,
     ),
     r'street4': PropertySchema(
-      id: 13,
+      id: 16,
       name: r'street4',
       type: IsarType.string,
     ),
     r'vendorCode': PropertySchema(
-      id: 14,
+      id: 17,
       name: r'vendorCode',
       type: IsarType.string,
     )
@@ -127,9 +142,21 @@ int _vendorEstimateSize(
   Map<Type, List<int>> allOffsets,
 ) {
   var bytesCount = offsets.last;
+  {
+    final value = object.bankAccount;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   bytesCount += 3 + object.city.length * 3;
   {
     final value = object.district;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final value = object.email;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
     }
@@ -138,6 +165,12 @@ int _vendorEstimateSize(
   bytesCount += 3 + object.fullName.length * 3;
   {
     final value = object.gst;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final value = object.ifsc;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
     }
@@ -196,21 +229,24 @@ void _vendorSerialize(
   List<int> offsets,
   Map<Type, List<int>> allOffsets,
 ) {
-  writer.writeString(offsets[0], object.city);
-  writer.writeString(offsets[1], object.district);
-  writer.writeString(offsets[2], object.fullAddress);
-  writer.writeString(offsets[3], object.fullName);
-  writer.writeString(offsets[4], object.gst);
-  writer.writeString(offsets[5], object.name1);
-  writer.writeString(offsets[6], object.name2);
-  writer.writeString(offsets[7], object.pan);
-  writer.writeString(offsets[8], object.postalCode);
-  writer.writeString(offsets[9], object.region);
-  writer.writeString(offsets[10], object.street1);
-  writer.writeString(offsets[11], object.street2);
-  writer.writeString(offsets[12], object.street3);
-  writer.writeString(offsets[13], object.street4);
-  writer.writeString(offsets[14], object.vendorCode);
+  writer.writeString(offsets[0], object.bankAccount);
+  writer.writeString(offsets[1], object.city);
+  writer.writeString(offsets[2], object.district);
+  writer.writeString(offsets[3], object.email);
+  writer.writeString(offsets[4], object.fullAddress);
+  writer.writeString(offsets[5], object.fullName);
+  writer.writeString(offsets[6], object.gst);
+  writer.writeString(offsets[7], object.ifsc);
+  writer.writeString(offsets[8], object.name1);
+  writer.writeString(offsets[9], object.name2);
+  writer.writeString(offsets[10], object.pan);
+  writer.writeString(offsets[11], object.postalCode);
+  writer.writeString(offsets[12], object.region);
+  writer.writeString(offsets[13], object.street1);
+  writer.writeString(offsets[14], object.street2);
+  writer.writeString(offsets[15], object.street3);
+  writer.writeString(offsets[16], object.street4);
+  writer.writeString(offsets[17], object.vendorCode);
 }
 
 Vendor _vendorDeserialize(
@@ -220,20 +256,23 @@ Vendor _vendorDeserialize(
   Map<Type, List<int>> allOffsets,
 ) {
   final object = Vendor();
-  object.city = reader.readString(offsets[0]);
-  object.district = reader.readStringOrNull(offsets[1]);
-  object.gst = reader.readStringOrNull(offsets[4]);
+  object.bankAccount = reader.readStringOrNull(offsets[0]);
+  object.city = reader.readString(offsets[1]);
+  object.district = reader.readStringOrNull(offsets[2]);
+  object.email = reader.readStringOrNull(offsets[3]);
+  object.gst = reader.readStringOrNull(offsets[6]);
   object.id = id;
-  object.name1 = reader.readString(offsets[5]);
-  object.name2 = reader.readStringOrNull(offsets[6]);
-  object.pan = reader.readStringOrNull(offsets[7]);
-  object.postalCode = reader.readString(offsets[8]);
-  object.region = reader.readStringOrNull(offsets[9]);
-  object.street1 = reader.readStringOrNull(offsets[10]);
-  object.street2 = reader.readStringOrNull(offsets[11]);
-  object.street3 = reader.readStringOrNull(offsets[12]);
-  object.street4 = reader.readStringOrNull(offsets[13]);
-  object.vendorCode = reader.readString(offsets[14]);
+  object.ifsc = reader.readStringOrNull(offsets[7]);
+  object.name1 = reader.readString(offsets[8]);
+  object.name2 = reader.readStringOrNull(offsets[9]);
+  object.pan = reader.readStringOrNull(offsets[10]);
+  object.postalCode = reader.readString(offsets[11]);
+  object.region = reader.readStringOrNull(offsets[12]);
+  object.street1 = reader.readStringOrNull(offsets[13]);
+  object.street2 = reader.readStringOrNull(offsets[14]);
+  object.street3 = reader.readStringOrNull(offsets[15]);
+  object.street4 = reader.readStringOrNull(offsets[16]);
+  object.vendorCode = reader.readString(offsets[17]);
   return object;
 }
 
@@ -245,15 +284,15 @@ P _vendorDeserializeProp<P>(
 ) {
   switch (propertyId) {
     case 0:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 1:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 2:
-      return (reader.readString(offset)) as P;
-    case 3:
-      return (reader.readString(offset)) as P;
-    case 4:
       return (reader.readStringOrNull(offset)) as P;
+    case 3:
+      return (reader.readStringOrNull(offset)) as P;
+    case 4:
+      return (reader.readString(offset)) as P;
     case 5:
       return (reader.readString(offset)) as P;
     case 6:
@@ -267,12 +306,18 @@ P _vendorDeserializeProp<P>(
     case 10:
       return (reader.readStringOrNull(offset)) as P;
     case 11:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 12:
       return (reader.readStringOrNull(offset)) as P;
     case 13:
       return (reader.readStringOrNull(offset)) as P;
     case 14:
+      return (reader.readStringOrNull(offset)) as P;
+    case 15:
+      return (reader.readStringOrNull(offset)) as P;
+    case 16:
+      return (reader.readStringOrNull(offset)) as P;
+    case 17:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -412,6 +457,152 @@ extension VendorQueryWhere on QueryBuilder<Vendor, Vendor, QWhereClause> {
 }
 
 extension VendorQueryFilter on QueryBuilder<Vendor, Vendor, QFilterCondition> {
+  QueryBuilder<Vendor, Vendor, QAfterFilterCondition> bankAccountIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'bankAccount',
+      ));
+    });
+  }
+
+  QueryBuilder<Vendor, Vendor, QAfterFilterCondition> bankAccountIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'bankAccount',
+      ));
+    });
+  }
+
+  QueryBuilder<Vendor, Vendor, QAfterFilterCondition> bankAccountEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'bankAccount',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Vendor, Vendor, QAfterFilterCondition> bankAccountGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'bankAccount',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Vendor, Vendor, QAfterFilterCondition> bankAccountLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'bankAccount',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Vendor, Vendor, QAfterFilterCondition> bankAccountBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'bankAccount',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Vendor, Vendor, QAfterFilterCondition> bankAccountStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'bankAccount',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Vendor, Vendor, QAfterFilterCondition> bankAccountEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'bankAccount',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Vendor, Vendor, QAfterFilterCondition> bankAccountContains(
+      String value,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'bankAccount',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Vendor, Vendor, QAfterFilterCondition> bankAccountMatches(
+      String pattern,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'bankAccount',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Vendor, Vendor, QAfterFilterCondition> bankAccountIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'bankAccount',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<Vendor, Vendor, QAfterFilterCondition> bankAccountIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'bankAccount',
+        value: '',
+      ));
+    });
+  }
+
   QueryBuilder<Vendor, Vendor, QAfterFilterCondition> cityEqualTo(
     String value, {
     bool caseSensitive = true,
@@ -682,6 +873,152 @@ extension VendorQueryFilter on QueryBuilder<Vendor, Vendor, QFilterCondition> {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.greaterThan(
         property: r'district',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<Vendor, Vendor, QAfterFilterCondition> emailIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'email',
+      ));
+    });
+  }
+
+  QueryBuilder<Vendor, Vendor, QAfterFilterCondition> emailIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'email',
+      ));
+    });
+  }
+
+  QueryBuilder<Vendor, Vendor, QAfterFilterCondition> emailEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'email',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Vendor, Vendor, QAfterFilterCondition> emailGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'email',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Vendor, Vendor, QAfterFilterCondition> emailLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'email',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Vendor, Vendor, QAfterFilterCondition> emailBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'email',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Vendor, Vendor, QAfterFilterCondition> emailStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'email',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Vendor, Vendor, QAfterFilterCondition> emailEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'email',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Vendor, Vendor, QAfterFilterCondition> emailContains(
+      String value,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'email',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Vendor, Vendor, QAfterFilterCondition> emailMatches(
+      String pattern,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'email',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Vendor, Vendor, QAfterFilterCondition> emailIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'email',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<Vendor, Vendor, QAfterFilterCondition> emailIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'email',
         value: '',
       ));
     });
@@ -1139,6 +1476,151 @@ extension VendorQueryFilter on QueryBuilder<Vendor, Vendor, QFilterCondition> {
         includeLower: includeLower,
         upper: upper,
         includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<Vendor, Vendor, QAfterFilterCondition> ifscIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'ifsc',
+      ));
+    });
+  }
+
+  QueryBuilder<Vendor, Vendor, QAfterFilterCondition> ifscIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'ifsc',
+      ));
+    });
+  }
+
+  QueryBuilder<Vendor, Vendor, QAfterFilterCondition> ifscEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'ifsc',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Vendor, Vendor, QAfterFilterCondition> ifscGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'ifsc',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Vendor, Vendor, QAfterFilterCondition> ifscLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'ifsc',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Vendor, Vendor, QAfterFilterCondition> ifscBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'ifsc',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Vendor, Vendor, QAfterFilterCondition> ifscStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'ifsc',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Vendor, Vendor, QAfterFilterCondition> ifscEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'ifsc',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Vendor, Vendor, QAfterFilterCondition> ifscContains(String value,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'ifsc',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Vendor, Vendor, QAfterFilterCondition> ifscMatches(
+      String pattern,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'ifsc',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<Vendor, Vendor, QAfterFilterCondition> ifscIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'ifsc',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<Vendor, Vendor, QAfterFilterCondition> ifscIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'ifsc',
+        value: '',
       ));
     });
   }
@@ -2559,6 +3041,18 @@ extension VendorQueryObject on QueryBuilder<Vendor, Vendor, QFilterCondition> {}
 extension VendorQueryLinks on QueryBuilder<Vendor, Vendor, QFilterCondition> {}
 
 extension VendorQuerySortBy on QueryBuilder<Vendor, Vendor, QSortBy> {
+  QueryBuilder<Vendor, Vendor, QAfterSortBy> sortByBankAccount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'bankAccount', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Vendor, Vendor, QAfterSortBy> sortByBankAccountDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'bankAccount', Sort.desc);
+    });
+  }
+
   QueryBuilder<Vendor, Vendor, QAfterSortBy> sortByCity() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'city', Sort.asc);
@@ -2580,6 +3074,18 @@ extension VendorQuerySortBy on QueryBuilder<Vendor, Vendor, QSortBy> {
   QueryBuilder<Vendor, Vendor, QAfterSortBy> sortByDistrictDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'district', Sort.desc);
+    });
+  }
+
+  QueryBuilder<Vendor, Vendor, QAfterSortBy> sortByEmail() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'email', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Vendor, Vendor, QAfterSortBy> sortByEmailDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'email', Sort.desc);
     });
   }
 
@@ -2616,6 +3122,18 @@ extension VendorQuerySortBy on QueryBuilder<Vendor, Vendor, QSortBy> {
   QueryBuilder<Vendor, Vendor, QAfterSortBy> sortByGstDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'gst', Sort.desc);
+    });
+  }
+
+  QueryBuilder<Vendor, Vendor, QAfterSortBy> sortByIfsc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'ifsc', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Vendor, Vendor, QAfterSortBy> sortByIfscDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'ifsc', Sort.desc);
     });
   }
 
@@ -2741,6 +3259,18 @@ extension VendorQuerySortBy on QueryBuilder<Vendor, Vendor, QSortBy> {
 }
 
 extension VendorQuerySortThenBy on QueryBuilder<Vendor, Vendor, QSortThenBy> {
+  QueryBuilder<Vendor, Vendor, QAfterSortBy> thenByBankAccount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'bankAccount', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Vendor, Vendor, QAfterSortBy> thenByBankAccountDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'bankAccount', Sort.desc);
+    });
+  }
+
   QueryBuilder<Vendor, Vendor, QAfterSortBy> thenByCity() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'city', Sort.asc);
@@ -2762,6 +3292,18 @@ extension VendorQuerySortThenBy on QueryBuilder<Vendor, Vendor, QSortThenBy> {
   QueryBuilder<Vendor, Vendor, QAfterSortBy> thenByDistrictDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'district', Sort.desc);
+    });
+  }
+
+  QueryBuilder<Vendor, Vendor, QAfterSortBy> thenByEmail() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'email', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Vendor, Vendor, QAfterSortBy> thenByEmailDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'email', Sort.desc);
     });
   }
 
@@ -2810,6 +3352,18 @@ extension VendorQuerySortThenBy on QueryBuilder<Vendor, Vendor, QSortThenBy> {
   QueryBuilder<Vendor, Vendor, QAfterSortBy> thenByIdDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'id', Sort.desc);
+    });
+  }
+
+  QueryBuilder<Vendor, Vendor, QAfterSortBy> thenByIfsc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'ifsc', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Vendor, Vendor, QAfterSortBy> thenByIfscDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'ifsc', Sort.desc);
     });
   }
 
@@ -2935,6 +3489,13 @@ extension VendorQuerySortThenBy on QueryBuilder<Vendor, Vendor, QSortThenBy> {
 }
 
 extension VendorQueryWhereDistinct on QueryBuilder<Vendor, Vendor, QDistinct> {
+  QueryBuilder<Vendor, Vendor, QDistinct> distinctByBankAccount(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'bankAccount', caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<Vendor, Vendor, QDistinct> distinctByCity(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -2946,6 +3507,13 @@ extension VendorQueryWhereDistinct on QueryBuilder<Vendor, Vendor, QDistinct> {
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'district', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<Vendor, Vendor, QDistinct> distinctByEmail(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'email', caseSensitive: caseSensitive);
     });
   }
 
@@ -2967,6 +3535,13 @@ extension VendorQueryWhereDistinct on QueryBuilder<Vendor, Vendor, QDistinct> {
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'gst', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<Vendor, Vendor, QDistinct> distinctByIfsc(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'ifsc', caseSensitive: caseSensitive);
     });
   }
 
@@ -3048,6 +3623,12 @@ extension VendorQueryProperty on QueryBuilder<Vendor, Vendor, QQueryProperty> {
     });
   }
 
+  QueryBuilder<Vendor, String?, QQueryOperations> bankAccountProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'bankAccount');
+    });
+  }
+
   QueryBuilder<Vendor, String, QQueryOperations> cityProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'city');
@@ -3057,6 +3638,12 @@ extension VendorQueryProperty on QueryBuilder<Vendor, Vendor, QQueryProperty> {
   QueryBuilder<Vendor, String?, QQueryOperations> districtProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'district');
+    });
+  }
+
+  QueryBuilder<Vendor, String?, QQueryOperations> emailProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'email');
     });
   }
 
@@ -3075,6 +3662,12 @@ extension VendorQueryProperty on QueryBuilder<Vendor, Vendor, QQueryProperty> {
   QueryBuilder<Vendor, String?, QQueryOperations> gstProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'gst');
+    });
+  }
+
+  QueryBuilder<Vendor, String?, QQueryOperations> ifscProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'ifsc');
     });
   }
 

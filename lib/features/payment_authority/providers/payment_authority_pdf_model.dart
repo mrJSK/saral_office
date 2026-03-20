@@ -20,6 +20,10 @@ class PaymentAuthorityPdfModel {
   final String payeeAddress;
   final String? payeePan; // Optional PAN
   final String? payeeGst; // Optional GST
+  final String? payeeIfsc;
+  final String? payeeCode;
+  final String? payeeBankAccount;
+  final String? payeeEmail;
   final String paymentParticulars;
   final String authorityOrderNo;
   final DateTime authorityOrderDate;
@@ -37,6 +41,10 @@ class PaymentAuthorityPdfModel {
     required this.payeeAddress,
     this.payeePan,
     this.payeeGst,
+    this.payeeIfsc,
+    this.payeeBankAccount,
+    this.payeeEmail,
+    this.payeeCode,
     required this.paymentParticulars,
     required this.authorityOrderNo,
     required this.authorityOrderDate,

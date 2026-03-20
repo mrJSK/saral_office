@@ -11,6 +11,17 @@ class IOSTextField extends StatelessWidget {
   final int maxLines;
   final Widget? prefix;
   final Widget? suffix;
+  final Color? fillColor;
+  final TextCapitalization textCapitalization;
+  final void Function(String)? onChanged;
+  final bool enabled;
+  final bool readOnly; // <--- ADDED THIS
+
+  /// helps keep the focused field visible inside scroll views / bottom sheets
+  final EdgeInsets scrollPadding;
+
+  /// allows parent to manage focus (optional)
+  final FocusNode? focusNode;
 
   const IOSTextField({
     super.key,
@@ -21,6 +32,13 @@ class IOSTextField extends StatelessWidget {
     this.maxLines = 1,
     this.prefix,
     this.suffix,
+    this.fillColor,
+    this.textCapitalization = TextCapitalization.none,
+    this.onChanged,
+    this.enabled = true,
+    this.readOnly = false, // <--- ADDED THIS
+    this.scrollPadding = const EdgeInsets.all(20),
+    this.focusNode,
   });
 
   @override
@@ -38,9 +56,15 @@ class IOSTextField extends StatelessWidget {
         const SizedBox(height: 6),
         CupertinoTextField(
           controller: controller,
+          focusNode: focusNode,
+          scrollPadding: scrollPadding,
           placeholder: placeholder,
           keyboardType: keyboardType,
           maxLines: maxLines,
+          textCapitalization: textCapitalization,
+          onChanged: onChanged,
+          enabled: enabled,
+          readOnly: readOnly, // <--- PASS IT HERE
           prefix: prefix != null
               ? Padding(padding: const EdgeInsets.only(left: 12), child: prefix)
               : null,
@@ -52,11 +76,23 @@ class IOSTextField extends StatelessWidget {
               : null,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           decoration: BoxDecoration(
-            color: AppTheme.backgroundLight,
+            color: (enabled && !readOnly)
+                ? (fillColor ?? AppTheme.backgroundLight)
+                : AppTheme.backgroundLight.withOpacity(
+                    0.5,
+                  ), // dim if disabled/readonly
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: AppTheme.dividerColor, width: 1),
+            border: Border.all(
+              color: enabled
+                  ? AppTheme.dividerColor
+                  : AppTheme.dividerColor.withOpacity(0.5),
+              width: 1,
+            ),
           ),
-          style: AppTheme.body1.copyWith(fontSize: 15),
+          style: AppTheme.body1.copyWith(
+            fontSize: 15,
+            color: enabled ? AppTheme.textPrimary : AppTheme.textSecondary,
+          ),
           placeholderStyle: AppTheme.body2,
         ),
       ],
